@@ -3,6 +3,7 @@ package org.radargun;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.radargun.config.MasterConfig;
+import org.radargun.stages.WebSessionBenchmarkStage;
 import org.radargun.state.MasterState;
 
 import java.io.IOException;
@@ -12,12 +13,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * This is the master that will coordonate the {@link Slave}s in order to run the benchmark.
@@ -78,12 +74,35 @@ public class Master {
 
    private void runDistStage(DistStage currentStage, int noSlaves) throws Exception {
       writeBufferMap.clear();
+
+       /*try{
+           FileWriter fw= new FileWriter("/Users/Diego/tipo_di_DistStage.txt",true);
+            fw.write(currentStage.getClass().getName());
+           fw.flush();
+           fw.close();
+       }
+
+       catch(IOException e){
+
+
+       }  */
+
+
       DistStage toSerialize;
       for (int i = 0; i < noSlaves; i++) {
          SocketChannel slave = slaves.get(i);
          slave.configureBlocking(false);
          slave.register(communicationSelector, SelectionKey.OP_WRITE);
+
          toSerialize = currentStage.clone();
+           //If we are performing the benchmark, the primary slave need to know how many slaves there are
+          if(currentStage.getClass().getName()=="org.radargun.stages.WebSessionBenchmarkStage"){
+                    ((WebSessionBenchmarkStage)toSerialize).setNumSlaves(noSlaves);
+                     //log.info(((WebSessionBenchmarkStage)toSerialize).);
+                   // ((WebSessionBenchmarkStage)toSerialize).setLowerBoundOp(1);
+                   // ((WebSessionBenchmarkStage)toSerialize).setUpperBoundOp(20);
+
+          }
          toSerialize.initOnMaster(state, i);
          if (i == 0) {//only log this once
             log.info("Starting dist stage '" + toSerialize.getClass().getSimpleName() + "' on " + toSerialize.getActiveSlaveCount() + " Slaves: " + toSerialize);

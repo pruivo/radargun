@@ -14,114 +14,165 @@ import org.radargun.utils.Utils;
 
 import javax.transaction.TransactionManager;
 import java.util.List;
+import java.util.Map;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class InfinispanWrapper implements CacheWrapper {
 
-   private static Log log = LogFactory.getLog(InfinispanWrapper.class);
-   DefaultCacheManager cacheManager;
-   Cache<Object, Object> cache;
-   TransactionManager tm;
-   boolean started = false;
-   String config;
+    private static Log log = LogFactory.getLog(InfinispanWrapper.class);
+    DefaultCacheManager cacheManager;
+    Cache<Object, Object> cache;
+    TransactionManager tm;
+    boolean started = false;
+    String config;
 
-   public void setUp(String config, boolean isLocal, int nodeIndex) throws Exception {
-      this.config = config;
-       if (!started) {
-          cacheManager = new DefaultCacheManager(config);
+
+    public void setUp(String config, boolean isLocal, int nodeIndex) throws Exception {
+        this.config = config;
+
+
+        if (!started) {
+            cacheManager = new DefaultCacheManager(config);
 //          if (!isLocal) {
 //             GlobalConfiguration configuration = cacheManager.getGlobalConfiguration();
 //             configuration.setTransportNodeName(String.valueOf(nodeIndex));
 //          }
-          // use a named cache, based on the 'default'
-          cacheManager.defineConfiguration("x", new Configuration());
-          cache = cacheManager.getCache("x");
-          started = true;
-       }
-       log.info("Loading JGroups form: " + org.jgroups.Version.class.getProtectionDomain().getCodeSource().getLocation());
-       log.info("JGroups version: " + org.jgroups.Version.printDescription());
+            // use a named cache, based on the 'default'
+            cacheManager.defineConfiguration("x", new Configuration());
+            cache = cacheManager.getCache("x");
+            tm=cache.getAdvancedCache().getTransactionManager();
 
-      // should we be blocking until all rehashing, etc. has finished?
-      long gracePeriod = MINUTES.toMillis(15);
-      long giveup = System.currentTimeMillis() + gracePeriod;
-      if (cache.getConfiguration().getCacheMode().isDistributed()) {
-         while (!cache.getAdvancedCache().getDistributionManager().isJoinComplete() && System.currentTimeMillis() < giveup)
-            Thread.sleep(200);
-      }
+            started = true;
+            /*
+            * Devo ottenere un transactionManager altrimenti quando comincio una transazione e' null e ritorna null!
+            */
 
-      if (cache.getConfiguration().getCacheMode().isDistributed() && !cache.getAdvancedCache().getDistributionManager().isJoinComplete())
-         throw new RuntimeException("Caches haven't discovered and joined the cluster even after " + Utils.prettyPrintTime(gracePeriod));
-   }
 
-   public void tearDown() throws Exception {
-      List<Address> addressList = cacheManager.getMembers();
-      if (started) {
-         cacheManager.stop();
-         log.trace("Stopped, previous view is " + addressList);
-         started = false;
-      }
-   }
+            /*  try{
+     FileWriter fw=new FileWriter("/home/diego/Desktop/errore.txt");
+     fw.write("transactionalManager "+tm.getClass().getName());
+     fw.flush();
+     fw.close();
 
-   public void put(String bucket, Object key, Object value) throws Exception {
-      cache.put(key, value);
-   }
 
-   public Object get(String bucket, Object key) throws Exception {
-      return cache.get(key);
-   }
+ }
+ catch(ImagingOpExcepfor (int i = 0; i < TRY_COUNT; i++) {
+     int numMembers = wraption i){}   */
+        }
 
-   public void empty() throws Exception {
-      log.info("Cache size before clear: " + cache.size());
-      cache.getAdvancedCache().withFlags(Flag.CACHE_MODE_LOCAL).clear();
-      log.info("Cache size after clear: " + cache.size());
-   }
+        log.info("Loading JGroups form: " + org.jgroups.Version.class.getProtectionDomain().getCodeSource().getLocation());
+        log.info("JGroups version: " + org.jgroups.Version.printDescription());
 
-   public int getNumMembers() {
-      ComponentRegistry componentRegistry = cache.getAdvancedCache().getComponentRegistry();
-      if (componentRegistry.getStatus().startingUp()) {
-         log.trace("We're in the process of starting up.");
-      }
-      if (cacheManager.getMembers() != null) {
-         log.trace("Members are: " + cacheManager.getMembers());
-      }
-      return cacheManager.getMembers() == null ? 0 : cacheManager.getMembers().size();
-   }
+        // should we be blocking until all rehashing, etc. has finished?
+        long gracePeriod = MINUTES.toMillis(15);
+        long giveup = System.currentTimeMillis() + gracePeriod;
+        if (cache.getConfiguration().getCacheMode().isDistributed()) {
+            while (!cache.getAdvancedCache().getDistributionManager().isJoinComplete() && System.currentTimeMillis() < giveup)
+                Thread.sleep(200);
+        }
 
-   public String getInfo() {
-      String clusterSizeStr = "";
-      RpcManager rpcManager = cache.getAdvancedCache().getRpcManager();
-      if (rpcManager != null && rpcManager.getTransport() != null) {
-         clusterSizeStr = "cluster size = " + rpcManager.getTransport().getMembers().size();
-      }
-      return cache.getVersion() + ", " + clusterSizeStr + ", " + config + ", Size of the cache is: " + cache.size();
-   }
+        if (cache.getConfiguration().getCacheMode().isDistributed() && !cache.getAdvancedCache().getDistributionManager().isJoinComplete())
+            throw new RuntimeException("Caches haven't discovered and joined the cluster even after " + Utils.prettyPrintTime(gracePeriod));
+    }
 
-   public Object getReplicatedData(String bucket, String key) throws Exception {
-      return get(bucket, key);
-   }
+    public void tearDown() throws Exception {
+        List<Address> addressList = cacheManager.getMembers();
+        if (started) {
+            cacheManager.stop();
+            log.trace("Stopped, previous view is " + addressList);
+            started = false;
+        }
+    }
 
-   public Object startTransaction() {
-      if (tm == null) return null;
-      try {
-         tm.begin();
-         return tm.getTransaction();
-      }
-      catch (Exception e) {
-         throw new RuntimeException(e);
-      }
-   }
+    public void put(String bucket, Object key, Object value) throws Exception {
 
-   public void endTransaction(boolean successful) {
-      if (tm == null) return;
-      try {
-         if (successful)
-            tm.commit();
-         else
-            tm.rollback();
-      }
-      catch (Exception e) {
-         throw new RuntimeException(e);
-      }
-   }
+        cache.put(key, value);
+
+    }
+
+    public Object get(String bucket, Object key) throws Exception {
+        return cache.get(key);
+    }
+
+    public void empty() throws Exception {
+        log.info("Cache size before clear: " + cache.size());
+        cache.getAdvancedCache().withFlags(Flag.CACHE_MODE_LOCAL).clear();
+        log.info("Cache size after clear: " + cache.size());
+    }
+
+    public int getNumMembers() {
+        ComponentRegistry componentRegistry = cache.getAdvancedCache().getComponentRegistry();
+        if (componentRegistry.getStatus().startingUp()) {
+            log.trace("We're in the process of starting up.");
+        }
+        if (cacheManager.getMembers() != null) {
+            log.trace("Members are: " + cacheManager.getMembers());
+        }
+        return cacheManager.getMembers() == null ? 0 : cacheManager.getMembers().size();
+    }
+
+    public String getInfo() {
+        String clusterSizeStr = "";
+        RpcManager rpcManager = cache.getAdvancedCache().getRpcManager();
+        if (rpcManager != null && rpcManager.getTransport() != null) {
+            clusterSizeStr = "cluster size = " + rpcManager.getTransport().getMembers().size();
+        }
+        return cache.getVersion() + ", " + clusterSizeStr + ", " + config + ", Size of the cache is: " + cache.size();
+    }
+
+    public Object getReplicatedData(String bucket, String key) throws Exception {
+        return get(bucket, key);
+    }
+
+    public Object startTransaction() {
+        // if (tm == null) return null;
+
+
+        if (tm==null) return null ;
+
+        try {
+            tm.begin();
+            return tm.getTransaction();
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    public void endTransaction(boolean successful)throws RuntimeException{
+        if (tm == null){
+
+            return;
+        }
+        try {
+            if (successful)
+                tm.commit();
+            else
+                tm.rollback();
+        }
+
+
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /*
+    * Method to retrieve information about the replicas policy
+     */
+
+    public boolean isPassiveReplication(){
+        return this.cache.getAdvancedCache().getConfiguration().isPassiveReplication();
+    }
+
+    public boolean isPrimary(){
+        return this.cacheManager.isCoordinator();
+    }
+
+    @Override
+    public Map<String, Object> dumpTransportStats() {
+        return this.cache.getAdvancedCache().getRpcManager().getTransport().dumpTransportStats();
+    }
 }

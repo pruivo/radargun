@@ -1,40 +1,44 @@
 <bench-config>
 
-   <master bindAddress="${127.0.0.1:master.address}" port="${2103:master.port}"/>
+    <master bindAddress="${127.0.0.1:master.address}" port="${2103:master.port}"/>
 
-   <benchmark initSize="2" maxSize="${4:slaves}" increment="1">
-      <DestroyWrapper runOnAllSlaves="true"/>
-      <StartCluster staggerSlaveStartup="true" delayAfterFirstSlaveStarts="5000" delayBetweenStartingSlaves = "500"/>
-      <ClusterValidation partialReplication="false"/>
-      <Warmup operationCount="1000"/>
-      <!--
-         This will average to 10000 requests per thread, although a work-stealing pattern is used so some threads may
-         do more work than others.
-       -->
-      <WebSessionBenchmark numberOfRequests="2500" opsCountStatusLog="500" numOfThreads="2"/>
-      <CsvReportGeneration/>
-   </benchmark>
+    <benchmark initSize="2" maxSize="${2:slaves}" increment="1">
+        <DestroyWrapper runOnAllSlaves="true"/>
+        <StartCluster staggerSlaveStartup="true" delayAfterFirstSlaveStarts="5000" delayBetweenStartingSlaves = "500"/>
+        <ClusterValidation partialReplication="false"/>
+        <Warmup operationCount="1000"/>
+        <!--
+          This will average to 10000 requests per thread, although a work-stealing pattern is used so some threads may
+          do more work than others.
+        -->
+        <WebSessionBenchmark
+                writePercentage="50"
+                numberOfRequests="2500"
+                opsCountStatusLog="500"
+                numberOfAttributes="1000"
+                numOfThreads="2"
+                lowerBoundOp="10"
+                upperBoundOp="10"
+                perThreadSimulTime="30000000000"/>
+        <CsvReportGeneration/>
+    </benchmark>
 
-   <products>
-      <jbosscache3>
-         <config name="mvcc/mvcc-repl-sync.xml"/>
-      </jbosscache3>
-      <infinispan4>
-         <config name="repl-sync.xml"/>
-         <config name="dist-sync.xml"/>
-      </infinispan4>
-   </products>
+    <products>
+        <infinispan4>
+<!--            <config name="repl-async.xml"/>-->
+<!--            <config name="repl-sync.xml"/>-->
+<!--            <config name="ab-repl-1.xml"/>-->
+<!--            <config name="part-repl.xml"/>-->
+        </infinispan4>
+    </products>
 
-   <reports>
-      <report name="Replicated">
-         <item product="infinispan4" config="repl-sync.xml"/>
-         <item product="jbosscache3" config="*"/>
-      </report>
-      <report name="DistVsRepl">
-         <item product="infinispan4" config="repl-sync.xml"/>
-         <item product="infinispan4" config="dist-sync.xml"/>
-      </report>
-      <report name="All" includeAll="true"/>
-   </reports>
+    <reports>
+        <report name="Replicated">
+<!--            <item product="infinispan4" config="repl-async.xml"/>-->
+<!--            <item product="infinispan4" config="repl-sync.xml"/>-->
+<!--            <item product="infinispan4" config="ab-repl-1.xml"/>-->
+<!--            <item product="infinispan4" config="part-repl.xml"/>-->
+        </report>
+    </reports>
 
 </bench-config>

@@ -20,7 +20,7 @@ import java.util.List;
  */
 public class WarmupStage extends AbstractDistStage {
 
-   private int operationCount = 10000;
+   private int operationCount = 1000;
 
    public DistStageAck executeOnSlave() {
       DefaultDistStageAck ack = newDefaultStageAck();

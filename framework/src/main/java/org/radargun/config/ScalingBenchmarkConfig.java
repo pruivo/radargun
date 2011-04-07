@@ -33,6 +33,11 @@ public class ScalingBenchmarkConfig extends FixedSizeBenchmarkConfig {
    //optional
    private int increment = 1;
 
+
+    //Diego
+    private int txLowerBound=1;
+    private int txUpperBound=1;
+
    public int getInitSize() {
       return initSize;
    }
@@ -48,6 +53,27 @@ public class ScalingBenchmarkConfig extends FixedSizeBenchmarkConfig {
    public void setIncrement(int increment) {
       this.increment = increment;
    }
+
+   /*Diego
+    public void setTxLowerBound(int value){
+        this.txLowerBound=value;
+
+    }
+
+    public void setTxUpperBound(int value){
+        this.txUpperBound=value;
+
+    }
+
+    public int getTxUpperBound(){
+
+        return this.txUpperBound;
+    }
+
+    public int getTxLowerBound(){
+        return this.txLowerBound;
+    }
+         */
 
    public void validate() {
       super.validate();

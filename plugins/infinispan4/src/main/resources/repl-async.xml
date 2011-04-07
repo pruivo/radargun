@@ -1,21 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <infinispan xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:infinispan:config:4.0">
-   <global>
-      <transport clusterName="x">
-         <properties>
-            <property name="configurationFile" value="jgroups/jgroups-udp.xml"/>
-         </properties>
-      </transport>
-   </global>
+    <global>
+        <transport clusterName="x">
+            <properties>
+                <property name="configurationFile" value="jgroups/jgroups-udp.xml"/>
+            </properties>
+        </transport>
+    </global>
 
-   <default>
-      <transaction
-            transactionManagerLookupClass="org.infinispan.transaction.lookup.GenericTransactionManagerLookup"/>
-      <locking concurrencyLevel="1000" useLockStriping="false" />
+    <default>
+        <transaction
+                transactionManagerLookupClass="org.infinispan.transaction.lookup.GenericTransactionManagerLookup"/>
+        <locking
+                isolationLevel="REPEATABLE_READ"
+                concurrencyLevel="1000"
+                useLockStriping="false" />
 
-      <clustering mode="r">
-         <async asyncMarshalling="false" />
-      </clustering>
-   </default>
+        <clustering mode="r">
+            <async asyncMarshalling="false" />
+            <replicasPolicy mode ="PC"/>
+        </clustering>
+    </default>
 </infinispan>

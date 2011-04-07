@@ -71,6 +71,7 @@ CONF="-master $MASTER"
 add_fwk_to_classpath
 set_env
 
+BIND_ADDRESS=`hostname`
 D_VARS="-Djava.net.preferIPv4Stack=true -Dlog4j.file.prefix=${LOG4J_PREFIX} -Dbind.address=${BIND_ADDRESS}"
 HOST_NAME=`hostname`
 echo "java ${JVM_OPTS} ${D_VARS} -classpath $CP org.radargun.Slave ${CONF}" > stdout_slave_${HOST_NAME}.out

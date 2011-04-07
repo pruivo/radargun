@@ -32,7 +32,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
     * for each session there will be created fixed number of attributes. On those attributes all the GETs and PUTs are
     * performed (for PUT is overwrite)
     */
-   private int numberOfAttributes = 100;
+   private int numberOfAttributes = 10000;
 
    /**
     * Each attribute will be a byte[] of this size
@@ -52,8 +52,17 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
 
    private boolean reportNanos = false;
 
+    //indicates that the coordinator executes transactions or not
+    private boolean coordinatorParticipation = true;
 
    private CacheWrapper cacheWrapper;
+
+
+    private int total_num_of_slaves;//needed to compute the write percentage given for the master given the number of per-cache operation
+    private int lowerBoundOp = 100;     //needed to compute the uniform distribution of operations per transaction
+    private int upperBoundOp = 100;     // as above
+    private long perThreadSimulTime;
+
 
    public DistStageAck executeOnSlave() {
       DefaultDistStageAck result = new DefaultDistStageAck(slaveIndex, slaveState.getLocalAddress());
@@ -64,8 +73,8 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
       }
 
       log.info("Starting WebSessionBenchmarkStage: " + this.toString());
-
-      PutGetStressor putGetStressor = new PutGetStressor();
+      //Added by Diego
+      PutGetStressor putGetStressor = new PutGetStressor(cacheWrapper.isPrimary(), total_num_of_slaves,this.lowerBoundOp,this.upperBoundOp,this.perThreadSimulTime);
       putGetStressor.setBucketPrefix(getSlaveIndex() + "");
       putGetStressor.setNumberOfAttributes(numberOfAttributes);
       putGetStressor.setNumberOfRequests(numberOfRequests);
@@ -73,6 +82,10 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
       putGetStressor.setOpsCountStatusLog(opsCountStatusLog);
       putGetStressor.setSizeOfAnAttribute(sizeOfAnAttribute);
       putGetStressor.setWritePercentage(writePercentage);
+       putGetStressor.setCoordinatorParticipation(coordinatorParticipation);
+
+       //ATTENTION! THE CACHEWRAPPER IS A PARAMETER FOR THE STRESS METHOD SO IT'S NOT SET UPON THE CALL TO THE
+       //STRESSOR CONSTRUCTOR!
 
       try {
          Map<String, String> results = putGetStressor.stress(cacheWrapper);
@@ -143,6 +156,10 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
       this.opsCountStatusLog = opsCountStatusLog;
    }
 
+    public void setCoordinatorParticipation(boolean coordinatorParticipation) {
+      this.coordinatorParticipation = coordinatorParticipation;
+   }
+
    @Override
    public String toString() {
       return "WebSessionBenchmarkStage {" +
@@ -156,4 +173,36 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
             ", cacheWrapper=" + cacheWrapper +
             ", " + super.toString();
    }
+
+
+
+    public void setNumSlaves(int no){
+
+        this.total_num_of_slaves=no;
+    }
+
+
+    public void setLowerBoundOp(int lb){
+
+        this.lowerBoundOp=lb;
+    }
+
+
+    public void setUpperBoundOp(int ub){
+
+        this.upperBoundOp=ub;
+    }
+
+
+    public void setPerThreadSimulTime(long l){
+
+        this.perThreadSimulTime=l;
+
+    }
+
+
+    public long getPerThreadSimulTime(){
+
+        return this.perThreadSimulTime;
+    }
 }

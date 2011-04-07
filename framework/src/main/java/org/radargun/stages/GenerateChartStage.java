@@ -44,10 +44,10 @@ public class GenerateChartStage extends AbstractMasterStage {
    ClusterReport getReport = new LineClusterReport();
 
    public boolean execute() throws Exception {
-      putReport.setReportFile(reportDirectory, fnPrefix + "_PUT");
-      putReport.init(X_LABEL, "PUT ops/sec on each cache instance", "Average PUT per cache instance", getSubtitle());
-      getReport.setReportFile(reportDirectory, fnPrefix + "_GET");
-      getReport.init(X_LABEL, "GET ops/sec on each cache instance", "Average GET per cache instance", getSubtitle());
+      putReport.setReportFile(reportDirectory, fnPrefix + "_WRITE_TX");
+      putReport.init(X_LABEL, "WRITE_ONLY tx/sec ", "Throughput WRITE_ONLY tx ", getSubtitle());
+      getReport.setReportFile(reportDirectory, fnPrefix + "_READ_TX");
+      getReport.init(X_LABEL, "READ_ONLY tx/sec ", "Throughput READ_ONLY tx ", getSubtitle());
 
       File[] files = getFilteredFiles(new File(csvFilesDirectory));
       for (File f : files) {
@@ -90,8 +90,8 @@ public class GenerateChartStage extends AbstractMasterStage {
          }
       }
       br.close();
-      avgGetsPerSec = avgGetsPerSec / clusterSize;
-      avgPutPerSec = avgPutPerSec / clusterSize;
+      //avgGetsPerSec = avgGetsPerSec / clusterSize;
+      //avgPutPerSec = avgPutPerSec  / clusterSize;
 
       String name = productName + "(" + configName + ")";
       putReport.addCategory(name, clusterSize, avgPutPerSec);

@@ -126,6 +126,8 @@ public class DomConfigParser extends ConfigParser {
       prototype.setInitSize(ConfigHelper.getIntAttribute(benchmarkEl, "initSize"));
       prototype.setMaxSize(ConfigHelper.getIntAttribute(benchmarkEl, "maxSize"));
       prototype.setIncrement(ConfigHelper.getIntAttribute(benchmarkEl, "increment"));
+     /* prototype.setTxLowerBound(ConfigHelper.getIntAttribute(benchmarkEl,"txLowerBound"));
+      prototype.setTxUpperBound(ConfigHelper.getIntAttribute(benchmarkEl,"txUpperBound")); */
 
       NodeList childNodes = benchmarkEl.getChildNodes();
       for (int i = 0; i < childNodes.getLength(); i++) {

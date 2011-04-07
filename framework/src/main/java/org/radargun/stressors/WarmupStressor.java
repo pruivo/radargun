@@ -5,7 +5,6 @@ import org.apache.commons.logging.LogFactory;
 import org.radargun.CacheWrapper;
 import org.radargun.CacheWrapperStressor;
 import org.radargun.stages.WarmupStage;
-import org.radargun.CacheWrapper;
 
 import java.util.Map;
 import java.util.Random;
@@ -20,7 +19,7 @@ public class WarmupStressor implements CacheWrapperStressor {
 
    private static Log log = LogFactory.getLog(WarmupStage.class);
 
-   private int operationCount = 10000;
+   private int operationCount = 10;
 
    private String bucket = "WarmupStressor_BUCKET";
 

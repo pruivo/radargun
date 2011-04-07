@@ -66,6 +66,14 @@ public class ScalingBenchmark {
     @XmlAttribute(required = true)
     @XmlJavaTypeAdapter(Adapter1 .class)
     protected String maxSize;
+        @XmlAttribute(required = true)
+    @XmlJavaTypeAdapter(Adapter1 .class)
+    protected String txLowerBound;
+        @XmlAttribute(required = true)
+    @XmlJavaTypeAdapter(Adapter1 .class)
+    protected String txUpperBound;
+
+
 
     @XmlAttribute(required = true)
     @XmlJavaTypeAdapter(Adapter1 .class)
@@ -230,6 +238,28 @@ public class ScalingBenchmark {
     public String getProductName() {
         return productName;
     }
+
+
+    public void setTxLowerBound(String value){
+            this.txLowerBound=value;
+
+    }
+
+    public void setTxUpperBound(String value){
+            this.txUpperBound=value;
+
+    }
+
+    public String getTxLowerBound(){
+            return this.txLowerBound;
+
+    }
+
+    public String getTxUpperBound(){
+            return this.txUpperBound;
+
+    }
+
 
     /**
      * Sets the value of the name property.

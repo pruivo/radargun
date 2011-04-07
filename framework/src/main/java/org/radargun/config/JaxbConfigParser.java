@@ -48,6 +48,11 @@ public class JaxbConfigParser extends ConfigParser {
          sbc.setInitSize(toInt(sb.getInitSize()));
          sbc.setMaxSize(toInt(sb.getMaxSize()));
          sbc.setIncrement(toInt(sb.getIncrement()));
+         /*Diego
+         sbc.setTxLowerBound(toInt(sb.getTxLowerBound()));
+         sbc.setTxUpperBound(toInt(sb.getTxUpperBound()));
+         log.info("*****************************************lowerbound "+sb.getTxLowerBound()+" upperbound "+sb.getTxUpperBound()+"************************************************");
+         */
 
          List<Stage> benchmarkStagesFromXml = sb.getBenchmarkStages().getStage();
          sbc.setStages(processStages(benchmarkStagesFromXml));
