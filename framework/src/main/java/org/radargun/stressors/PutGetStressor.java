@@ -171,8 +171,19 @@ public class PutGetStressor implements CacheWrapperStressor {
             }
 
             ObjectName txInter = new ObjectName("org.infinispan"+":type=Cache"+",name="+ObjectName.quote("x(repl_sync)")+",manager="+ObjectName.quote("DefaultCacheManager")+",component=Transactions");
+            if(!threadMBeanServer.isRegistered(txInter)) {
+                txInter = new ObjectName("org.infinispan"+":type=Cache"+",name="+ObjectName.quote("x(repl_sync)")+",manager="+ObjectName.quote("DefaultCacheManager")+",component=DistTxInterceptor");
+            }
+
             ObjectName replInter= new ObjectName("org.infinispan"+":type=Cache"+",name="+ObjectName.quote("x(repl_sync)")+",manager="+ ObjectName.quote("DefaultCacheManager")+",component=Replication");
+            if(!threadMBeanServer.isRegistered(replInter)) {
+                replInter = new ObjectName("org.infinispan"+":type=Cache"+",name="+ObjectName.quote("x(repl_sync)")+",manager="+ObjectName.quote("DefaultCacheManager")+",component=Distribution");
+            }
+
             ObjectName lockInter = new ObjectName("org.infinispan"+":type=Cache"+",name="+ObjectName.quote("x(repl_sync)")+",manager="+ObjectName.quote("DefaultCacheManager")+",component=LockingInterceptor");
+            if(!threadMBeanServer.isRegistered(lockInter)) {
+                lockInter = new ObjectName("org.infinispan"+":type=Cache"+",name="+ObjectName.quote("x(repl_sync)")+",manager="+ObjectName.quote("DefaultCacheManager")+",component=DistLockingInterceptor");
+            }
 
             LL=((Long)threadMBeanServer.getAttribute(lockMan,"LocalLocalContentions")).intValue();
             LR=((Long)threadMBeanServer.getAttribute(lockMan,"LocalRemoteContentions")).intValue();
