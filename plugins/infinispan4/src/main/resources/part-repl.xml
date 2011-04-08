@@ -11,7 +11,7 @@
         <transport
                 clusterName="infinispan-cluster">
             <properties>
-                <property name="configurationFile" value="jgroups/jgroups-udp-seq.xml" />
+                <property name="configurationFile" value="jgroups/jgroups-udp-multicast.xml" />
             </properties>
         </transport>
     </global>

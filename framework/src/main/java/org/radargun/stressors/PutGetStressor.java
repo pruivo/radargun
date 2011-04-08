@@ -73,6 +73,10 @@ public class PutGetStressor implements CacheWrapperStressor {
     private int upper_bound_op;
     private long simulTime;
 
+    //Pedro
+    private Set<String> pooledKeys = new HashSet<String>(numberOfKeys);
+    private Map<String, Object> finalValues = new HashMap<String, Object>();
+
 
     //Diego
     public PutGetStressor(boolean b, int slaves, int lb, int ub, long simulTime){
@@ -106,6 +110,10 @@ public class PutGetStressor implements CacheWrapperStressor {
     public void destroy() throws Exception {
         cacheWrapper.empty();
         cacheWrapper = null;
+    }
+
+    public Map<String, Object> getAllKeys() {
+        return finalValues;
     }
 
     private Map<String, String> processResults(List<Stresser> stressers) {
@@ -444,6 +452,21 @@ public class PutGetStressor implements CacheWrapperStressor {
             log.info("stresser[" + stresser.getName() + "] finsihed");
         }
         log.info("****BARRIER JOIN PASSED****");
+
+        for(Stresser s : stressers) {
+            pooledKeys.addAll(s.pooledKeys);
+        }
+
+        for(String key : pooledKeys) {
+            if(cacheWrapper.isKeyLocal(key)) {
+                finalValues.put(key, cacheWrapper.get("", key));
+            }
+        }
+
+        log.info("****KEYS OBTAINED****");
+
+        Thread.sleep(30000);
+
         return stressers;
     }
 

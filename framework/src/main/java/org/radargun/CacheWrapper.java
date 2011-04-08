@@ -80,4 +80,6 @@ public interface CacheWrapper
     boolean isPrimary();
 
     Map<String, Object> dumpTransportStats();
+
+    boolean isKeyLocal(Object key);
 }

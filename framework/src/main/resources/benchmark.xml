@@ -25,8 +25,8 @@
 
     <products>
         <infinispan4>
-<!--            <config name="repl-async.xml"/>-->
 <!--            <config name="repl-sync.xml"/>-->
+<!--            <config name="dist-sync.xml"/>-->
 <!--            <config name="ab-repl-1.xml"/>-->
 <!--            <config name="part-repl.xml"/>-->
         </infinispan4>
@@ -34,8 +34,8 @@
 
     <reports>
         <report name="Replicated">
-<!--            <item product="infinispan4" config="repl-async.xml"/>-->
 <!--            <item product="infinispan4" config="repl-sync.xml"/>-->
+<!--            <item product="infinispan4" config="dist-sync.xml"/>-->
 <!--            <item product="infinispan4" config="ab-repl-1.xml"/>-->
 <!--            <item product="infinispan4" config="part-repl.xml"/>-->
         </report>

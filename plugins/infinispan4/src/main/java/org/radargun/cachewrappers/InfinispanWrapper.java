@@ -3,6 +3,7 @@ package org.radargun.cachewrappers;
 import org.infinispan.Cache;
 import org.infinispan.config.Configuration;
 import org.infinispan.context.Flag;
+import org.infinispan.distribution.DistributionManager;
 import org.infinispan.factories.ComponentRegistry;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.remoting.rpc.RpcManager;
@@ -174,5 +175,10 @@ public class InfinispanWrapper implements CacheWrapper {
     @Override
     public Map<String, Object> dumpTransportStats() {
         return this.cache.getAdvancedCache().getRpcManager().getTransport().dumpTransportStats();
+    }
+
+    public boolean isKeyLocal(Object key) {
+        DistributionManager dm = cache.getAdvancedCache().getDistributionManager();
+        return dm == null || dm.isLocal(key);
     }
 }
