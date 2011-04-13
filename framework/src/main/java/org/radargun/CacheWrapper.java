@@ -82,4 +82,6 @@ public interface CacheWrapper
     Map<String, Object> dumpTransportStats();
 
     boolean isKeyLocal(Object key);
+
+    String getCacheMode();
 }

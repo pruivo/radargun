@@ -181,4 +181,8 @@ public class InfinispanWrapper implements CacheWrapper {
         DistributionManager dm = cache.getAdvancedCache().getDistributionManager();
         return dm == null || dm.isLocal(key);
     }
+
+    public String getCacheMode() {
+        return cache.getConfiguration().getCacheModeString();
+    }
 }

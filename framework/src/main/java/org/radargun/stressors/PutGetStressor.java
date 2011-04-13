@@ -138,8 +138,6 @@ public class PutGetStressor implements CacheWrapperStressor {
         long allCommitDurations = 0;
 
         long remote_tout=0;
-        long begin=0;
-        long write=0;
 
         //contentation: local_vs_local, local_vs_remote, remote_vs_local, remote_vs_remote
         int LL = -1;
@@ -170,27 +168,29 @@ public class PutGetStressor implements CacheWrapperStressor {
         long abcastSelfDelJG = -1;
         long numMsgsJG = -1;
 
+        String cacheMode = cacheWrapper.getCacheMode().toLowerCase();
+
         try {
             MBeanServer threadMBeanServer = ManagementFactory.getPlatformMBeanServer();
 
-            ObjectName lockMan = new ObjectName("org.infinispan"+":type=Cache"+",name="+ObjectName.quote("x(repl_sync)")+",manager="+ObjectName.quote("DefaultCacheManager")+",component=LockManager");
+            ObjectName lockMan = new ObjectName("org.infinispan"+":type=Cache"+",name="+ObjectName.quote("x(" + cacheMode + ")")+",manager="+ObjectName.quote("DefaultCacheManager")+",component=LockManager");
             if(!threadMBeanServer.isRegistered(lockMan)) {
-                lockMan = new ObjectName("org.infinispan"+":type=Cache"+",name="+ObjectName.quote("x(repl_sync)")+",manager="+ObjectName.quote("DefaultCacheManager")+",component=DeadlockDetectingLockManager");
+                lockMan = new ObjectName("org.infinispan"+":type=Cache"+",name="+ObjectName.quote("x(" + cacheMode + ")")+",manager="+ObjectName.quote("DefaultCacheManager")+",component=DeadlockDetectingLockManager");
             }
 
-            ObjectName txInter = new ObjectName("org.infinispan"+":type=Cache"+",name="+ObjectName.quote("x(repl_sync)")+",manager="+ObjectName.quote("DefaultCacheManager")+",component=Transactions");
+            ObjectName txInter = new ObjectName("org.infinispan"+":type=Cache"+",name="+ObjectName.quote("x(" + cacheMode + ")")+",manager="+ObjectName.quote("DefaultCacheManager")+",component=Transactions");
             if(!threadMBeanServer.isRegistered(txInter)) {
-                txInter = new ObjectName("org.infinispan"+":type=Cache"+",name="+ObjectName.quote("x(repl_sync)")+",manager="+ObjectName.quote("DefaultCacheManager")+",component=DistTxInterceptor");
+                txInter = new ObjectName("org.infinispan"+":type=Cache"+",name="+ObjectName.quote("x(" + cacheMode + ")")+",manager="+ObjectName.quote("DefaultCacheManager")+",component=DistTxInterceptor");
             }
 
-            ObjectName replInter= new ObjectName("org.infinispan"+":type=Cache"+",name="+ObjectName.quote("x(repl_sync)")+",manager="+ ObjectName.quote("DefaultCacheManager")+",component=Replication");
+            ObjectName replInter= new ObjectName("org.infinispan"+":type=Cache"+",name="+ObjectName.quote("x(" + cacheMode + ")")+",manager="+ ObjectName.quote("DefaultCacheManager")+",component=ReplicationInterceptor");
             if(!threadMBeanServer.isRegistered(replInter)) {
-                replInter = new ObjectName("org.infinispan"+":type=Cache"+",name="+ObjectName.quote("x(repl_sync)")+",manager="+ObjectName.quote("DefaultCacheManager")+",component=Distribution");
+                replInter = new ObjectName("org.infinispan"+":type=Cache"+",name="+ObjectName.quote("x(" + cacheMode + ")")+",manager="+ObjectName.quote("DefaultCacheManager")+",component=DistributionInterceptor");
             }
 
-            ObjectName lockInter = new ObjectName("org.infinispan"+":type=Cache"+",name="+ObjectName.quote("x(repl_sync)")+",manager="+ObjectName.quote("DefaultCacheManager")+",component=LockingInterceptor");
+            ObjectName lockInter = new ObjectName("org.infinispan"+":type=Cache"+",name="+ObjectName.quote("x(" + cacheMode + ")")+",manager="+ObjectName.quote("DefaultCacheManager")+",component=LockingInterceptor");
             if(!threadMBeanServer.isRegistered(lockInter)) {
-                lockInter = new ObjectName("org.infinispan"+":type=Cache"+",name="+ObjectName.quote("x(repl_sync)")+",manager="+ObjectName.quote("DefaultCacheManager")+",component=DistLockingInterceptor");
+                lockInter = new ObjectName("org.infinispan"+":type=Cache"+",name="+ObjectName.quote("x(" + cacheMode + ")")+",manager="+ObjectName.quote("DefaultCacheManager")+",component=DistLockingInterceptor");
             }
 
             LL=((Long)threadMBeanServer.getAttribute(lockMan,"LocalLocalContentions")).intValue();
@@ -254,22 +254,22 @@ public class PutGetStressor implements CacheWrapperStressor {
 
         Map<String, Object> jgroupsStats = cacheWrapper.dumpTransportStats();
         Map<String, Object> sequencerStats = (Map<String, Object>) jgroupsStats.get("SEQUENCER");
-        Map<String, Object> tpStats = (Map<String, Object>) jgroupsStats.get("UDP");
+        //Map<String, Object> tpStats = (Map<String, Object>) jgroupsStats.get("UDP");
 
         if(sequencerStats != null) {
             Long temp = (Long) sequencerStats.get("self_deliver_time");
             if(temp != null) {
-                abcastSelfDelJG = temp.longValue();
+                abcastSelfDelJG = temp;
                 abcastSelfDelJG /= 1000; //nanos to micros
             }
 
             temp = (Long) sequencerStats.get("number_of_messages");
             if(temp != null) {
-                numMsgsJG = temp.longValue();
+                numMsgsJG = temp;
             }
         }
 
-        if(tpStats != null) {
+        /*if(tpStats != null) {
             System.out.println("----------TP--------------");
             System.out.println("num msg sent=" + tpStats.get("num_msgs_sent") +
                     "\nnum bytes sent=" + tpStats.get("num_bytes_sent") +
@@ -279,7 +279,7 @@ public class PutGetStressor implements CacheWrapperStressor {
         } else {
             System.out.println("----------TP IS NULL--------------");
             System.out.println(jgroupsStats);
-        }
+        }*/
 
         Map<String, String> results = new LinkedHashMap<String, String>();
 
@@ -378,46 +378,28 @@ public class PutGetStressor implements CacheWrapperStressor {
         }
 
         if(stealLockNumberOfTries > 0) {
-            if(stealLockTime > 0) {
-                results.put("AVG_STEAL_LOCK_TIME (usec)",str(stealLockTime / stealLockNumberOfTries));
-            } else {
-                results.put("AVG_STEAL_LOCK_TIME (usec)",str(0));
-            }
-            results.put("NUMBER_OF_STEAL_LOCKS",str(stealLockNumberOfTries));
+            results.put("AVG_STEAL_LOCK_TIME (usec)",str(stealLockTime / stealLockNumberOfTries));
         } else {
             results.put("AVG_STEAL_LOCK_TIME (usec)",str(0));
-            results.put("NUMBER_OF_STEAL_LOCKS",str(0));
         }
 
-        if(numberOfTxThiefs > 0) {
-            results.put("TX_THAT_STOLEN_LOCK", str(numberOfTxThiefs));
-        } else {
-            results.put("TX_THAT_STOLEN_LOCK", str(0));
-        }
+        results.put("NUMBER_OF_STEAL_LOCKS",str(stealLockNumberOfTries));
+        results.put("TX_THAT_STOLEN_LOCK", str(numberOfTxThiefs));
 
-        if(allCommittedTx > 0 && flushDuration > 0) {
+        if(allCommittedTx > 0) {
             results.put("FLUSH_DURATION (usec)", str(flushDuration / allCommittedTx));
         } else {
             results.put("FLUSH_DURATION (usec)", str(0));
         }
 
-        if(allRollbackedTx > 0 && rollDuration > 0) {
+        if(allRollbackedTx > 0) {
             results.put("ROLLBACK_DURATION (usec)", str(rollDuration / allRollbackedTx));
         } else {
             results.put("ROLLBACK_DURATION (usec)", str(0));
         }
 
-        if(allCommittedTx > 0) {
-            results.put("ALL_COMMITTED_TX", str(allCommittedTx));
-        } else {
-            results.put("ALL_COMMITTED_TX", str(0));
-        }
-
-        if(allRollbackedTx > 0) {
-            results.put("ALL_ROLLBACKED_TX", str(allRollbackedTx));
-        } else {
-            results.put("ALL_ROLLBACKED_TX", str(0));
-        }
+        results.put("ALL_COMMITTED_TX", str(allCommittedTx));
+        results.put("ALL_ROLLBACKED_TX", str(allRollbackedTx));
 
         log.info("Finished generating report. Nr of failed operations on this node is: " + failures +
                 ". Test duration is: " + Utils.getDurationString(System.currentTimeMillis() - startTime));
@@ -744,7 +726,7 @@ questo per evitare che qualcuno abbia dati piu' "freschi" in cache di altri  */
         this.coordinatorParticipation = coordinatorParticipation;
     }
 
-    /**
+    /*
      * This will make sure that each session runs in its own thread and no collisition will take place. See
      * https://sourceforge.net/apps/trac/cachebenchfwk/ticket/14
      */
