@@ -14,6 +14,7 @@ import org.radargun.CacheWrapper;
 import org.radargun.utils.Utils;
 
 import javax.transaction.TransactionManager;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -165,7 +166,7 @@ public class InfinispanWrapper implements CacheWrapper {
      */
 
     public boolean isPassiveReplication(){
-        return this.cache.getAdvancedCache().getConfiguration().isPassiveReplication();
+        return false;
     }
 
     public boolean isPrimary(){
@@ -174,7 +175,7 @@ public class InfinispanWrapper implements CacheWrapper {
 
     @Override
     public Map<String, Object> dumpTransportStats() {
-        return this.cache.getAdvancedCache().getRpcManager().getTransport().dumpTransportStats();
+        return Collections.emptyMap();
     }
 
     public boolean isKeyLocal(Object key) {

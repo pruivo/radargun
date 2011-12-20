@@ -87,6 +87,12 @@ public class PutGetStressor implements CacheWrapperStressor {
         this.simulTime=simulTime;
     }
 
+    public PutGetStressor() {
+        this.is_master = true;
+        this.total_num_of_slaves = 1;
+        this.simulTime = 30000000;
+    }
+
     public boolean isMaster(){
         return this.is_master;
     }
