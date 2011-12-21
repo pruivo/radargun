@@ -791,5 +791,17 @@ questo per evitare che qualcuno abbia dati piu' "freschi" in cache di altri  */
 
         }
     }
+
+    public void setLowerBoundOp(int lower_bound_op) {
+        this.lower_bound_op = lower_bound_op;
+    }
+
+    public void setUpperBoundOp(int upper_bound_op) {
+        this.upper_bound_op = upper_bound_op;
+    }
+
+    public void setPerThreadSimulTime(long simulTime) {
+        this.simulTime = simulTime;
+    }
 }
 
