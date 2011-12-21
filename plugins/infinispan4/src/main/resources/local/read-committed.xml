@@ -9,7 +9,8 @@
     </global>
 
     <default>
-        <jmxStatistics enabled="true"/>
+        <jmxStatistics enabled="true" streamLibEnabled="true" topK="5"/>
+        <!--<jmxStatistics enabled="true"/>-->
         <transaction
                 transactionManagerLookupClass="org.infinispan.transaction.lookup.GenericTransactionManagerLookup"/>
         <locking concurrencyLevel="1000" useLockStriping="false" isolationLevel="READ_COMMITTED"/>

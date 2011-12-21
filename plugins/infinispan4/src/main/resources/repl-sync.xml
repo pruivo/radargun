@@ -17,7 +17,8 @@
 
         <deadlockDetection enabled="true"/>
 
-        <jmxStatistics enabled="true"/>
+        <!--<jmxStatistics enabled="true"/>-->
+        <jmxStatistics enabled="true" streamLibEnabled="true" topK="5"/>
 
         <transaction
                 transactionManagerLookupClass="org.infinispan.transaction.lookup.GenericTransactionManagerLookup"/>
@@ -25,9 +26,11 @@
         <locking
                 isolationLevel="REPEATABLE_READ"
                 lockAcquisitionTimeout="10000"
-                writeSkewCheck="true"
+                writeSkewCheck="false"
                 concurrencyLevel="500"
                 useLockStriping="false" />
+
+        <deadlockDetection enabled="true"/>
 
         <clustering mode="r">
             <sync replTimeout="10000"/>
