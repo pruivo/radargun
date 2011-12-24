@@ -1,5 +1,7 @@
 package org.radargun.cachewrappers;
 
+import eu.cloudtm.rmi.statistics.InfinispanStatistics;
+import eu.cloudtm.rmi.statistics.stream_lib.StreamLibStatsContainer;
 import org.infinispan.Cache;
 import org.infinispan.config.Configuration;
 import org.infinispan.context.Flag;
@@ -185,5 +187,14 @@ public class InfinispanWrapper implements CacheWrapper {
 
     public String getCacheMode() {
         return cache.getConfiguration().getCacheModeString();
+    }
+
+    @Override
+    public void printStatsFromStreamLib() {
+        StreamLibStatsContainer slsc = InfinispanStatistics.getStreamLibStatsContainer();
+
+        for(StreamLibStatsContainer.Stat s : StreamLibStatsContainer.Stat.values()) {
+            System.out.println(s + ": " + slsc.getTopKFrom(s));
+        }
     }
 }

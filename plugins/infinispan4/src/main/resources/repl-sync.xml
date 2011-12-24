@@ -18,7 +18,8 @@
         <deadlockDetection enabled="true"/>
 
         <!--<jmxStatistics enabled="true"/>-->
-        <jmxStatistics enabled="true" streamLibEnabled="true" topK="5"/>
+        <jmxStatistics enabled="true" topKValue="5"/>
+        <!--<jmxStatistics enabled="true" streamLibEnabled="true" topK="5"/>-->
 
         <transaction
                 transactionManagerLookupClass="org.infinispan.transaction.lookup.GenericTransactionManagerLookup"/>

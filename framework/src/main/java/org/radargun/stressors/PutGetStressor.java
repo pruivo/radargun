@@ -225,6 +225,8 @@ public class PutGetStressor implements CacheWrapperStressor {
             log.error(e);
         }
 
+        cacheWrapper.printStatsFromStreamLib();
+
         int commitFails = 0;
 
         for (Stresser stresser : stressers) {

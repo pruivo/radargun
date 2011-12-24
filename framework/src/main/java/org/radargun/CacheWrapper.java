@@ -84,4 +84,6 @@ public interface CacheWrapper
     boolean isKeyLocal(Object key);
 
     String getCacheMode();
+
+    public void printStatsFromStreamLib();
 }

@@ -10,7 +10,8 @@
     </global>
 
     <default>
-        <jmxStatistics enabled="true" streamLibEnabled="true" topK="5"/>
+        <jmxStatistics enabled="true" topKValue="5"/>
+        <!--<jmxStatistics enabled="true" streamLibEnabled="true" topK="5"/>-->
         <!--<jmxStatistics enabled="true"/>-->
 
         <transaction transactionManagerLookupClass="org.infinispan.transaction.lookup.GenericTransactionManagerLookup"/>
