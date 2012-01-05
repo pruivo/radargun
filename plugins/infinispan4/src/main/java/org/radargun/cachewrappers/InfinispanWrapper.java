@@ -1,7 +1,8 @@
 package org.radargun.cachewrappers;
 
-import eu.cloudtm.rmi.statistics.InfinispanStatistics;
-import eu.cloudtm.rmi.statistics.stream_lib.StreamLibStatsContainer;
+//import eu.cloudtm.rmi.statistics.InfinispanStatistics;
+//import eu.cloudtm.rmi.statistics.stream_lib.StreamLibStatsContainer;
+
 import org.infinispan.Cache;
 import org.infinispan.config.Configuration;
 import org.infinispan.context.Flag;
@@ -15,7 +16,10 @@ import org.jgroups.logging.LogFactory;
 import org.radargun.CacheWrapper;
 import org.radargun.utils.Utils;
 
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 import javax.transaction.TransactionManager;
+import java.lang.management.ManagementFactory;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +34,16 @@ public class InfinispanWrapper implements CacheWrapper {
     TransactionManager tm;
     boolean started = false;
     String config;
+
+    private static final String[] topKStats = {
+            "RemoteTopGets",
+            "LocalTopGets",
+            "RemoteTopPuts",
+            "LocalTopPuts",
+            "TopLockedKeys",
+            "TopContendedKeys",
+            "TopLockFailedKeys"
+    };
 
 
     public void setUp(String config, boolean isLocal, int nodeIndex) throws Exception {
@@ -191,10 +205,19 @@ public class InfinispanWrapper implements CacheWrapper {
 
     @Override
     public void printStatsFromStreamLib() {
-        StreamLibStatsContainer slsc = InfinispanStatistics.getStreamLibStatsContainer();
+        String cacheMode = getCacheMode().toLowerCase();
 
-        for(StreamLibStatsContainer.Stat s : StreamLibStatsContainer.Stat.values()) {
-            System.out.println(s + ": " + slsc.getTopKFrom(s));
+        try {
+            MBeanServer threadMBeanServer = ManagementFactory.getPlatformMBeanServer();
+
+            ObjectName streamLib = new ObjectName("org.infinispan"+":type=Cache"+",name="+ObjectName.quote("x(" + cacheMode + ")")+",manager="+ObjectName.quote("DefaultCacheManager")+",component=StreamLibStatistics");
+
+            for(String s : topKStats) {
+                System.out.println(s + "=" + threadMBeanServer.getAttribute(streamLib, s));
+            }
+
+        } catch (Exception e) {
+            System.out.println("error printing stream lib stats: " + e.getLocalizedMessage());
         }
     }
 }
