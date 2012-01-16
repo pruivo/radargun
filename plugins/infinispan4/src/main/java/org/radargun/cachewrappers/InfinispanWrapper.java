@@ -4,6 +4,7 @@ package org.radargun.cachewrappers;
 //import eu.cloudtm.rmi.statistics.stream_lib.StreamLibStatsContainer;
 
 import org.infinispan.Cache;
+import org.infinispan.CacheException;
 import org.infinispan.config.Configuration;
 import org.infinispan.context.Flag;
 import org.infinispan.distribution.DistributionManager;
@@ -11,18 +12,18 @@ import org.infinispan.factories.ComponentRegistry;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.remoting.rpc.RpcManager;
 import org.infinispan.remoting.transport.Address;
+import org.infinispan.util.concurrent.TimeoutException;
+import org.infinispan.util.concurrent.locks.DeadlockDetectedException;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.radargun.CacheWrapper;
 import org.radargun.utils.Utils;
 
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
 import javax.transaction.TransactionManager;
-import java.lang.management.ManagementFactory;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 
@@ -35,7 +36,7 @@ public class InfinispanWrapper implements CacheWrapper {
     boolean started = false;
     String config;
 
-    private static final String[] topKStats = {
+    /*private static final String[] topKStats = {
             "RemoteTopGets",
             "LocalTopGets",
             "RemoteTopPuts",
@@ -43,7 +44,20 @@ public class InfinispanWrapper implements CacheWrapper {
             "TopLockedKeys",
             "TopContendedKeys",
             "TopLockFailedKeys"
-    };
+    };*/
+
+    private static enum Stats {
+        FAILURES_DUE_TO_TIMEOUT,
+        FAILURES_DUE_TO_DEADLOCK,
+        FAILURES_DUE_TO_WRITE_SKEW
+    }
+
+    private final AtomicLong[] stats = new AtomicLong[Stats.values().length];
+    {
+        for(int i = 0; i < stats.length; i++) {
+            stats[i] = new AtomicLong(0);
+        }
+    }
 
 
     public void setUp(String config, boolean isLocal, int nodeIndex) throws Exception {
@@ -62,21 +76,6 @@ public class InfinispanWrapper implements CacheWrapper {
             tm=cache.getAdvancedCache().getTransactionManager();
 
             started = true;
-            /*
-            * Devo ottenere un transactionManager altrimenti quando comincio una transazione e' null e ritorna null!
-            */
-
-
-            /*  try{
-     FileWriter fw=new FileWriter("/home/diego/Desktop/errore.txt");
-     fw.write("transactionalManager "+tm.getClass().getName());
-     fw.flush();
-     fw.close();
-
-
- }
- catch(ImagingOpExcepfor (int i = 0; i < TRY_COUNT; i++) {
-     int numMembers = wraption i){}   */
         }
 
         log.info("Loading JGroups form: " + org.jgroups.Version.class.getProtectionDomain().getCodeSource().getLocation());
@@ -104,9 +103,20 @@ public class InfinispanWrapper implements CacheWrapper {
     }
 
     public void put(String bucket, Object key, Object value) throws Exception {
-
-        cache.put(key, value);
-
+        try {
+            cache.put(key, value);
+        } catch(TimeoutException e) {
+            stats[Stats.FAILURES_DUE_TO_TIMEOUT.ordinal()].incrementAndGet();
+            throw e;
+        } catch (DeadlockDetectedException e) {
+            stats[Stats.FAILURES_DUE_TO_DEADLOCK.ordinal()].incrementAndGet();
+            throw e;
+        } catch (CacheException e) {
+            if(e.getMessage().startsWith("Detected write skew")) {
+                stats[Stats.FAILURES_DUE_TO_WRITE_SKEW.ordinal()].incrementAndGet();
+            }
+            throw e;
+        }
     }
 
     public Object get(String bucket, Object key) throws Exception {
@@ -117,6 +127,7 @@ public class InfinispanWrapper implements CacheWrapper {
         log.info("Cache size before clear: " + cache.size());
         cache.getAdvancedCache().withFlags(Flag.CACHE_MODE_LOCAL).clear();
         log.info("Cache size after clear: " + cache.size());
+        resetStats();
     }
 
     public int getNumMembers() {
@@ -144,10 +155,7 @@ public class InfinispanWrapper implements CacheWrapper {
     }
 
     public Object startTransaction() {
-        // if (tm == null) return null;
-
-
-        if (tm==null) return null ;
+        if (tm == null) return null;
 
         try {
             tm.begin();
@@ -161,9 +169,9 @@ public class InfinispanWrapper implements CacheWrapper {
 
     public void endTransaction(boolean successful)throws RuntimeException{
         if (tm == null){
-
             return;
         }
+
         try {
             if (successful)
                 tm.commit();
@@ -177,47 +185,32 @@ public class InfinispanWrapper implements CacheWrapper {
         }
     }
 
-    /*
-    * Method to retrieve information about the replicas policy
-     */
-
-    public boolean isPassiveReplication(){
-        return false;
+    private void resetStats() {
+        for (AtomicLong al : stats) {
+            al.set(0);
+        }
     }
 
-    public boolean isPrimary(){
+    @Override
+    public boolean isCoordinator(){
         return this.cacheManager.isCoordinator();
     }
 
     @Override
-    public Map<String, Object> dumpTransportStats() {
-        return Collections.emptyMap();
-    }
-
-    public boolean isKeyLocal(Object key) {
+    public boolean isKeyLocal(String key) {
         DistributionManager dm = cache.getAdvancedCache().getDistributionManager();
         return dm == null || dm.isLocal(key);
     }
 
-    public String getCacheMode() {
-        return cache.getConfiguration().getCacheModeString();
-    }
-
     @Override
-    public void printStatsFromStreamLib() {
-        String cacheMode = getCacheMode().toLowerCase();
+    public Map<String, String> getAdditionalStats() {
+        //collect stats from JMX
+        Map<String, String> result = new HashMap<String, String>();
 
-        try {
-            MBeanServer threadMBeanServer = ManagementFactory.getPlatformMBeanServer();
-
-            ObjectName streamLib = new ObjectName("org.infinispan"+":type=Cache"+",name="+ObjectName.quote("x(" + cacheMode + ")")+",manager="+ObjectName.quote("DefaultCacheManager")+",component=StreamLibStatistics");
-
-            for(String s : topKStats) {
-                System.out.println(s + "=" + threadMBeanServer.getAttribute(streamLib, s));
-            }
-
-        } catch (Exception e) {
-            System.out.println("error printing stream lib stats: " + e.getLocalizedMessage());
+        for (Stats s : Stats.values()) {
+            result.put(s.toString(), String.valueOf(stats[s.ordinal()].get()));
         }
+
+        return result;
     }
 }

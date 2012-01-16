@@ -74,16 +74,9 @@ public interface CacheWrapper
 
     void endTransaction(boolean successful) throws RollbackException;
 
-    //PEDRO Diego
-    boolean isPassiveReplication();
+    boolean isCoordinator();
 
-    boolean isPrimary();
+    boolean isKeyLocal(String key);
 
-    Map<String, Object> dumpTransportStats();
-
-    boolean isKeyLocal(Object key);
-
-    String getCacheMode();
-
-    public void printStatsFromStreamLib();
+    Map<String, String> getAdditionalStats();
 }

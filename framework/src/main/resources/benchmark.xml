@@ -2,41 +2,60 @@
 
     <master bindAddress="${127.0.0.1:master.address}" port="${2103:master.port}"/>
 
-    <benchmark initSize="2" maxSize="${2:slaves}" increment="1">
-        <DestroyWrapper runOnAllSlaves="true"/>
-        <StartCluster staggerSlaveStartup="true" delayAfterFirstSlaveStarts="5000" delayBetweenStartingSlaves = "500"/>
-        <ClusterValidation partialReplication="false"/>
-        <Warmup operationCount="1000"/>
-        <!--
-          This will average to 10000 requests per thread, although a work-stealing pattern is used so some threads may
-          do more work than others.
-        -->
+    <benchmark
+            initSize="2"
+            maxSize="${2:slaves}"
+            increment="1">
+
+        <DestroyWrapper
+                runOnAllSlaves="true"/>
+
+        <StartCluster
+                staggerSlaveStartup="true"
+                delayAfterFirstSlaveStarts="5000"
+                delayBetweenStartingSlaves = "500"/>
+
+        <ClusterValidation
+                partialReplication="false"/>
+
+        <Warmup
+                operationCount="1000"/>
+
         <WebSessionBenchmark
-                writePercentage="50"
-                numberOfRequests="2500"
-                opsCountStatusLog="500"
+                perThreadSimulTime="30000000000"
+                opsCountStatusLog="5000"
                 numberOfAttributes="1000"
+                sizeOfAnAttribute="1000"
                 numOfThreads="2"
+                writePercentage="50"
                 lowerBoundOp="10"
                 upperBoundOp="10"
-                perThreadSimulTime="30000000000"/>
+                coordinatorParticipation="true"
+                readOnlyTransactionsEnabled="false"
+                noContentionEnabled="false"/>
+
         <CsvReportGeneration/>
     </benchmark>
 
     <products>
         <infinispan4>
 <!--            <config name="repl-sync.xml"/>-->
+<!--            <config name="repl-async.xml"/>-->
+<!--            <config name="to-repl-sync.xml"/>-->
+<!--            <config name="to-repl-async.xml"/>-->
 <!--            <config name="dist-sync.xml"/>-->
-<!--            <config name="ab-repl-1.xml"/>-->
 <!--            <config name="part-repl.xml"/>-->
+
         </infinispan4>
     </products>
 
     <reports>
         <report name="Replicated">
 <!--            <item product="infinispan4" config="repl-sync.xml"/>-->
+<!--            <item product="infinispan4" config="repl-sync.xml"/>-->
+<!--            <item product="infinispan4" config="to-repl-sync.xml"/>-->
+<!--            <item product="infinispan4" config="to-repl-async.xml"/>-->
 <!--            <item product="infinispan4" config="dist-sync.xml"/>-->
-<!--            <item product="infinispan4" config="ab-repl-1.xml"/>-->
 <!--            <item product="infinispan4" config="part-repl.xml"/>-->
         </report>
     </reports>

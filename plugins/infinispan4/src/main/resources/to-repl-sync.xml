@@ -11,29 +11,36 @@
         <transport
                 clusterName="infinispan-cluster">
             <properties>
-                <property name="configurationFile" value="jgroups/jgroups-udp-seq.xml" />
+                <property
+                        name="configurationFile"
+                        value="jgroups/jgroups-udp-seq.xml" />
             </properties>
         </transport>
     </global>
 
     <default>
 
-        <deadlockDetection enabled="true"/>
-
         <locking
-                isolationLevel="REPEATABLE_READ"
+                isolationLevel="READ_COMMITTED"
                 concurrencyLevel="500"
-                lockAcquisitionTimeout="10000"
-                writeSkewCheck="true"
+                writeSkewCheck="false"
                 useLockStriping="false"/>
 
         <transaction
-                transactionManagerLookupClass="org.infinispan.transaction.lookup.GenericTransactionManagerLookup"/>
+                transactionManagerLookupClass="org.infinispan.transaction.lookup.GenericTransactionManagerLookup"
+                transactionProtocol="TOTAL_ORDER"/>
 
-        <jmxStatistics enabled="true"/>
+        <jmxStatistics
+                enabled="true"/>
 
         <clustering mode="r">
-            <replicasPolicy mode="ATOMIC_BROADCAST_REPLICATION"/>
+            <sync
+                    replTimeout="20000"/>
+            <stateRetrieval
+                    alwaysProvideInMemoryState="true"
+                    fetchInMemoryState="false"
+                    timeout="20000"/>
+
         </clustering>
 
     </default>

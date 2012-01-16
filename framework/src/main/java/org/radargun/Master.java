@@ -96,13 +96,13 @@ public class Master {
 
          toSerialize = currentStage.clone();
            //If we are performing the benchmark, the primary slave need to know how many slaves there are
-          if(currentStage.getClass().getName()=="org.radargun.stages.WebSessionBenchmarkStage"){
+          /*if(currentStage.getClass().getName()=="org.radargun.stages.WebSessionBenchmarkStage"){
                     ((WebSessionBenchmarkStage)toSerialize).setNumSlaves(noSlaves);
                      //log.info(((WebSessionBenchmarkStage)toSerialize).);
                    // ((WebSessionBenchmarkStage)toSerialize).setLowerBoundOp(1);
                    // ((WebSessionBenchmarkStage)toSerialize).setUpperBoundOp(20);
 
-          }
+          }*/
          toSerialize.initOnMaster(state, i);
          if (i == 0) {//only log this once
             log.info("Starting dist stage '" + toSerialize.getClass().getSimpleName() + "' on " + toSerialize.getActiveSlaveCount() + " Slaves: " + toSerialize);

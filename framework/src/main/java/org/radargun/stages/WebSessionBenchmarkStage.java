@@ -21,49 +21,42 @@ import static org.radargun.utils.Utils.numberFormat;
  */
 public class WebSessionBenchmarkStage extends AbstractDistStage {
 
-    private int opsCountStatusLog = 5000;
-
     public static final String SESSION_PREFIX = "SESSION";
 
-    /**
-     * total number of request to be made against this session: reads + writes
-     */
-    private int numberOfRequests = 50000;
-
-    /**
-     * for each session there will be created fixed number of attributes. On those attributes all the GETs and PUTs are
-     * performed (for PUT is overwrite)
-     */
+    //for each session there will be created fixed number of attributes. On those attributes all the GETs and PUTs are
+    // performed (for PUT is overwrite)
     private int numberOfAttributes = 10000;
 
-    /**
-     * Each attribute will be a byte[] of this size
-     */
+    //Each attribute will be a byte[] of this size
     private int sizeOfAnAttribute = 1000;
 
-    /**
-     * Out of the total number of request, this define the frequency of writes (percentage)
-     */
+    //Out of the total number of request, this define the frequency of writes (percentage)
     private int writePercentage = 20;
 
-
-    /**
-     * the number of threads that will work on this slave
-     */
+    //the number of threads that will work on this slave
     private int numOfThreads = 10;
-
-    private boolean reportNanos = false;
 
     //indicates that the coordinator executes transactions or not
     private boolean coordinatorParticipation = true;
 
-    private CacheWrapper cacheWrapper;
+    //needed to compute the uniform distribution of operations per transaction
+    private int lowerBoundOp = 100;
 
+    // as above
+    private int upperBoundOp = 100;
 
-    private int total_num_of_slaves;//needed to compute the write percentage given for the master given the number of per-cache operation
-    private int lowerBoundOp = 100;     //needed to compute the uniform distribution of operations per transaction
-    private int upperBoundOp = 100;     // as above
+    //simulation time
     private long perThreadSimulTime;
+
+    //allows read only transaction
+    private boolean readOnlyTransactionsEnabled = false;
+
+    //allows execution without contention
+    private boolean noContentionEnabled = false;
+
+    private CacheWrapper cacheWrapper;
+    private int opsCountStatusLog = 5000;
+    private boolean reportNanos = false;
 
 
     public DistStageAck executeOnSlave() {
@@ -75,19 +68,21 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
         }
 
         log.info("Starting WebSessionBenchmarkStage: " + this.toString());
-        //Added by Diego
-        PutGetStressor putGetStressor = new PutGetStressor(cacheWrapper.isPrimary(), total_num_of_slaves,this.lowerBoundOp,this.upperBoundOp,this.perThreadSimulTime);
+
+        PutGetStressor putGetStressor = new PutGetStressor();
+        putGetStressor.setSlaveIdx(getSlaveIndex());
+        putGetStressor.setLowerBoundOp(lowerBoundOp);
+        putGetStressor.setUpperBoundOp(upperBoundOp);
+        putGetStressor.setSimulationTime(perThreadSimulTime);
         putGetStressor.setBucketPrefix(getSlaveIndex() + "");
         putGetStressor.setNumberOfAttributes(numberOfAttributes);
-        putGetStressor.setNumberOfRequests(numberOfRequests);
         putGetStressor.setNumOfThreads(numOfThreads);
         putGetStressor.setOpsCountStatusLog(opsCountStatusLog);
         putGetStressor.setSizeOfAnAttribute(sizeOfAnAttribute);
         putGetStressor.setWritePercentage(writePercentage);
         putGetStressor.setCoordinatorParticipation(coordinatorParticipation);
-
-        //ATTENTION! THE CACHEWRAPPER IS A PARAMETER FOR THE STRESS METHOD SO IT'S NOT SET UPON THE CALL TO THE
-        //STRESSOR CONSTRUCTOR!
+        putGetStressor.setReadOnlyTransactionsEnabled(readOnlyTransactionsEnabled);
+        putGetStressor.setNoContentionEnabled(noContentionEnabled);
 
         try {
             Map<String, String> results = putGetStressor.stress(cacheWrapper);
@@ -142,8 +137,39 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
         return success;
     }
 
-    public void setNumberOfRequests(int numberOfRequests) {
-        this.numberOfRequests = numberOfRequests;
+    @Override
+    public String toString() {
+        return "WebSessionBenchmarkStage {" +
+                "opsCountStatusLog=" + opsCountStatusLog +
+                ", numberOfAttributes=" + numberOfAttributes +
+                ", sizeOfAnAttribute=" + sizeOfAnAttribute +
+                ", writePercentage=" + writePercentage +
+                ", numOfThreads=" + numOfThreads +
+                ", reportNanos=" + reportNanos +
+                ", coordinatorParticipation=" + coordinatorParticipation +
+                ", lowerBoundOp=" + lowerBoundOp +
+                ", upperBoundOp=" + upperBoundOp +
+                ", perThreadSimulTime=" + perThreadSimulTime +
+                ", readOnlyTransactionsEnabled=" + readOnlyTransactionsEnabled +
+                ", noContentionEnabled=" + noContentionEnabled +
+                ", cacheWrapper=" + cacheWrapper +
+                ", " + super.toString();
+    }
+
+    public void setLowerBoundOp(int lb){
+        this.lowerBoundOp=lb;
+    }
+
+    public void setUpperBoundOp(int ub){
+        this.upperBoundOp=ub;
+    }
+
+    public void setPerThreadSimulTime(long l){
+        this.perThreadSimulTime=l;
+    }
+
+    public long getPerThreadSimulTime(){
+        return this.perThreadSimulTime;
     }
 
     public void setNumberOfAttributes(int numberOfAttributes) {
@@ -174,49 +200,11 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
         this.coordinatorParticipation = coordinatorParticipation;
     }
 
-    @Override
-    public String toString() {
-        return "WebSessionBenchmarkStage {" +
-                "opsCountStatusLog=" + opsCountStatusLog +
-                ", numberOfRequests=" + numberOfRequests +
-                ", numberOfAttributes=" + numberOfAttributes +
-                ", sizeOfAnAttribute=" + sizeOfAnAttribute +
-                ", writePercentage=" + writePercentage +
-                ", numOfThreads=" + numOfThreads +
-                ", reportNanos=" + reportNanos +
-                ", cacheWrapper=" + cacheWrapper +
-                ", " + super.toString();
+    public void setReadOnlyTransactionsEnabled(boolean readOnlyTransactionsEnabled) {
+        this.readOnlyTransactionsEnabled = readOnlyTransactionsEnabled;
     }
 
-
-
-    public void setNumSlaves(int no){
-
-        this.total_num_of_slaves=no;
-    }
-
-
-    public void setLowerBoundOp(int lb){
-
-        this.lowerBoundOp=lb;
-    }
-
-
-    public void setUpperBoundOp(int ub){
-
-        this.upperBoundOp=ub;
-    }
-
-
-    public void setPerThreadSimulTime(long l){
-
-        this.perThreadSimulTime=l;
-
-    }
-
-
-    public long getPerThreadSimulTime(){
-
-        return this.perThreadSimulTime;
+    public void setNoContentionEnabled(boolean noContentionEnabled) {
+        this.noContentionEnabled = noContentionEnabled;
     }
 }
