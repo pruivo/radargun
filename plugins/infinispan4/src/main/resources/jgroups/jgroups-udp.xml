@@ -45,10 +45,8 @@ urn:org:jgroups ">
     <FD_SOCK/>
     <BARRIER/>
     <pbcast.NAKACK
-            use_stats_for_retransmission="false"
             exponential_backoff="0"
             use_mcast_xmit="true"
-            gc_lag="0"
             retransmit_timeout="600,1200"
             discard_delivered_msgs="true"/>
     <UNICAST2

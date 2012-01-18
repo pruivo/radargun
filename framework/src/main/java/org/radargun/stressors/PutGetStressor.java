@@ -60,12 +60,6 @@ public class PutGetStressor implements CacheWrapperStressor {
     //allows execution without contention
     private boolean noContentionEnabled = false;
 
-    //the pool key
-    private Set<String> pooledKeys = new HashSet<String>(numberOfKeys);
-
-    //the final values of all local keys
-    private Map<String, Object> finalValues = new HashMap<String, Object>();
-
     public PutGetStressor() {}
 
     public Map<String, String> stress(CacheWrapper wrapper) {
@@ -87,10 +81,6 @@ public class PutGetStressor implements CacheWrapperStressor {
     public void destroy() throws Exception {
         cacheWrapper.empty();
         cacheWrapper = null;
-    }
-
-    public Map<String, Object> getAllKeys() {
-        return finalValues;
     }
 
     private Map<String, String> processResults(List<Stresser> stressers) {
@@ -231,19 +221,13 @@ public class PutGetStressor implements CacheWrapperStressor {
         }
         log.info("****BARRIER JOIN PASSED****");
 
+
+
+        Set<String> pooledKeys = new HashSet<String>(numberOfKeys);
         for(Stresser s : stressers) {
             pooledKeys.addAll(s.pooledKeys);
         }
-
-        for(String key : pooledKeys) {
-            if(cacheWrapper.isKeyLocal(key)) {
-                finalValues.put(key, cacheWrapper.get("", key));
-            }
-        }
-
-        log.info("****KEYS OBTAINED****");
-
-        Thread.sleep(30000);
+        cacheWrapper.setStressedKeys(pooledKeys);
 
         return stressers;
     }

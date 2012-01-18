@@ -52,7 +52,7 @@
     <reports>
         <report name="Replicated">
 <!--            <item product="infinispan4" config="repl-sync.xml"/>-->
-<!--            <item product="infinispan4" config="repl-sync.xml"/>-->
+<!--            <item product="infinispan4" config="repl-async.xml"/>-->
 <!--            <item product="infinispan4" config="to-repl-sync.xml"/>-->
 <!--            <item product="infinispan4" config="to-repl-async.xml"/>-->
 <!--            <item product="infinispan4" config="dist-sync.xml"/>-->

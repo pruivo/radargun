@@ -28,7 +28,12 @@
 
         <transaction
                 transactionManagerLookupClass="org.infinispan.transaction.lookup.GenericTransactionManagerLookup"
-                transactionProtocol="TOTAL_ORDER"/>
+                transactionProtocol="TOTAL_ORDER">
+            <totalOrderThreading
+                    corePoolSize="8"
+                    maximumPoolSize="64"
+                    keepAliveTime="10000"/>
+        </transaction>
 
         <jmxStatistics
                 enabled="true"/>

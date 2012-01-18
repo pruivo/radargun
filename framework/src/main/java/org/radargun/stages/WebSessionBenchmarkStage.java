@@ -87,7 +87,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
         try {
             Map<String, String> results = putGetStressor.stress(cacheWrapper);
             result.setPayload(results);
-            try {
+            /*try {
                 BufferedWriter bw = new BufferedWriter(new FileWriter("./keys" + System.nanoTime()));
                 for(Map.Entry<String,Object> entry : putGetStressor.getAllKeys().entrySet()) {
                     bw.write("*** " + entry.getKey() + " => " + entry.getValue());
@@ -97,7 +97,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
                 bw.close();
             } catch(Exception e) {
                 log.warn("++++++++++ ups... +++++++++");
-            }
+            }*/
 
             return result;
         } catch (Exception e) {

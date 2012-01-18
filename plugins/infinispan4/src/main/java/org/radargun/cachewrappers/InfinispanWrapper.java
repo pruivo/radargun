@@ -20,9 +20,7 @@ import org.radargun.CacheWrapper;
 import org.radargun.utils.Utils;
 
 import javax.transaction.TransactionManager;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -35,6 +33,8 @@ public class InfinispanWrapper implements CacheWrapper {
     TransactionManager tm;
     boolean started = false;
     String config;
+
+    private final Set<String> keysStressed = new HashSet<String>();
 
     /*private static final String[] topKStats = {
             "RemoteTopGets",
@@ -212,5 +212,15 @@ public class InfinispanWrapper implements CacheWrapper {
         }
 
         return result;
+    }
+
+    @Override
+    public void setStressedKeys(Set<String> keys) {
+        keysStressed.addAll(keys);
+    }
+
+    @Override
+    public Set<String> getStressedKeys() {
+        return Collections.unmodifiableSet(keysStressed);
     }
 }

@@ -3,6 +3,7 @@ package org.radargun;
 
 import javax.transaction.RollbackException;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * CacheWrappers wrap caching products tp provide RadarGun with a standard way of
@@ -74,9 +75,37 @@ public interface CacheWrapper
 
     void endTransaction(boolean successful) throws RollbackException;
 
+
+    //Added by Pedro
+    /**
+     *
+     * @return
+     */
     boolean isCoordinator();
 
+    /**
+     *
+     * @param key
+     * @return
+     */
     boolean isKeyLocal(String key);
 
+    /**
+     *
+     * @return
+     */
     Map<String, String> getAdditionalStats();
+
+    /**
+     * save the keys stressed by this slave. this is used in the GetKeysStage, where it obtains the values
+     * of the keys. in the end, it is possible to check if the values are equals in each node...
+     * @param keys the set of keys
+     */
+    void setStressedKeys(Set<String> keys);
+
+    /**
+     * see above
+     * @return the set of keys
+     */
+    Set<String> getStressedKeys();
 }
