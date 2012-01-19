@@ -1,6 +1,8 @@
 package org.radargun;
 
 
+import org.radargun.utils.BucketsKeysTreeSet;
+
 import javax.transaction.RollbackException;
 import java.util.Map;
 import java.util.Set;
@@ -101,11 +103,11 @@ public interface CacheWrapper
      * of the keys. in the end, it is possible to check if the values are equals in each node...
      * @param keys the set of keys
      */
-    void setStressedKeys(Set<String> keys);
+    void saveKeysStressed(BucketsKeysTreeSet keys);
 
     /**
      * see above
      * @return the set of keys
      */
-    Set<String> getStressedKeys();
+    BucketsKeysTreeSet getStressedKeys();
 }

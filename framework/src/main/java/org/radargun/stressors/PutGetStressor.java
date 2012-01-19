@@ -4,6 +4,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.radargun.CacheWrapper;
 import org.radargun.CacheWrapperStressor;
+import org.radargun.utils.BucketsKeysTreeSet;
 import org.radargun.utils.Utils;
 
 import java.util.*;
@@ -219,15 +220,16 @@ public class PutGetStressor implements CacheWrapperStressor {
             stresser.join();
             log.info("stresser[" + stresser.getName() + "] finsihed");
         }
-        log.info("****BARRIER JOIN PASSED****");
+        log.info("All stressers have finished their execution");
 
 
-
-        Set<String> pooledKeys = new HashSet<String>(numberOfKeys);
+        BucketsKeysTreeSet bucketsKeysTreeSet = new BucketsKeysTreeSet();
         for(Stresser s : stressers) {
-            pooledKeys.addAll(s.pooledKeys);
+            bucketsKeysTreeSet.addKeySet(s.bucketId, s.pooledKeys);
         }
-        cacheWrapper.setStressedKeys(pooledKeys);
+        cacheWrapper.saveKeysStressed(bucketsKeysTreeSet);
+
+        log.info("Keys stressed saved");
 
         return stressers;
     }
@@ -376,12 +378,6 @@ public class PutGetStressor implements CacheWrapperStressor {
                 } catch (InterruptedException e) {
                     log.info("interrupted exception when sleeping (I'm coordinator and I don't execute transactions)");
                 }
-            }
-
-            try {
-                Thread.sleep(30000); //30 seconds
-            } catch (InterruptedException e) {
-                log.info("interrupted exception catched in the shutdown interval");
             }
         }
 

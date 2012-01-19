@@ -17,9 +17,15 @@ import org.infinispan.util.concurrent.locks.DeadlockDetectedException;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.radargun.CacheWrapper;
+import org.radargun.utils.BucketsKeysTreeSet;
 import org.radargun.utils.Utils;
 
+import javax.management.MBeanServer;
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectName;
 import javax.transaction.TransactionManager;
+import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -34,7 +40,7 @@ public class InfinispanWrapper implements CacheWrapper {
     boolean started = false;
     String config;
 
-    private final Set<String> keysStressed = new HashSet<String>();
+    private BucketsKeysTreeSet keys;
 
     /*private static final String[] topKStats = {
             "RemoteTopGets",
@@ -211,16 +217,68 @@ public class InfinispanWrapper implements CacheWrapper {
             result.put(s.toString(), String.valueOf(stats[s.ordinal()].get()));
         }
 
+        MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
+        String cacheComponentString = getCacheComponentBaseString(mBeanServer);
+
+        if(cacheComponentString != null) {
+            result.putAll(getStatsFromTotalOrderValidator(cacheComponentString, mBeanServer));
+        }
+
         return result;
     }
 
-    @Override
-    public void setStressedKeys(Set<String> keys) {
-        keysStressed.addAll(keys);
+    private String getCacheComponentBaseString(MBeanServer mBeanServer) {
+        for(ObjectName name : mBeanServer.queryNames(null, null)) {
+            if(name.getDomain().equals("org.infinispan")) {
+
+                if("Cache".equals(name.getKeyProperty("type"))) {
+                    String cacheName = name.getKeyProperty("name");
+                    String cacheManagerName = name.getKeyProperty("manager");
+                    return new StringBuilder("org.infinispan:type=Cache,name=")
+                            .append(cacheName.startsWith("\"") ? cacheName :
+                                    ObjectName.quote(cacheName))
+                            .append(",manager=").append(cacheManagerName.startsWith("\"") ? cacheManagerName :
+                                    ObjectName.quote(cacheManagerName))
+                            .append(",component=").toString();
+                }
+            }
+        }
+        return null;
+    }
+
+    private Map<String, String> getStatsFromTotalOrderValidator(String baseName, MBeanServer mBeanServer) {
+        Map<String, String> result = new HashMap<String, String>();
+        try {
+            ObjectName toValidator = new ObjectName(baseName + "TotalOrderValidator");
+            long avgWaitingQueue = getLongAttribute(mBeanServer, toValidator, "averageWaitingTimeInQueue");
+            long avgValidationDur = getLongAttribute(mBeanServer, toValidator, "averageValidationDuration");
+
+            avgWaitingQueue /= 1000000; //nano seconds to milli seconds
+            avgValidationDur /= 1000000;
+            result.put("AvgWaitingQueue(nanosec)", String.valueOf(avgWaitingQueue));
+            result.put("AvgValidationDuration(nanosec)", String.valueOf(avgValidationDur));
+        } catch (Exception e) {
+            log.warn("Unable to collect stats from Total Order Validator component");
+        }
+        return result;
+    }
+
+    private Long getLongAttribute(MBeanServer mBeanServer, ObjectName component, String attr) {
+        try {
+            return (Long)mBeanServer.getAttribute(component, attr);
+        } catch (Exception e) {
+            //attr not found or another problem
+        }
+        return -1L;
     }
 
     @Override
-    public Set<String> getStressedKeys() {
-        return Collections.unmodifiableSet(keysStressed);
+    public void saveKeysStressed(BucketsKeysTreeSet keys) {
+        this.keys = keys;
+    }
+
+    @Override
+    public BucketsKeysTreeSet getStressedKeys() {
+        return keys != null ? keys : new BucketsKeysTreeSet();
     }
 }
