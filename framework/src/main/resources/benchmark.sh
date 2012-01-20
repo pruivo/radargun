@@ -64,6 +64,10 @@ do
     "-h")
       help_and_exit
       ;;
+    "-i")
+      N_SLAVES=$2
+      shift
+      ;;
     *)
       if [ ${1:0:1} = "-" ] ; then
         echo "Warning: unknown argument ${1}" 
@@ -81,6 +85,10 @@ done
 if [ -z "$SLAVES" ] ; then
   echo "FATAL: No slave nodes specified!"
   help_and_exit
+fi
+
+if [ -n "$N_SLAVES" ] ; then
+    SLAVE_COUNT="$N_SLAVES -i $N_SLAVES"
 fi
 
 

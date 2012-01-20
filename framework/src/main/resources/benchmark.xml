@@ -3,7 +3,7 @@
     <master bindAddress="${127.0.0.1:master.address}" port="${2103:master.port}"/>
 
     <benchmark
-            initSize="2"
+            initSize="${2:Islaves}"
             maxSize="${2:slaves}"
             increment="1">
 
