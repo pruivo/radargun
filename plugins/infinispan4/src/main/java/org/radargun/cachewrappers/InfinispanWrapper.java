@@ -21,10 +21,8 @@ import org.radargun.utils.BucketsKeysTreeSet;
 import org.radargun.utils.Utils;
 
 import javax.management.MBeanServer;
-import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.transaction.TransactionManager;
-import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -220,6 +218,8 @@ public class InfinispanWrapper implements CacheWrapper {
         MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
         String cacheComponentString = getCacheComponentBaseString(mBeanServer);
 
+        log.info("Obtain jmx stats from " + cacheComponentString);
+
         if(cacheComponentString != null) {
             result.putAll(getStatsFromTotalOrderValidator(cacheComponentString, mBeanServer));
         }
@@ -250,13 +250,13 @@ public class InfinispanWrapper implements CacheWrapper {
         Map<String, String> result = new HashMap<String, String>();
         try {
             ObjectName toValidator = new ObjectName(baseName + "TotalOrderValidator");
-            long avgWaitingQueue = getLongAttribute(mBeanServer, toValidator, "averageWaitingTimeInQueue");
-            long avgValidationDur = getLongAttribute(mBeanServer, toValidator, "averageValidationDuration");
+            double avgWaitingQueue = getDoubleAttribute(mBeanServer, toValidator, "averageWaitingTimeInQueue");
+            double avgValidationDur = getDoubleAttribute(mBeanServer, toValidator, "averageValidationDuration");
 
-            avgWaitingQueue /= 1000000; //nano seconds to milli seconds
-            avgValidationDur /= 1000000;
-            result.put("AvgWaitingQueue(nanosec)", String.valueOf(avgWaitingQueue));
-            result.put("AvgValidationDuration(nanosec)", String.valueOf(avgValidationDur));
+            //avgWaitingQueue /= 1000000; //nano seconds to milli seconds
+            //avgValidationDur /= 1000000;
+            result.put("AVG_WAITING_TIME_IN_QUEUE_(msec)", String.valueOf(avgWaitingQueue));
+            result.put("AVG_VALIDATION_DURATION_(msec)", String.valueOf(avgValidationDur));
         } catch (Exception e) {
             log.warn("Unable to collect stats from Total Order Validator component");
         }
@@ -270,6 +270,15 @@ public class InfinispanWrapper implements CacheWrapper {
             //attr not found or another problem
         }
         return -1L;
+    }
+
+    private Double getDoubleAttribute(MBeanServer mBeanServer, ObjectName component, String attr) {
+        try {
+            return (Double)mBeanServer.getAttribute(component, attr);
+        } catch (Exception e) {
+            //attr not found or another problem
+        }
+        return -1D;
     }
 
     @Override
