@@ -39,8 +39,6 @@
                 concurrencyLevel="500"
                 useLockStriping="false" />
 
-        <deadlockDetection enabled="true"/>
-
         <clustering mode="r">
             <sync
                     replTimeout="20000"/>

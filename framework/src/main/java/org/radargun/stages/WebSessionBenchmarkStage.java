@@ -1,16 +1,15 @@
 package org.radargun.stages;
 
 import org.radargun.CacheWrapper;
+import org.radargun.CacheWrapperStressor;
 import org.radargun.DistStageAck;
 import org.radargun.state.MasterState;
+import org.radargun.stressors.IncrementCounterStressor;
 import org.radargun.stressors.PutGetStressor;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+import static java.lang.Double.compare;
 import static java.lang.Double.parseDouble;
 import static org.radargun.utils.Utils.numberFormat;
 
@@ -54,6 +53,9 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
     //allows execution without contention
     private boolean noContentionEnabled = false;
 
+    //indicates what the kind of stressor to run
+    private String stressorType = "PutGetStressor";
+
     private CacheWrapper cacheWrapper;
     private int opsCountStatusLog = 5000;
     private boolean reportNanos = false;
@@ -68,47 +70,58 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
         }
 
         log.info("Starting WebSessionBenchmarkStage: " + this.toString());
+        CacheWrapperStressor stressor = null;
 
-        PutGetStressor putGetStressor = new PutGetStressor();
-        putGetStressor.setSlaveIdx(getSlaveIndex());
-        putGetStressor.setLowerBoundOp(lowerBoundOp);
-        putGetStressor.setUpperBoundOp(upperBoundOp);
-        putGetStressor.setSimulationTime(perThreadSimulTime);
-        putGetStressor.setBucketPrefix(getSlaveIndex() + "");
-        putGetStressor.setNumberOfAttributes(numberOfAttributes);
-        putGetStressor.setNumOfThreads(numOfThreads);
-        putGetStressor.setOpsCountStatusLog(opsCountStatusLog);
-        putGetStressor.setSizeOfAnAttribute(sizeOfAnAttribute);
-        putGetStressor.setWritePercentage(writePercentage);
-        putGetStressor.setCoordinatorParticipation(coordinatorParticipation);
-        putGetStressor.setReadOnlyTransactionsEnabled(readOnlyTransactionsEnabled);
-        putGetStressor.setNoContentionEnabled(noContentionEnabled);
+        if("PutGetStressor".equals(stressorType))  {
+            PutGetStressor putGetStressor = new PutGetStressor();
+            putGetStressor.setSlaveIdx(getSlaveIndex());
+            putGetStressor.setLowerBoundOp(lowerBoundOp);
+            putGetStressor.setUpperBoundOp(upperBoundOp);
+            putGetStressor.setSimulationTime(perThreadSimulTime);
+            putGetStressor.setBucketPrefix(getSlaveIndex() + "");
+            putGetStressor.setNumberOfAttributes(numberOfAttributes);
+            putGetStressor.setNumOfThreads(numOfThreads);
+            putGetStressor.setOpsCountStatusLog(opsCountStatusLog);
+            putGetStressor.setSizeOfAnAttribute(sizeOfAnAttribute);
+            putGetStressor.setWritePercentage(writePercentage);
+            putGetStressor.setCoordinatorParticipation(coordinatorParticipation);
+            putGetStressor.setReadOnlyTransactionsEnabled(readOnlyTransactionsEnabled);
+            putGetStressor.setNoContentionEnabled(noContentionEnabled);
+            stressor = putGetStressor;
+        } else if("IncrementCounterStressor".equals(stressorType)) {
+            IncrementCounterStressor ics = new IncrementCounterStressor();
+            ics.setNumOfThreads(numOfThreads);
+            ics.setSimulationTime(perThreadSimulTime);
+            ics.setSlaveIdx(getSlaveIndex());
+            stressor = ics;
+        }
 
         try {
-            Map<String, String> results = putGetStressor.stress(cacheWrapper);
+            if(stressor == null) {
+                throw new NullPointerException("Stressor type doesn't found [" + stressorType + "]");
+            }
+            Map<String, String> results = stressor.stress(cacheWrapper);
             result.setPayload(results);
-            /*try {
-                BufferedWriter bw = new BufferedWriter(new FileWriter("./keys" + System.nanoTime()));
-                for(Map.Entry<String,Object> entry : putGetStressor.getAllKeys().entrySet()) {
-                    bw.write("*** " + entry.getKey() + " => " + entry.getValue());
-                    bw.newLine();
-                }
-                bw.flush();
-                bw.close();
-            } catch(Exception e) {
-                log.warn("++++++++++ ups... +++++++++");
-            }*/
-
             return result;
         } catch (Exception e) {
             log.warn("Exception while initializing the test", e);
             result.setError(true);
             result.setRemoteException(e);
+            result.setErrorMessage(e.getMessage());
             return result;
         }
     }
 
     public boolean processAckOnMaster(List<DistStageAck> acks, MasterState masterState) {
+        if("PutGetStressor".equals(stressorType)) {
+            return processAckFromPutGetStressors(acks, masterState);
+        } else if("IncrementCounterStressor".equals(stressorType)) {
+            return processAcksFromIncrementCounterStressor(acks, masterState);
+        }
+        return false;
+    }
+
+    private boolean processAckFromPutGetStressors(List<DistStageAck> acks, MasterState masterState) {
         logDurationInfo(acks);
         boolean success = true;
         Map<Integer, Map<String, Object>> results = new HashMap<Integer, Map<String, Object>>();
@@ -137,6 +150,47 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
         return success;
     }
 
+    private boolean processAcksFromIncrementCounterStressor(List<DistStageAck> acks, MasterState masterState) {
+        logDurationInfo(acks);
+        boolean success = true;
+        TreeSet<Integer> allIncrements = new TreeSet<Integer>();
+
+        for (DistStageAck ack : acks) {
+            DefaultDistStageAck wAck = (DefaultDistStageAck) ack;
+            if (wAck.isError()) {
+                success = false;
+                log.warn("Received error ack: " + wAck);
+            } else {
+                if (log.isTraceEnabled())
+                    log.trace(wAck);
+            }
+            Map<String, String> benchResult = (Map<String, String>) wAck.getPayload();
+            if (benchResult != null) {
+                boolean ok = Boolean.valueOf(benchResult.get(IncrementCounterStressor.STRESSOR_RESULT));
+
+                if(!ok) {
+                    log.warn("Error received from slave " + ack.getSlaveIndex());
+                    success = false;
+                    continue;
+                }
+
+                SortedSet<Integer> increments = IncrementCounterStressor.convertStringToSet(
+                        benchResult.get(IncrementCounterStressor.STRESSOR_INCREMENTS));
+
+                for (Integer i : increments) {
+                    if(!allIncrements.add(i)) {
+                        log.warn("Received a duplicated increment from slave" + ack.getSlaveIndex());
+                        success = false;
+                        break;
+                    }
+                }
+            } else {
+                log.trace("No report received from slave: " + ack.getSlaveIndex());
+            }
+        }
+        return success;
+    }
+
     @Override
     public String toString() {
         return "WebSessionBenchmarkStage {" +
@@ -152,6 +206,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
                 ", perThreadSimulTime=" + perThreadSimulTime +
                 ", readOnlyTransactionsEnabled=" + readOnlyTransactionsEnabled +
                 ", noContentionEnabled=" + noContentionEnabled +
+                ", stressorType=" + stressorType +
                 ", cacheWrapper=" + cacheWrapper +
                 ", " + super.toString();
     }
@@ -206,5 +261,9 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
 
     public void setNoContentionEnabled(boolean noContentionEnabled) {
         this.noContentionEnabled = noContentionEnabled;
+    }
+
+    public void setStressorType(String stressorType) {
+        this.stressorType = stressorType;
     }
 }
