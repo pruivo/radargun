@@ -24,7 +24,9 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.transaction.TransactionManager;
 import java.lang.management.ManagementFactory;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
