@@ -24,9 +24,8 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.transaction.TransactionManager;
 import java.lang.management.ManagementFactory;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.nio.Buffer;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -41,16 +40,6 @@ public class InfinispanWrapper implements CacheWrapper {
     String config;
 
     private BucketsKeysTreeSet keys;
-
-    /*private static final String[] topKStats = {
-            "RemoteTopGets",
-            "LocalTopGets",
-            "RemoteTopPuts",
-            "LocalTopPuts",
-            "TopLockedKeys",
-            "TopContendedKeys",
-            "TopLockFailedKeys"
-    };*/
 
     private static enum Stats {
         FAILURES_DUE_TO_TIMEOUT,
@@ -166,8 +155,7 @@ public class InfinispanWrapper implements CacheWrapper {
         try {
             tm.begin();
             return tm.getTransaction();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -183,10 +171,7 @@ public class InfinispanWrapper implements CacheWrapper {
                 tm.commit();
             else
                 tm.rollback();
-        }
-
-
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -206,6 +191,26 @@ public class InfinispanWrapper implements CacheWrapper {
     public boolean isKeyLocal(String key) {
         DistributionManager dm = cache.getAdvancedCache().getDistributionManager();
         return dm == null || dm.isLocal(key);
+    }
+
+    @Override
+    public void saveKeysStressed(BucketsKeysTreeSet keys) {
+        BucketsKeysTreeSet bucketsKeysTreeSet = new BucketsKeysTreeSet();
+
+        if (keys != null) {
+            Iterator<Map.Entry<String, SortedSet<String>>> it = keys.getEntrySet().iterator();
+            if (it.hasNext()) {
+                Map.Entry<String, SortedSet<String>> entry = it.next();
+                bucketsKeysTreeSet.addKeySet("ISPN_BUCKET", entry.getValue());
+            }
+        }
+
+        this.keys = bucketsKeysTreeSet;
+    }
+
+    @Override
+    public BucketsKeysTreeSet getStressedKeys() {
+        return keys != null ? keys : new BucketsKeysTreeSet();
     }
 
     @Override
@@ -254,11 +259,11 @@ public class InfinispanWrapper implements CacheWrapper {
             ObjectName toValidator = new ObjectName(baseName + "TotalOrderValidator");
             double avgWaitingQueue = getDoubleAttribute(mBeanServer, toValidator, "averageWaitingTimeInQueue");
             double avgValidationDur = getDoubleAttribute(mBeanServer, toValidator, "averageValidationDuration");
+            double avgInitDur = getDoubleAttribute(mBeanServer, toValidator, "averageInitializationDuration");
 
-            //avgWaitingQueue /= 1000000; //nano seconds to milli seconds
-            //avgValidationDur /= 1000000;
-            result.put("AVG_WAITING_TIME_IN_QUEUE_(msec)", String.valueOf(avgWaitingQueue));
-            result.put("AVG_VALIDATION_DURATION_(msec)", String.valueOf(avgValidationDur));
+            result.put("AVG_WAITING_TIME_IN_QUEUE(msec)", String.valueOf(avgWaitingQueue));
+            result.put("AVG_VALIDATION_DURATION(msec)", String.valueOf(avgValidationDur));
+            result.put("AVG_INIT_DURATION(msec)", String.valueOf(avgInitDur));
         } catch (Exception e) {
             log.warn("Unable to collect stats from Total Order Validator component");
         }
@@ -281,15 +286,5 @@ public class InfinispanWrapper implements CacheWrapper {
             //attr not found or another problem
         }
         return -1D;
-    }
-
-    @Override
-    public void saveKeysStressed(BucketsKeysTreeSet keys) {
-        this.keys = keys;
-    }
-
-    @Override
-    public BucketsKeysTreeSet getStressedKeys() {
-        return keys != null ? keys : new BucketsKeysTreeSet();
     }
 }
