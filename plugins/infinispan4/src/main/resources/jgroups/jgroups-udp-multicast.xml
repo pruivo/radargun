@@ -1,7 +1,7 @@
-<config xmlns="urn:org:jgroups"
+<config
+        xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="urn:org:jgroups file:schema/JGroups-2.8.xsd
-urn:org:jgroups ">
+        xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.0.xsd">
     <UDP
             mcast_addr="${jgroups.udp.mcast_addr:232.10.10.10}"
             mcast_port="${jgroups.udp.mcast_port:45588}"
@@ -33,9 +33,7 @@ urn:org:jgroups ">
             oob_thread_pool.keep_alive_time="5000"
             oob_thread_pool.queue_enabled="false"
             oob_thread_pool.queue_max_size="100"
-            oob_thread_pool.rejection_policy="discard"
-            />
-
+            oob_thread_pool.rejection_policy="discard"/>
     <PING timeout="5000" num_initial_members="1000"/>
     <MERGE2 max_interval="30000" min_interval="10000"/>
     <FD_SOCK/>

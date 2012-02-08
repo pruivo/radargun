@@ -1,4 +1,5 @@
-<config xmlns="urn:org:jgroups"
+<config
+        xmlns="urn:org:jgroups"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.0.xsd">
     <UDP
@@ -32,9 +33,7 @@
             oob_thread_pool.keep_alive_time="5000"
             oob_thread_pool.queue_enabled="false"
             oob_thread_pool.queue_max_size="1000"
-            oob_thread_pool.rejection_policy="run"
-            />
-
+            oob_thread_pool.rejection_policy="run"/>
     <PING
             timeout="5000"
             num_initial_members="10"/>

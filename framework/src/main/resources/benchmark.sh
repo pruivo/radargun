@@ -99,7 +99,7 @@ PID_OF_MASTER_PROCESS=$RADARGUN_MASTER_PID
 sleep 5s
 ####### then start the rest of the nodes
 CMD="source ~/.bash_profile ; cd $WORKING_DIR"
-CMD="$CMD ; bin/slave.sh -m ${MASTER}"
+CMD="$CMD ; bin/slave.sh -m ${MASTER} -g ${MASTER}"
 
 for slave in $SLAVES; do
   TOEXEC="$REMOTE_CMD -l $SSH_USER $slave '$CMD'"
