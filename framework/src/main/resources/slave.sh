@@ -84,6 +84,11 @@ if [ -n "${GOSSIP_HOST}" ]; then
 D_VARS="${D_VARS} -Djgroups.gossip_host=${GOSSIP_HOST}"
 fi
 
+#enable	remote JMX
+D_VARS="${D_VARS} -Dcom.sun.management.jmxremote.port=8081 -Dcom.sun.management.jmxremote.authenticate=false
+-Dcom.sun.management.jmxremote.ssl=false"
+
+
 HOST_NAME=`hostname`
 echo "java ${JVM_OPTS} ${D_VARS} -classpath $CP org.radargun.Slave ${CONF}" > stdout_slave_${HOST_NAME}.out
 echo "--------------------------------------------------------------------------------" >> stdout_slave_${HOST_NAME}.out
