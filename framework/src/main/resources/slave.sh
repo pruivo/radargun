@@ -72,6 +72,11 @@ do
   shift
 done
 
+if [[ "${MASTER}" != *:* ]]; then
+MASTER=${MASTER}":"${MASTER_PORT}
+fi
+
+
 CONF="-master $MASTER"
 
 add_fwk_to_classpath

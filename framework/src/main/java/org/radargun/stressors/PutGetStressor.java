@@ -5,6 +5,7 @@ import org.apache.commons.logging.LogFactory;
 import org.radargun.CacheWrapper;
 import org.radargun.CacheWrapperStressor;
 import org.radargun.utils.BucketsKeysTreeSet;
+import org.radargun.utils.KeyGenerator;
 import org.radargun.utils.Utils;
 
 import java.util.*;
@@ -19,15 +20,13 @@ import java.util.concurrent.CountDownLatch;
  */
 public class PutGetStressor implements CacheWrapperStressor {
 
-    public static final String DEFAULT_BUCKET_PREFIX = "BUCKET_";
-    public static final String DEFAULT_KEY_PREFIX = "KEY_";
     private static Log log = LogFactory.getLog(PutGetStressor.class);
 
     private CacheWrapper cacheWrapper;
     private static Random r = new Random();
     private long startTime;
     private volatile CountDownLatch startPoint;
-    private String bucketPrefix = DEFAULT_BUCKET_PREFIX;
+    private String bucketPrefix = null;
     private int opsCountStatusLog = 5000;
     private int slaveIdx = 1;
 
@@ -203,7 +202,6 @@ public class PutGetStressor implements CacheWrapperStressor {
 
         for (int threadIndex = 0; threadIndex < numOfThreads; threadIndex++) {
             Stresser stresser = new Stresser(threadIndex);
-            stresser.initializeKeys();
             stressers.add(stresser);
 
             try{
@@ -225,7 +223,7 @@ public class PutGetStressor implements CacheWrapperStressor {
 
         BucketsKeysTreeSet bucketsKeysTreeSet = new BucketsKeysTreeSet();
         for(Stresser s : stressers) {
-            bucketsKeysTreeSet.addKeySet(s.bucketId, s.pooledKeys);
+            bucketsKeysTreeSet.addKeySet(s.keyGenerator.getBucketPrefix(), s.keyGenerator.getAllKeys(numberOfKeys));
         }
         cacheWrapper.saveKeysStressed(bucketsKeysTreeSet);
 
@@ -236,10 +234,7 @@ public class PutGetStressor implements CacheWrapperStressor {
 
     private class Stresser extends Thread {
 
-        private ArrayList<String> pooledKeys = new ArrayList<String>(numberOfKeys);
-
         private int threadIndex;
-        private String bucketId;
         private int nrFailures = 0;
         private int nrFailsAtCommit = 0;
         private long allReadOnlyTxDuration = 0;
@@ -247,6 +242,7 @@ public class PutGetStressor implements CacheWrapperStressor {
         private long numberOfReadOnlyTx = 0;
         private long numberOfWriteTx = 0;
         private long startTime = 0;
+        private KeyGenerator keyGenerator;
 
 
         private long delta=0;
@@ -260,8 +256,8 @@ public class PutGetStressor implements CacheWrapperStressor {
         public Stresser(int threadIndex) {
             super("Stresser-" + threadIndex);
             this.threadIndex = threadIndex;
-            this.bucketId = getBucketId(threadIndex);
             this.operationTypeRandomGenerator = new Random(System.nanoTime());
+            this.keyGenerator = new KeyGenerator(slaveIdx, threadIndex, noContentionEnabled, bucketPrefix);
         }
 
         @Override
@@ -275,6 +271,7 @@ public class PutGetStressor implements CacheWrapperStressor {
             long commit_start = 0;
             boolean alreadyWritten;
             Object lastReadValue = null;
+            String bucketId = keyGenerator.getBucketPrefix();
 
             try {
                 startPoint.await();
@@ -298,7 +295,7 @@ public class PutGetStressor implements CacheWrapperStressor {
 
                     while(operationLeft > 0 && successful){
                         randomKeyInt = r.nextInt(numberOfKeys - 1);
-                        String key = getKey(randomKeyInt);
+                        String key = keyGenerator.getKey(randomKeyInt);
 
                         if (isReadOperation(operationLeft, alreadyWritten)) {
                             try {
@@ -399,34 +396,10 @@ public class PutGetStressor implements CacheWrapperStressor {
                         Utils.getDurationString((long) elapsedTime) + ". Last vlue read is " + result);
             }
         }
-
-        public void initializeKeys() {
-            for (int keyIndex = 0; keyIndex < numberOfKeys; keyIndex++) {
-                String key;
-                if(noContentionEnabled) {
-                    key = DEFAULT_KEY_PREFIX + slaveIdx + "_" + threadIndex + "_" + keyIndex;
-                } else {
-                    key = DEFAULT_KEY_PREFIX + keyIndex;
-                }
-                pooledKeys.add(key);
-            }
-        }
-
-        private String getKey(int keyIndex) {
-            return pooledKeys.get(keyIndex);
-        }
     }
 
     private String str(Object o) {
         return String.valueOf(o);
-    }
-
-    /*
-    * This will make sure that each session runs in its own thread and no collisition will take place. See
-    * https://sourceforge.net/apps/trac/cachebenchfwk/ticket/14
-    */
-    private String getBucketId(int threadIndex) {
-        return bucketPrefix + "_" + threadIndex;
     }
 
     private static String generateRandomString(int size) {
@@ -460,7 +433,7 @@ public class PutGetStressor implements CacheWrapperStressor {
                 ", noContentionEnabled=" + noContentionEnabled +
                 ", cacheWrapper=" + cacheWrapper +
 
-        "}";
+                "}";
     }
 
     /*

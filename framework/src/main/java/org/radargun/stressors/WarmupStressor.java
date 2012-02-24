@@ -40,7 +40,7 @@ public class WarmupStressor implements CacheWrapperStressor {
          log.info("Performing Warmup Operations");
          performWarmupOperations(wrapper);
       } catch (Exception e) {
-         log.warn("Received exception durring cache warmup" + e.getMessage());
+         log.warn("Received exception during cache warmup" + e.getMessage());
       }
       return null;
    }
