@@ -4,6 +4,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.radargun.CacheWrapper;
 import org.radargun.tpcc.domain.Customer;
+import org.radargun.tpcc.domain.CustomerLookup;
 import org.radargun.tpcc.domain.District;
 import org.radargun.tpcc.domain.History;
 import org.radargun.tpcc.domain.Item;
@@ -361,14 +362,18 @@ public class TpccPopulation {
       if (id_wharehouse < 0 || id_district < 0) return;
       else {
          log.info(" CUSTOMER " + id_wharehouse + ", " + id_district);
+         
+         String c_last = null;
          for (int i = 1; i <= TpccTools.NB_MAX_CUSTOMER; i++) {
 
+        	c_last = c_last();
+        	 
             Customer newCustomer = new Customer(id_wharehouse,
                                                 id_district,
                                                 i,
                                                 TpccTools.aleaChainec(8, 16),
                                                 "OE",
-                                                c_last(),
+                                                c_last,
                                                 TpccTools.aleaChainec(10, 20),
                                                 TpccTools.aleaChainec(10, 20),
                                                 TpccTools.aleaChainec(10, 20),
@@ -388,6 +393,32 @@ public class TpccPopulation {
                } catch (Throwable e) {
                   log.warn(e);
                }
+            }
+            
+            CustomerLookup customerLookup = new CustomerLookup(c_last, id_wharehouse, id_district);
+            
+            successful=false;
+            
+            while (!successful){
+                try {
+                    customerLookup.load(wrapper);
+                    successful=true;
+                } catch (Throwable e) {
+                    log.warn(e);
+                }
+            }
+            
+            customerLookup.addId(i);
+            
+            successful=false;
+            
+            while (!successful){
+                try {
+                    customerLookup.store(wrapper);
+                    successful=true;
+                } catch (Throwable e) {
+                    log.warn(e);
+                }
             }
 
 

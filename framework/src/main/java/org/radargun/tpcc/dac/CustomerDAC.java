@@ -3,8 +3,10 @@ package org.radargun.tpcc.dac;
 import org.radargun.CacheWrapper;
 import org.radargun.tpcc.TpccTools;
 import org.radargun.tpcc.domain.Customer;
+import org.radargun.tpcc.domain.CustomerLookup;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -12,37 +14,46 @@ import java.util.List;
  */
 public final class CustomerDAC {
 
-   private CustomerDAC() {
-   }
+	private CustomerDAC() {
+	}
 
-   public static List<Customer> loadByCLast(CacheWrapper cacheWrapper, long c_w_id, long c_d_id, String c_last) throws Throwable {
+	public static List<Customer> loadByCLast(CacheWrapper cacheWrapper, long c_w_id, long c_d_id, String c_last) throws Throwable {
 
-      List<Customer> result = new ArrayList<Customer>();
+		List<Customer> result=new ArrayList<Customer>();
 
-      Customer current = null;
-      boolean found = false;
+		CustomerLookup customerLookup = new CustomerLookup(c_last, c_w_id, c_d_id);
 
-      for (int i = 1; i <= TpccTools.NB_MAX_CUSTOMER; i++) {
+		customerLookup.load(cacheWrapper);
 
-         current = new Customer();
+		Customer current=null;
+		boolean found = false;
+		if(customerLookup.getIds() != null){
 
-         current.setC_id(i);
-         current.setC_d_id(c_d_id);
-         current.setC_w_id(c_w_id);
+			Iterator<Long> itr = customerLookup.getIds().iterator();
 
-         found = current.load(cacheWrapper);
+			while(itr.hasNext()){
 
-         if (found && current.getC_last() != null && current.getC_last().equals(c_last)) {
+				long c_id = itr.next();
 
-            result.add(current);
+				current=new Customer();
 
-         }
+				current.setC_id(c_id);
+				current.setC_d_id(c_d_id);
+				current.setC_w_id(c_w_id);
 
-      }
+				found = current.load(cacheWrapper);
 
-      return result;
+				if(found){
+					result.add(current);
+				}
+
+			}
+		}
+
+		return result;
 
 
-   }
+
+	}
 
 }
