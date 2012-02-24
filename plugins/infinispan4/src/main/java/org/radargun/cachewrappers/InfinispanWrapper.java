@@ -16,143 +16,241 @@ import org.radargun.CacheWrapper;
 import org.radargun.utils.TypedProperties;
 import org.radargun.utils.Utils;
 
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 import javax.transaction.TransactionManager;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.lang.management.ManagementFactory;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class InfinispanWrapper implements CacheWrapper {
 
-   private static Log log = LogFactory.getLog(InfinispanWrapper.class);
-   DefaultCacheManager cacheManager;
-   private Cache<Object, Object> cache;
-   TransactionManager tm;
-   boolean started = false;
-   String config;
+    private static Log log = LogFactory.getLog(InfinispanWrapper.class);
+    DefaultCacheManager cacheManager;
+    private Cache<Object, Object> cache;
+    TransactionManager tm;
+    boolean started = false;
+    String config;
 
-   public void setUp(String config, boolean isLocal, int nodeIndex, TypedProperties confAttributes) throws Exception {
-      this.config = config;
-      if (!started) {
-         cacheManager = new DefaultCacheManager(config);
-         // use a named cache, based on the 'default'
-         cacheManager.defineConfiguration("x", new Configuration());
-         cache = cacheManager.getCache("x");
-         tm = cache.getAdvancedCache().getTransactionManager();
-         started = true;
-      }
-      log.info("Loading JGroups form: " + org.jgroups.Version.class.getProtectionDomain().getCodeSource().getLocation());
-      log.info("JGroups version: " + org.jgroups.Version.printDescription());
-      blockForRehashing();
-      injectEvenConsistentHash(confAttributes);
-   }
+    public void setUp(String config, boolean isLocal, int nodeIndex, TypedProperties confAttributes) throws Exception {
+        this.config = config;
+        if (!started) {
+            cacheManager = new DefaultCacheManager(config);
+            // use a named cache, based on the 'default'
+            cacheManager.defineConfiguration("x", new Configuration());
+            cache = cacheManager.getCache("x");
+            tm = cache.getAdvancedCache().getTransactionManager();
+            started = true;
+        }
+        log.info("Loading JGroups form: " + org.jgroups.Version.class.getProtectionDomain().getCodeSource().getLocation());
+        log.info("JGroups version: " + org.jgroups.Version.printDescription());
+        blockForRehashing();
+        injectEvenConsistentHash(confAttributes);
+    }
 
-   public void tearDown() throws Exception {
-      List<Address> addressList = cacheManager.getMembers();
-      if (started) {
-         cacheManager.stop();
-         log.trace("Stopped, previous view is " + addressList);
-         started = false;
-      }
-   }
+    public void tearDown() throws Exception {
+        List<Address> addressList = cacheManager.getMembers();
+        if (started) {
+            cacheManager.stop();
+            log.trace("Stopped, previous view is " + addressList);
+            started = false;
+        }
+    }
 
-   public void put(String bucket, Object key, Object value) throws Exception {
-      cache.put(key, value);
-   }
+    public void put(String bucket, Object key, Object value) throws Exception {
+        cache.put(key, value);
+    }
 
-   public Object get(String bucket, Object key) throws Exception {
-      return cache.get(key);
-   }
+    public Object get(String bucket, Object key) throws Exception {
+        return cache.get(key);
+    }
 
-   public void empty() throws Exception {
-      RpcManager rpcManager = cache.getAdvancedCache().getRpcManager();
-      int clusterSize = 0;
-      if (rpcManager != null) {
-         clusterSize = rpcManager.getTransport().getMembers().size();
-      }
-      //use keySet().size() rather than size directly as cache.size might not be reliable
-      log.info("Cache size before clear (cluster size= " + clusterSize +")" + cache.keySet().size());
+    public void empty() throws Exception {
+        RpcManager rpcManager = cache.getAdvancedCache().getRpcManager();
+        int clusterSize = 0;
+        if (rpcManager != null) {
+            clusterSize = rpcManager.getTransport().getMembers().size();
+        }
+        //use keySet().size() rather than size directly as cache.size might not be reliable
+        log.info("Cache size before clear (cluster size= " + clusterSize +")" + cache.keySet().size());
 
-      cache.getAdvancedCache().withFlags(Flag.CACHE_MODE_LOCAL).clear();
-      log.info("Cache size after clear: " + cache.keySet().size());
-   }
+        cache.getAdvancedCache().withFlags(Flag.CACHE_MODE_LOCAL).clear();
+        log.info("Cache size after clear: " + cache.keySet().size());
+    }
 
-   public int getNumMembers() {
-      ComponentRegistry componentRegistry = cache.getAdvancedCache().getComponentRegistry();
-      if (componentRegistry.getStatus().startingUp()) {
-         log.trace("We're in the process of starting up.");
-      }
-      if (cacheManager.getMembers() != null) {
-         log.trace("Members are: " + cacheManager.getMembers());
-      }
-      return cacheManager.getMembers() == null ? 0 : cacheManager.getMembers().size();
-   }
+    public int getNumMembers() {
+        ComponentRegistry componentRegistry = cache.getAdvancedCache().getComponentRegistry();
+        if (componentRegistry.getStatus().startingUp()) {
+            log.trace("We're in the process of starting up.");
+        }
+        if (cacheManager.getMembers() != null) {
+            log.trace("Members are: " + cacheManager.getMembers());
+        }
+        return cacheManager.getMembers() == null ? 0 : cacheManager.getMembers().size();
+    }
 
-   public String getInfo() {
-      return "Running : " + cache.getVersion() +  ", config:" + config ;
-   }
+    public String getInfo() {
+        return "Running : " + cache.getVersion() +  ", config:" + config ;
+    }
 
-   public Object getReplicatedData(String bucket, String key) throws Exception {
-      return get(bucket, key);
-   }
+    public Object getReplicatedData(String bucket, String key) throws Exception {
+        return get(bucket, key);
+    }
 
-   public Object startTransaction() {
-      if (tm == null) return null;
-      try {
-         tm.begin();
-         return tm.getTransaction();
-      }
-      catch (Exception e) {
-         throw new RuntimeException(e);
-      }
-   }
+    public Object startTransaction() {
+        if (tm == null) return null;
+        try {
+            tm.begin();
+            return tm.getTransaction();
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-   public void endTransaction(boolean successful) {
-      if (tm == null) return;
-      try {
-         if (successful)
-            tm.commit();
-         else
-            tm.rollback();
-      }
-      catch (Exception e) {
-         throw new RuntimeException(e);
-      }
-   }
+    public void endTransaction(boolean successful) {
+        if (tm == null) return;
+        try {
+            if (successful)
+                tm.commit();
+            else
+                tm.rollback();
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-   @Override
-   public int size() {
-      return cache.keySet().size();
-   }
+    @Override
+    public int size() {
+        return cache.keySet().size();
+    }
 
-   private void blockForRehashing() throws InterruptedException {
-      // should we be blocking until all rehashing, etc. has finished?
-      long gracePeriod = MINUTES.toMillis(15);
-      long giveup = System.currentTimeMillis() + gracePeriod;
-      if (cache.getConfiguration().getCacheMode().isDistributed()) {
-         while (!cache.getAdvancedCache().getDistributionManager().isJoinComplete() && System.currentTimeMillis() < giveup)
-            Thread.sleep(200);
-      }
+    private void blockForRehashing() throws InterruptedException {
+        // should we be blocking until all rehashing, etc. has finished?
+        long gracePeriod = MINUTES.toMillis(15);
+        long giveup = System.currentTimeMillis() + gracePeriod;
+        if (cache.getConfiguration().getCacheMode().isDistributed()) {
+            while (!cache.getAdvancedCache().getDistributionManager().isJoinComplete() && System.currentTimeMillis() < giveup)
+                Thread.sleep(200);
+        }
 
-      if (cache.getConfiguration().getCacheMode().isDistributed() && !cache.getAdvancedCache().getDistributionManager().isJoinComplete())
-         throw new RuntimeException("Caches haven't discovered and joined the cluster even after " + Utils.prettyPrintTime(gracePeriod));
-   }
+        if (cache.getConfiguration().getCacheMode().isDistributed() && !cache.getAdvancedCache().getDistributionManager().isJoinComplete())
+            throw new RuntimeException("Caches haven't discovered and joined the cluster even after " + Utils.prettyPrintTime(gracePeriod));
+    }
 
-   private void injectEvenConsistentHash(TypedProperties confAttributes) {
-      if (cache.getConfiguration().getCacheMode().isDistributed()) {
-         ConsistentHash ch = cache.getAdvancedCache().getDistributionManager().getConsistentHash();
-         if (ch instanceof EvenSpreadingConsistentHash) {
-            int threadsPerNode = confAttributes.getIntProperty("threadsPerNode", -1);
-            if (threadsPerNode < 0) throw new IllegalStateException("When EvenSpreadingConsistentHash is used threadsPerNode must also be set.");
-            int keysPerThread = confAttributes.getIntProperty("keysPerThread", -1);
-            if (keysPerThread < 0) throw new IllegalStateException("When EvenSpreadingConsistentHash is used must also be set.");
-            ((EvenSpreadingConsistentHash)ch).init(threadsPerNode, keysPerThread);
-            log.info("Using an even consistent hash!");
-         }
+    private void injectEvenConsistentHash(TypedProperties confAttributes) {
+        if (cache.getConfiguration().getCacheMode().isDistributed()) {
+            ConsistentHash ch = cache.getAdvancedCache().getDistributionManager().getConsistentHash();
+            if (ch instanceof EvenSpreadingConsistentHash) {
+                int threadsPerNode = confAttributes.getIntProperty("threadsPerNode", -1);
+                if (threadsPerNode < 0) throw new IllegalStateException("When EvenSpreadingConsistentHash is used threadsPerNode must also be set.");
+                int keysPerThread = confAttributes.getIntProperty("keysPerThread", -1);
+                if (keysPerThread < 0) throw new IllegalStateException("When EvenSpreadingConsistentHash is used must also be set.");
+                ((EvenSpreadingConsistentHash)ch).init(threadsPerNode, keysPerThread);
+                log.info("Using an even consistent hash!");
+            }
 
-      }
-   }
+        }
+    }
 
-   public Cache<Object, Object> getCache() {
-      return cache;
-   }
+    public Cache<Object, Object> getCache() {
+        return cache;
+    }
+
+    @Override
+    public Map<String, String> getAdditionalStats() {
+        saveTopKStats();
+        return Collections.emptyMap();
+    }
+
+    public void saveTopKStats() {
+        MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
+        String cacheComponentString = getCacheComponentBaseString(mBeanServer);
+        log.info("Obtain jmx stats from " + cacheComponentString);
+        if(cacheComponentString != null) {
+            saveStatsFromStreamLibStatistics(cacheComponentString, mBeanServer);
+        }
+    }
+
+    private String getCacheComponentBaseString(MBeanServer mBeanServer) {
+        for(ObjectName name : mBeanServer.queryNames(null, null)) {
+            if(name.getDomain().equals("org.infinispan")) {
+
+                if("Cache".equals(name.getKeyProperty("type"))) {
+                    String cacheName = name.getKeyProperty("name");
+                    String cacheManagerName = name.getKeyProperty("manager");
+                    return new StringBuilder("org.infinispan:type=Cache,name=")
+                            .append(cacheName.startsWith("\"") ? cacheName :
+                                    ObjectName.quote(cacheName))
+                            .append(",manager=").append(cacheManagerName.startsWith("\"") ? cacheManagerName :
+                                    ObjectName.quote(cacheManagerName))
+                            .append(",component=").toString();
+                }
+            }
+        }
+        return null;
+    }
+
+    private void saveStatsFromStreamLibStatistics(String baseName, MBeanServer mBeanServer) {
+        try {
+            ObjectName streamLibStats = new ObjectName(baseName + "StreamLibStatistics");
+
+            String filePath = "top-keys-" + cache.getAdvancedCache().getRpcManager().getAddress();
+
+            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(filePath));
+
+            bufferedWriter.write("RemoteTopGets=" + getMapAttribute(mBeanServer, streamLibStats,"RemoteTopGets")
+                    .toString());
+            bufferedWriter.newLine();
+            bufferedWriter.write("LocalTopGets=" + getMapAttribute(mBeanServer, streamLibStats,"LocalTopGets")
+                    .toString());
+            bufferedWriter.newLine();
+            bufferedWriter.write("RemoteTopPuts=" + getMapAttribute(mBeanServer, streamLibStats,"RemoteTopPuts")
+                    .toString());
+            bufferedWriter.newLine();
+            bufferedWriter.write("LocalTopPuts=" + getMapAttribute(mBeanServer, streamLibStats,"LocalTopPuts")
+                    .toString());
+            bufferedWriter.newLine();
+            bufferedWriter.flush();
+            bufferedWriter.close();
+
+        } catch (Exception e) {
+            log.warn("Unable to collect stats from Stream Lib Statistic component");
+        }
+    }
+
+    private Long getLongAttribute(MBeanServer mBeanServer, ObjectName component, String attr) {
+        try {
+            return (Long)mBeanServer.getAttribute(component, attr);
+        } catch (Exception e) {
+            //attr not found or another problem
+        }
+        return -1L;
+    }
+
+    private Double getDoubleAttribute(MBeanServer mBeanServer, ObjectName component, String attr) {
+        try {
+            return (Double)mBeanServer.getAttribute(component, attr);
+        } catch (Exception e) {
+            //attr not found or another problem
+        }
+        return -1D;
+    }
+
+    private Map<Object, Object> getMapAttribute(MBeanServer mBeanServer, ObjectName component, String attr) {
+        try {
+            return (Map<Object, Object>)mBeanServer.getAttribute(component, attr);
+        } catch (Exception e) {
+            //attr not found or another problem
+            //e.printStackTrace();
+        }
+        return Collections.emptyMap();
+    }
 }

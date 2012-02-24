@@ -38,6 +38,8 @@ help_and_exit() {
   echo ""
   echo "   -h        Displays this help screen"
   echo ""
+  echo "   -g        Gossip Router hostname"
+  echo ""
   exit 0
 }
 
@@ -58,24 +60,43 @@ do
     "-h")
       help_and_exit
       ;;
+    "-g")
+      GOSSIP_HOST=$2
+      shift
+      ;;
     *)
-      echo "Warn: unknown param \"${1}\"" 
+      echo "Warn: unknown param \"${1}\""
       help_and_exit
       ;;
   esac
   shift
 done
 
+if [[ "${MASTER}" != *:* ]]; then
+MASTER=${MASTER}":"${MASTER_PORT}
+fi
+
 CONF="-master $MASTER"
 
 add_fwk_to_classpath
 set_env
 
-D_VARS="-Djava.net.preferIPv4Stack=true -Dlog4j.file.prefix=${LOG4J_PREFIX} -Dbind.address=${BIND_ADDRESS}"
+BIND_ADDRESS=`hostname`
+D_VARS="-Djava.net.preferIPv4Stack=true -Dlog4j.file.prefix=${LOG4J_PREFIX} -Dbind.address=${BIND_ADDRESS} -Djgroups.bind_addr=${BIND_ADDRESS}"
+
+if [ -n "${GOSSIP_HOST}" ]; then
+D_VARS="${D_VARS} -Djgroups.gossip_host=${GOSSIP_HOST}"
+fi
+
+#enable	remote JMX
+D_VARS="${D_VARS} -Dcom.sun.management.jmxremote.port=8081 -Dcom.sun.management.jmxremote.authenticate=false
+-Dcom.sun.management.jmxremote.ssl=false"
+
+
 HOST_NAME=`hostname`
-echo "${JAVA} ${JVM_OPTS} ${D_VARS} -classpath $CP org.radargun.Slave ${CONF}" > stdout_slave_${HOST_NAME}.out
+echo "java ${JVM_OPTS} ${D_VARS} -classpath $CP org.radargun.Slave ${CONF}" > stdout_slave_${HOST_NAME}.out
 echo "--------------------------------------------------------------------------------" >> stdout_slave_${HOST_NAME}.out
-nohup ${JAVA} ${JVM_OPTS} ${D_VARS} -classpath $CP org.radargun.Slave ${CONF} >> stdout_slave_${HOST_NAME}.out 2>&1 &
+nohup java ${JVM_OPTS} ${D_VARS} -classpath $CP org.radargun.Slave ${CONF} >> stdout_slave_${HOST_NAME}.out 2>&1 &
 echo "... done! Slave process started on host ${HOST_NAME}!"
 echo ""
 

@@ -11,7 +11,7 @@ RADARGUN_MASTER_PID=""
 
 master_pid() {
    RADARGUN_MASTER_PID=`ps -ef | grep "org.radargun.LaunchMaster" | grep -v "grep" | awk '{print $2}'`
-   return 
+   return
 }
 
 help_and_exit() {
@@ -45,26 +45,26 @@ do
       master_pid;
       if [ -z "${RADARGUN_MASTER_PID}" ]
       then
-        echo "Master not running." 
+        echo "Master not running."
       else
         echo "Master is running, pid is ${RADARGUN_MASTER_PID}."
-      fi 
+      fi
       exit 0
       ;;
      "-stop")
       master_pid;
       if [ -z "${RADARGUN_MASTER_PID}" ]
       then
-        echo "Master not running." 
+        echo "Master not running."
       else
         kill -15 ${RADARGUN_MASTER_PID}
         if [ $? ]
-        then 
+        then
           echo "Successfully stopped master (pid=${RADARGUN_MASTER_PID})"
-        else 
+        else
           echo "Problems stopping master(pid=${RADARGUN_MASTER_PID})";
-        fi  
-      fi 
+        fi
+      fi
       exit 0
       ;;
      "-s")
@@ -85,8 +85,12 @@ do
     "-h")
       help_and_exit
       ;;
+    "-i")
+      SLAVE_COUNT_ARG_I="-DIslaves=$2 "
+      shift
+      ;;
     *)
-      wrappedecho "Warning: unknown argument ${1}" 
+      wrappedecho "Warning: unknown argument ${1}"
       help_and_exit
       ;;
   esac
@@ -109,11 +113,11 @@ if ! [ "x${MASTER}" = "x" ] ; then
   fi
 fi
 
-${JAVA} ${JVM_OPTS} -classpath $CP ${D_VARS} $SLAVE_COUNT_ARG org.radargun.LaunchMaster -config ${CONFIG} > stdout_master.out 2>&1 &
+java ${JVM_OPTS} -classpath $CP ${D_VARS} $SLAVE_COUNT_ARG $SLAVE_COUNT_ARG_I org.radargun.LaunchMaster -config ${CONFIG} > stdout_master.out 2>&1 &
 export RADARGUN_MASTER_PID=$!
 HOST_NAME=`hostname`
 echo "Master's PID is $RADARGUN_MASTER_PID running on ${HOST_NAME}"
 if [ $TAILF == "true" ]
 then
   tail -f radargun.log
-fi  
+fi

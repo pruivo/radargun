@@ -60,13 +60,17 @@ do
       ;;
     "-t")
       TAILF=true
-      ;;      
+      ;;
     "-h")
       help_and_exit
       ;;
+    "-i")
+      N_SLAVES=$2
+      shift
+      ;;
     *)
       if [ ${1:0:1} = "-" ] ; then
-        echo "Warning: unknown argument ${1}" 
+        echo "Warning: unknown argument ${1}"
         help_and_exit
       fi
       SLAVES=$@
@@ -83,15 +87,19 @@ if [ -z "$SLAVES" ] ; then
   help_and_exit
 fi
 
+if [ -n "$N_SLAVES" ] ; then
+    SLAVE_COUNT="$N_SLAVES -i $N_SLAVES"
+fi
+
 
 ####### first start the master
 . ${RADARGUN_HOME}/bin/master.sh -s ${SLAVE_COUNT} -m ${MASTER}
 PID_OF_MASTER_PROCESS=$RADARGUN_MASTER_PID
 #### Sleep for a few seconds so master can open its port
-
+sleep 5s
 ####### then start the rest of the nodes
 CMD="source ~/.bash_profile ; cd $WORKING_DIR"
-CMD="$CMD ; bin/slave.sh -m ${MASTER}"
+CMD="$CMD ; bin/slave.sh -m ${MASTER} -g ${MASTER}"
 
 for slave in $SLAVES; do
   TOEXEC="$REMOTE_CMD -l $SSH_USER $slave '$CMD'"
