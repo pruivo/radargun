@@ -23,7 +23,7 @@ public class PutGetStressor implements CacheWrapperStressor {
     private static Log log = LogFactory.getLog(PutGetStressor.class);
 
     private CacheWrapper cacheWrapper;
-    private static Random r = new Random();
+    //private static Random r = new Random();
     private long startTime;
     private volatile CountDownLatch startPoint;
     private String bucketPrefix = null;
@@ -251,12 +251,12 @@ public class PutGetStressor implements CacheWrapperStressor {
         private long commitFailDuration = 0;
         private long commitTotalDuration = 0;
 
-        private Random operationTypeRandomGenerator;
+        private Random privateRandomGenerator;
 
         public Stresser(int threadIndex) {
             super("Stresser-" + threadIndex);
             this.threadIndex = threadIndex;
-            this.operationTypeRandomGenerator = new Random(System.nanoTime());
+            this.privateRandomGenerator = new Random(System.nanoTime());
             this.keyGenerator = new KeyGenerator(slaveIdx, threadIndex, noContentionEnabled, bucketPrefix);
         }
 
@@ -286,15 +286,15 @@ public class PutGetStressor implements CacheWrapperStressor {
 
                     successful = true;
                     alreadyWritten = false;
-                    operationLeft = opPerTx(lowerBoundOp,upperBoundOp,r);
+                    operationLeft = opPerTx(lowerBoundOp,upperBoundOp,privateRandomGenerator);
 
                     start = System.currentTimeMillis();
 
                     cacheWrapper.startTransaction();
-                    log.info("*** [" + getName() + "] new transaction: " + i + "***");
+                    log.trace("*** [" + getName() + "] new transaction: " + i + "***");
 
                     while(operationLeft > 0 && successful){
-                        randomKeyInt = r.nextInt(numberOfKeys - 1);
+                        randomKeyInt = privateRandomGenerator.nextInt(numberOfKeys);
                         String key = keyGenerator.getKey(randomKeyInt);
 
                         if (isReadOperation(operationLeft, alreadyWritten)) {
@@ -350,7 +350,7 @@ public class PutGetStressor implements CacheWrapperStressor {
                         this.commitTotalDuration += commit_end - commit_start;
                     }
 
-                    log.info("*** [" + getName() + "] end transaction: " + i++ + "***");
+                    log.trace("*** [" + getName() + "] end transaction: " + i++ + "***");
 
                     if(alreadyWritten){
                         allWriteTxDuration += System.currentTimeMillis() - start;
@@ -383,7 +383,7 @@ public class PutGetStressor implements CacheWrapperStressor {
             // -- the random generate number is higher thant the write percentage... and...
             // -- read only transaction are allowed... or...
             // -- it is the last operation and at least one write operation was done.
-            return operationTypeRandomGenerator.nextInt(100) >= writePercentage &&
+            return privateRandomGenerator.nextInt(100) >= writePercentage &&
                     (readOnlyTransactionsEnabled || !(operationLeft == 1 && !alreadyWritten));
         }
 
@@ -396,22 +396,21 @@ public class PutGetStressor implements CacheWrapperStressor {
                         Utils.getDurationString((long) elapsedTime) + ". Last vlue read is " + result);
             }
         }
+
+        private String generateRandomString(int size) {
+            // each char is 2 bytes
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < size / 2; i++) sb.append((char) (64 + privateRandomGenerator.nextInt(26)));
+            return sb.toString();
+        }
     }
 
     private String str(Object o) {
         return String.valueOf(o);
     }
 
-    private static String generateRandomString(int size) {
-        // each char is 2 bytes
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < size / 2; i++) sb.append((char) (64 + r.nextInt(26)));
-        return sb.toString();
-    }
-
-
     private int opPerTx(int lower_bound, int upper_bound,Random ran){
-        if(lower_bound==upper_bound)
+        if(lower_bound == upper_bound)
             return lower_bound;
         return(ran.nextInt(upper_bound-lower_bound)+lower_bound);
     }
