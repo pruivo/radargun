@@ -18,14 +18,17 @@
         <ClusterValidation
                 partialReplication="false"/>
 
-        <Warmup
-                operationCount="1000"/>
+        <Init
+                noContentionEnabled="false"
+                numberOfKeys="1000"
+                sizeOfValue="1000"
+                numOfThreads="2"/>
 
         <WebSessionBenchmark
                 perThreadSimulTime="30000000000"
                 opsCountStatusLog="5000"
-                numberOfAttributes="1000"
-                sizeOfAnAttribute="1000"
+                numberOfKeys="1000"
+                numberOfKeys="1000"
                 numOfThreads="2"
                 writePercentage="50"
                 lowerBoundOp="10"
@@ -40,24 +43,24 @@
 
     <products>
         <infinispan4>
-<!--            <config name="repl-sync.xml"/>-->
-<!--            <config name="repl-async.xml"/>-->
-<!--            <config name="to-repl-sync.xml"/>-->
-<!--            <config name="to-repl-async.xml"/>-->
-<!--            <config name="dist-sync.xml"/>-->
-<!--            <config name="part-repl.xml"/>-->
+            <!--            <config name="repl-sync.xml"/>-->
+            <!--            <config name="repl-async.xml"/>-->
+            <!--            <config name="to-repl-sync.xml"/>-->
+            <!--            <config name="to-repl-async.xml"/>-->
+            <!--            <config name="dist-sync.xml"/>-->
+            <!--            <config name="part-repl.xml"/>-->
 
         </infinispan4>
     </products>
 
     <reports>
         <report name="Replicated">
-<!--            <item product="infinispan4" config="repl-sync.xml"/>-->
-<!--            <item product="infinispan4" config="repl-async.xml"/>-->
-<!--            <item product="infinispan4" config="to-repl-sync.xml"/>-->
-<!--            <item product="infinispan4" config="to-repl-async.xml"/>-->
-<!--            <item product="infinispan4" config="dist-sync.xml"/>-->
-<!--            <item product="infinispan4" config="part-repl.xml"/>-->
+            <!--            <item product="infinispan4" config="repl-sync.xml"/>-->
+            <!--            <item product="infinispan4" config="repl-async.xml"/>-->
+            <!--            <item product="infinispan4" config="to-repl-sync.xml"/>-->
+            <!--            <item product="infinispan4" config="to-repl-async.xml"/>-->
+            <!--            <item product="infinispan4" config="dist-sync.xml"/>-->
+            <!--            <item product="infinispan4" config="part-repl.xml"/>-->
         </report>
     </reports>
 

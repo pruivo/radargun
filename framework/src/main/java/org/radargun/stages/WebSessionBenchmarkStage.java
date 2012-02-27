@@ -9,7 +9,6 @@ import org.radargun.stressors.PutGetStressor;
 
 import java.util.*;
 
-import static java.lang.Double.compare;
 import static java.lang.Double.parseDouble;
 import static org.radargun.utils.Utils.numberFormat;
 
@@ -24,7 +23,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
 
     //for each session there will be created fixed number of attributes. On those attributes all the GETs and PUTs are
     // performed (for PUT is overwrite)
-    private int numberOfAttributes = 10000;
+    private int numberOfKeys = 10000;
 
     //Each attribute will be a byte[] of this size
     private int sizeOfAnAttribute = 1000;
@@ -79,7 +78,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
             putGetStressor.setUpperBoundOp(upperBoundOp);
             putGetStressor.setSimulationTime(perThreadSimulTime);
             putGetStressor.setBucketPrefix(getSlaveIndex() + "");
-            putGetStressor.setNumberOfAttributes(numberOfAttributes);
+            putGetStressor.setNumberOfKeys(numberOfKeys);
             putGetStressor.setNumOfThreads(numOfThreads);
             putGetStressor.setOpsCountStatusLog(opsCountStatusLog);
             putGetStressor.setSizeOfAnAttribute(sizeOfAnAttribute);
@@ -195,7 +194,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
     public String toString() {
         return "WebSessionBenchmarkStage {" +
                 "opsCountStatusLog=" + opsCountStatusLog +
-                ", numberOfAttributes=" + numberOfAttributes +
+                ", numberOfKeys=" + numberOfKeys +
                 ", sizeOfAnAttribute=" + sizeOfAnAttribute +
                 ", writePercentage=" + writePercentage +
                 ", numOfThreads=" + numOfThreads +
@@ -227,8 +226,8 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
         return this.perThreadSimulTime;
     }
 
-    public void setNumberOfAttributes(int numberOfAttributes) {
-        this.numberOfAttributes = numberOfAttributes;
+    public void setNumberOfKeys(int numberOfKeys) {
+        this.numberOfKeys = numberOfKeys;
     }
 
     public void setSizeOfAnAttribute(int sizeOfAnAttribute) {

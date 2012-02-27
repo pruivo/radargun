@@ -6,7 +6,7 @@
         <PutGet
                 perThreadSimulTime="30000000000"
                 opsCountStatusLog="5000"
-                numberOfAttributes="1000"
+                numberOfKeys="1000"
                 sizeOfAnAttribute="1000"
                 numOfThreads="8"
                 writePercentage="50"

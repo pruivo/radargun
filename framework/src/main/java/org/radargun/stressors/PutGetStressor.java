@@ -470,7 +470,7 @@ public class PutGetStressor implements CacheWrapperStressor {
         this.bucketPrefix = bucketPrefix;
     }
 
-    public void setNumberOfAttributes(int numberOfKeys) {
+    public void setNumberOfKeys(int numberOfKeys) {
         this.numberOfKeys = numberOfKeys;
     }
 

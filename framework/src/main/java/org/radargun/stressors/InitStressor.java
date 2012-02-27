@@ -46,7 +46,7 @@ public class InitStressor implements CacheWrapperStressor {
 
         if (noContentionEnabled) {
             noContentionWarmup(wrapper);
-        } else {
+        } else if (slaveIdx == 0) {
             KeyGenerator keyGenerator = new KeyGenerator(slaveIdx, 0, false, bucketPrefix);
             warmup(wrapper, keyGenerator);
         }
