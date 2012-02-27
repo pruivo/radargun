@@ -8,7 +8,6 @@ if [ "x$RADARGUN_HOME" = "x" ]; then DIRNAME=`dirname $0`; RADARGUN_HOME=`cd $DI
 #### parse plugins we want to test
 SSH_USER=$USER
 WORKING_DIR=`pwd`
-CONFIG=$WORKING_DIR/conf/benchmark.xml
 VERBOSE=false
 REMOTE_CMD='ssh -q -o "StrictHostKeyChecking false"'
 MASTER=`hostname`
@@ -18,13 +17,11 @@ TAILF=false
 
 help_and_exit() {
   wrappedecho "Usage: "
-  wrappedecho '  $ benchmark.sh [-c config_file] [-u ssh_user] [-w WORKING DIRECTORY] [-m MASTER_IP[:PORT]] SLAVE...'
+  wrappedecho '  $ benchmark.sh [-u ssh_user] [-w WORKING DIRECTORY] [-m MASTER_IP[:PORT]] SLAVE...'
   wrappedecho ""
   wrappedecho "e.g."
   wrappedecho "  $ benchmark.sh node1 node2 node3 node4"
   wrappedecho "  $ benchmark.sh node{1..4}"
-  wrappedecho ""
-  wrappedecho "   -c       Configuration file. Defaults to '$CONFIG'."
   wrappedecho ""
   wrappedecho "   -u       SSH user to use when SSH'ing across to the slaves.  Defaults to '$SSH_USER'."
   wrappedecho ""
@@ -45,10 +42,6 @@ help_and_exit() {
 while ! [ -z $1 ]
 do
   case "$1" in
-    "-c")
-      CONFIG=$2
-      shift
-      ;;
     "-u")
       SSH_USER=$2
       shift
@@ -65,14 +58,15 @@ do
       MASTER=$2
       shift
       ;;
-    "-x")
-      SLAVE_COUNT=1
-      ;;
     "-t")
       TAILF=true
       ;;      
     "-h")
       help_and_exit
+      ;;
+    "-i")
+      N_SLAVES=$2
+      shift
       ;;
     *)
       if [ ${1:0:1} = "-" ] ; then
@@ -80,7 +74,7 @@ do
         help_and_exit
       fi
       SLAVES=$@
-      SLAVE_COUNT=$(($SLAVE_COUNT + $#))
+      SLAVE_COUNT=$#
       shift $#
       ;;
   esac
@@ -93,18 +87,21 @@ if [ -z "$SLAVES" ] ; then
   help_and_exit
 fi
 
+if [ -n "$N_SLAVES" ] ; then
+    SLAVE_COUNT="$N_SLAVES -i $N_SLAVES"
+fi
+
 
 ####### first start the master
-. ${RADARGUN_HOME}/bin/master.sh -s ${SLAVE_COUNT} -m ${MASTER} -c ${CONFIG}
+. ${RADARGUN_HOME}/bin/master.sh -s ${SLAVE_COUNT} -m ${MASTER}
 PID_OF_MASTER_PROCESS=$RADARGUN_MASTER_PID
 #### Sleep for a few seconds so master can open its port
-
+sleep 5s
 ####### then start the rest of the nodes
+CMD="source ~/.bash_profile ; cd $WORKING_DIR"
+CMD="$CMD ; bin/slave.sh -m ${MASTER} -g ${MASTER}"
 
 for slave in $SLAVES; do
-  CMD="source ~/.bash_profile ; cd $WORKING_DIR"
-  CMD="$CMD ; bin/slave.sh -m ${MASTER} -p $slave"
-
   TOEXEC="$REMOTE_CMD -l $SSH_USER $slave '$CMD'"
   echo "$TOEXEC"
   eval $TOEXEC

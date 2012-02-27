@@ -1,41 +1,52 @@
 <bench-config>
 
-   <master bindAddress="${127.0.0.1:master.address}" port="${2103:master.port}"/>
+    <master
+            bindAddress="${127.0.0.1:master.address}"
+            port="${42103:master.port}"/>
 
-   <benchmark initSize="2" maxSize="${4:slaves}" increment="1">
-      <DestroyWrapper runOnAllSlaves="true"/>
-      <StartCluster staggerSlaveStartup="true" delayAfterFirstSlaveStarts="5000" delayBetweenStartingSlaves = "500"/>
-      <ClusterValidation partialReplication="false"/>
-      <WebSessionWarmup numberOfRequests="2500" opsCountStatusLog="500" numOfThreads="2"/>
-      <ClearCluster/>
-      <!--
-         This will average to 10000 requests per thread, although a work-stealing pattern is used so some threads may
-         do more work than others.
-       -->
-      <WebSessionBenchmark numberOfRequests="2500" opsCountStatusLog="500" numOfThreads="2"/>
-      <CsvReportGeneration/>
-   </benchmark>
+    <benchmark
+            initSize="${10:Islaves}"
+            maxSize="${10:slaves}"
+            increment="1">
 
-   <products>
-      <jbosscache3>
-         <config name="mvcc/mvcc-repl-sync.xml"/>
-      </jbosscache3>
-      <infinispan4>
-         <config name="repl-sync.xml"/>
-         <config name="dist-sync.xml"/>
-      </infinispan4>
-   </products>
+        <DestroyWrapper
+                runOnAllSlaves="true"/>
 
-   <reports>
-      <report name="Replicated">
-         <item product="infinispan4" config="repl-sync.xml"/>
-         <item product="jbosscache3" config="*"/>
-      </report>
-      <report name="DistVsRepl">
-         <item product="infinispan4" config="repl-sync.xml"/>
-         <item product="infinispan4" config="dist-sync.xml"/>
-      </report>
-      <report name="All" includeAll="true"/>
-   </reports>
+        <StartCluster
+                staggerSlaveStartup="true"
+                delayAfterFirstSlaveStarts="5000"
+                delayBetweenStartingSlaves = "500"/>
+
+        <ClusterValidation
+                partialReplication="true"/>
+
+        <TpccPopulation
+                numWarehouses="1"
+                cLastMask="0"
+                olIdMask="0"
+                cIdMask="0"/>
+
+
+        <TpccBenchmark
+                numOfThreads="2"
+                perThreadSimulTime="180"
+                arrivalRate="0.0"
+                paymentWeight="5.0"
+                orderStatusWeight="70.0"/>
+
+        <CsvReportGeneration/>
+    </benchmark>
+
+    <products>
+        <infinispan4>
+            <config name="ispn.xml"/>
+        </infinispan4>
+    </products>
+
+    <reports>
+        <report name="Results">
+            <item product="infinispan4" config="ispn.xml"/>
+        </report>
+    </reports>
 
 </bench-config>

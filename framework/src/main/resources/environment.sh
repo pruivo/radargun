@@ -3,15 +3,17 @@
 ###### for cache products, as well as any JVM options.
 
 ### Set your bind address for the tests to use. Could be an IP, host name or a reference to an environment variable.
-
-## Helper to grab the IP off a given interface.  In this case, eth0.  Replace eth0 with eth1, eth0:2, etc as desired
-## and assign this to BIND_ADDRESS.
-
-# ETH0_IP=`/sbin/ifconfig eth0 | grep inet | sed -e 's/^\s*//' -e 's/Bcast.*//' -e 's/inet addr://'`
-
-BIND_ADDRESS=${MY_BIND_ADDRESS}
+BIND_ADDRESS=${MYTESTIP_2}
 JG_FLAGS="-Dresolve.dns=false -Djgroups.timer.num_threads=4"
-JVM_OPTS="-server -Xmx1024M -Xms1024M"
+JVM_OPTS="-server"
+JVM_OPTS="$JVM_OPTS -Xmx1024M -Xms1024M"
+#allocate more memory if needed
+#JVM_OPTS="$JVM_OPTS -Xmx8G -Xms8G"
+#JVM_OPTS="$JVM_OPTS -Xmx16G -Xms16G"
+#choose on of the GC types (or none if you want to use the default)
+#JVM_OPTS="$JVM_OPTS -XX:+UseConcMarkSweepGC -XX:+CMSIncrementalMode"
+#JVM_OPTS="$JVM_OPTS -XX:+UseParallelGC"
 JVM_OPTS="$JVM_OPTS $JG_FLAGS"
 JPROFILER_HOME=${HOME}/jprofiler6
 JPROFILER_CFG_ID=103
+
