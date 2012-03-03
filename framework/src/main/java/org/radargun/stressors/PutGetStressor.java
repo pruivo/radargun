@@ -280,6 +280,7 @@ public class PutGetStressor implements CacheWrapperStressor {
                 log.warn(e);
             }
 
+            startTime = System.currentTimeMillis();
             if(coordinatorParticipation || !cacheWrapper.isCoordinator()) {
 
                 while(delta < simulationTime){
