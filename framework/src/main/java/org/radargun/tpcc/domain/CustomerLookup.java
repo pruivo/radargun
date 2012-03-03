@@ -7,10 +7,12 @@ import java.io.ObjectOutput;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.radargun.CacheWrapper;
+import org.radargun.tpcc.DomainObject;
 
-public class CustomerLookup implements Externalizable{
+public class CustomerLookup implements Externalizable, DomainObject {
 	
 	private long c_w_id;
 	
@@ -180,6 +182,16 @@ public class CustomerLookup implements Externalizable{
 		
 	}
 
+   //Pedro
+   public void save(Map<String, CustomerLookup> map) {
+      if (!map.containsKey(getKey())) {
+         map.put(getKey(), this);
+      }
+   }
 
+   public CustomerLookup load(Map<String, CustomerLookup> map) {
+      CustomerLookup customerLookup = map.get(getKey());
+      return customerLookup != null ? customerLookup : this;
+   }
 }
 

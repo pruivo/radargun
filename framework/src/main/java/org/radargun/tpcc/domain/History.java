@@ -1,15 +1,17 @@
 package org.radargun.tpcc.domain;
 
 import org.radargun.CacheWrapper;
+import org.radargun.tpcc.DomainObject;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
  */
-public class History implements Serializable {
+public class History implements Serializable, DomainObject {
 
    private static final AtomicLong idGenerator = new AtomicLong(0L);
 
@@ -158,4 +160,13 @@ public class History implements Serializable {
    }
 
 
+   @Override
+   public void store(CacheWrapper wrapper) throws Throwable {
+      store(wrapper, new Random().nextInt()); //TODO
+   }
+
+   @Override
+   public boolean load(CacheWrapper wrapper) throws Throwable {
+      return true;
+   }
 }

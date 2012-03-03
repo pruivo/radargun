@@ -6,6 +6,7 @@ import java.util.List;
 import org.radargun.CacheWrapper;
 import org.radargun.DistStageAck;
 import org.radargun.state.MasterState;
+import org.radargun.stressors.FileTpccPopulationStressor;
 import org.radargun.stressors.TpccPopulationStressor;
 
 /**
@@ -24,26 +25,30 @@ import org.radargun.stressors.TpccPopulationStressor;
  */
 
 public class TpccPopulationStage extends AbstractDistStage{
-   
+
    /**
     * number of Warehouses
     */
    private int numWarehouses = 1;
-   
+
    /**
     * mask used to generate non-uniformly distributed random customer last names
     */
    private long cLastMask = 255;
-   
+
    /**
     * mask used to generate non-uniformly distributed random item numbers
     */
    private long olIdMask = 8191;
-   
+
    /**
     * mask used to generate non-uniformly distributed random customer numbers
     */
    private long cIdMask = 1023;
+
+   private boolean populateFromFile = false;
+
+   private String folder = "/tmp/";
 
    public DistStageAck executeOnSlave() {
       DefaultDistStageAck ack = newDefaultStageAck();
@@ -61,14 +66,25 @@ public class TpccPopulationStage extends AbstractDistStage{
    }
 
    private void populate(CacheWrapper wrapper) {
-      TpccPopulationStressor populationStressor = new TpccPopulationStressor();
-      populationStressor.setNumWarehouses(numWarehouses);
-      populationStressor.setSlaveIndex(getSlaveIndex());
-      populationStressor.setNumSlaves(getActiveSlaveCount());
-      populationStressor.setCLastMask(this.cLastMask);
-      populationStressor.setOlIdMask(this.olIdMask);
-      populationStressor.setCIdMask(this.cIdMask);
-      populationStressor.stress(wrapper);
+      if (!populateFromFile) {
+         TpccPopulationStressor populationStressor = new TpccPopulationStressor();
+         populationStressor.setNumWarehouses(numWarehouses);
+         populationStressor.setSlaveIndex(getSlaveIndex());
+         populationStressor.setNumSlaves(getActiveSlaveCount());
+         populationStressor.setCLastMask(this.cLastMask);
+         populationStressor.setOlIdMask(this.olIdMask);
+         populationStressor.setCIdMask(this.cIdMask);
+         populationStressor.stress(wrapper);
+      } else {
+         FileTpccPopulationStressor populationStressor = new FileTpccPopulationStressor();
+         populationStressor.setNumWarehouses(numWarehouses);
+         populationStressor.setFolder(folder);
+         populationStressor.setNumSlaves(getActiveSlaveCount());
+         populationStressor.setCLastMask(this.cLastMask);
+         populationStressor.setOlIdMask(this.olIdMask);
+         populationStressor.setCIdMask(this.cIdMask);
+         populationStressor.stress(wrapper);
+      }
    }
 
    public boolean processAckOnMaster(List<DistStageAck> acks, MasterState masterState) {
@@ -85,7 +101,7 @@ public class TpccPopulationStage extends AbstractDistStage{
    public void setNumWarehouses(int numWarehouses) {
       this.numWarehouses = numWarehouses;
    }
-   
+
    public void setCLastMask(long cLastMask) {
       this.cLastMask = cLastMask;
    }
@@ -98,13 +114,21 @@ public class TpccPopulationStage extends AbstractDistStage{
       this.cIdMask = cIdMask;
    }
 
+   public void setPopulateFromFile(boolean populateFromFile) {
+      this.populateFromFile = populateFromFile;
+   }
+
+   public void setFolder(String folder) {
+      this.folder = folder;
+   }
+
    @Override
    public String toString() {
       return "TpccPopulationStage {" +
-            "numWarehouses=" + numWarehouses + 
+            "numWarehouses=" + numWarehouses +
             ", cLastMask=" + cLastMask +
             ", olIdMask=" + olIdMask +
-            ", cIdMask=" + cIdMask +   
+            ", cIdMask=" + cIdMask +
             ", " + super.toString();
    }
 

@@ -1,13 +1,14 @@
 package org.radargun.tpcc.domain;
 
 import org.radargun.CacheWrapper;
+import org.radargun.tpcc.DomainObject;
 
 import java.io.Serializable;
 
 /**
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
  */
-public class District implements Serializable {
+public class District implements Serializable, DomainObject {
 
    private long d_id;
 

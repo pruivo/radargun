@@ -12,12 +12,12 @@
         <loaders passivation="false" shared="false" preload="false">
             <loader class="org.infinispan.loaders.file.FileCacheStore"
                     fetchPersistentState="false"
-                    purgerThreads="3"
+                    purgerThreads="1"
                     purgeSynchronously="false"
                     ignoreModifications="false"
-                    purgeOnStartup="false">
+                    purgeOnStartup="true">
                 <properties>
-                    <property name="location" value="${java.io.tmpdir}"/>
+                    <property name="location" value="~/datastore"/>
                 </properties>
             </loader>
         </loaders>

@@ -1,13 +1,14 @@
 package org.radargun.tpcc.domain;
 
 import org.radargun.CacheWrapper;
+import org.radargun.tpcc.DomainObject;
 
 import java.io.Serializable;
 
 /**
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
  */
-public class NewOrder implements Serializable {
+public class NewOrder implements Serializable, DomainObject {
 
    private long no_o_id;
 
@@ -58,6 +59,11 @@ public class NewOrder implements Serializable {
    public void store(CacheWrapper wrapper) throws Throwable {
 
       wrapper.put(null, this.getKey(), this);
+   }
+
+   @Override
+   public boolean load(CacheWrapper wrapper) throws Throwable {
+      return true;
    }
 
    public void insert(CacheWrapper wrapper) throws Throwable {

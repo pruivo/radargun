@@ -1,6 +1,7 @@
 package org.radargun.tpcc.domain;
 
 import org.radargun.CacheWrapper;
+import org.radargun.tpcc.DomainObject;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -8,7 +9,7 @@ import java.util.Date;
 /**
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
  */
-public class Customer implements Serializable, Comparable {
+public class Customer implements Serializable, Comparable, DomainObject {
 
    /* district id */
    private long c_d_id;
