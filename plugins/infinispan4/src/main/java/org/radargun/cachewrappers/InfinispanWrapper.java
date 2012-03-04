@@ -165,6 +165,11 @@ public class InfinispanWrapper implements CacheWrapper {
     }
 
     @Override
+    public int getCacheSize() {
+        return cache.size();
+    }
+    //================================================= JMX STATS ====================================================
+    @Override
     public Map<String, String> getAdditionalStats() {
         saveTopKStats();
         return Collections.emptyMap();
@@ -180,13 +185,15 @@ public class InfinispanWrapper implements CacheWrapper {
     }
 
     private String getCacheComponentBaseString(MBeanServer mBeanServer) {
+        String domain = cacheManager.getGlobalConfiguration().getJmxDomain();
         for(ObjectName name : mBeanServer.queryNames(null, null)) {
-            if(name.getDomain().equals("org.infinispan")) {
+            if(name.getDomain().equals(domain)) {
 
                 if("Cache".equals(name.getKeyProperty("type"))) {
                     String cacheName = name.getKeyProperty("name");
                     String cacheManagerName = name.getKeyProperty("manager");
-                    return new StringBuilder("org.infinispan:type=Cache,name=")
+                    return new StringBuilder(domain)
+                            .append(":type=Cache,name=")
                             .append(cacheName.startsWith("\"") ? cacheName :
                                     ObjectName.quote(cacheName))
                             .append(",manager=").append(cacheManagerName.startsWith("\"") ? cacheManagerName :
