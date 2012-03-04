@@ -2,7 +2,6 @@ package org.radargun.tpcc;
 
 
 import org.radargun.CacheWrapper;
-import sun.tools.tree.ThisExpression;
 
 import java.io.Serializable;
 
