@@ -23,13 +23,16 @@ public interface CacheWrapper
      * cacheing product being tested.
      *
      * @param config
+     * @param isLocal
      * @param nodeIndex
+     * @throws Exception
      */
     void setUp(String config, boolean isLocal, int nodeIndex) throws Exception;
 
     /**
      * This is called at the very end of all tests on this cache, and is used for clean-up
      * operations.
+     * @throws Exception
      */
     void tearDown() throws Exception;
 
@@ -42,17 +45,23 @@ public interface CacheWrapper
      * so in order to avoid key collisions, one should make sure that the keys are unique even between different buckets.
      * @param key
      * @param value
+     * @throws Exception
      */
     void put(String bucket, Object key, Object value) throws Exception;
 
     /**
+     * @param bucket
+     * @param key
      * @see #put(String, Object, Object)
+     * @return
+     * @throws Exception
      */
     Object get(String bucket, Object key) throws Exception;
 
     /**
      * This is called after each test type (if emptyCacheBetweenTests is set to true in benchmark.xml) and is
      * used to flush the cache.
+     * @throws Exception
      */
     void empty() throws Exception;
 
@@ -70,6 +79,8 @@ public interface CacheWrapper
      * Some caches (e.g. JBossCache with  buddy replication) do not store replicated data directlly in the main
      * structure, but use some additional structure to do this (replication tree, in the case of buddy replication).
      * This method is a hook for handling this situations.
+     * @param bucket
+     * @param key
      */
     Object getReplicatedData(String bucket, String key) throws Exception;
 
@@ -110,4 +121,10 @@ public interface CacheWrapper
      * @return the set of keys
      */
     BucketsKeysTreeSet getStressedKeys();
+
+    /**
+     *
+     * @return
+     */
+    int getCacheSize();
 }

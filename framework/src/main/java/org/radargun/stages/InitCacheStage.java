@@ -13,7 +13,7 @@ import java.util.List;
  * @author pruivo
  * @since 4.0
  */
-public class InitStage extends AbstractDistStage {
+public class InitCacheStage extends AbstractDistStage {
 
     //allows execution without contention
     private boolean noContentionEnabled = false;
