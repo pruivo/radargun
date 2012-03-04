@@ -90,4 +90,10 @@ public interface CacheWrapper
 
     //Pedro: adds cache dependent statistics
     Map<String, String> getAdditionalStats();
+
+    /**
+     *
+     * @return
+     */
+    int getCacheSize();
 }
