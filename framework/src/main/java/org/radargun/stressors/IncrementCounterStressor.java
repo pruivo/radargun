@@ -8,6 +8,8 @@ import org.radargun.CacheWrapperStressor;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 
+import static org.radargun.utils.IncrementCounterUtil.*;
+
 /**
  * Date: 1/24/12
  * Time: 3:35 PM
@@ -16,12 +18,7 @@ import java.util.concurrent.CountDownLatch;
  */
 public class IncrementCounterStressor implements CacheWrapperStressor {
 
-    public static final String STRESSOR_RESULT = "stressor_result";
-    public static final String STRESSOR_INCREMENTS = "stressor_increments";
-
-    private static final String DEFAULT_BUCKET_PREFIX = "BUCKET";
     private static Log log = LogFactory.getLog(IncrementCounterStressor.class);
-    private static final String COUNTER_KEY = "counter";
 
     private CacheWrapper cacheWrapper;
     private volatile CountDownLatch startPoint;
@@ -102,7 +99,6 @@ public class IncrementCounterStressor implements CacheWrapperStressor {
 
             while(delta < simulationTime){
                 successful = true;
-                counterValue = null;
 
                 cacheWrapper.startTransaction();
                 log.info("*** [" + getName() + "] new transaction: " + i + "***");
