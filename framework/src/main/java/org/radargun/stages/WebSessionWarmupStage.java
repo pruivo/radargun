@@ -3,7 +3,7 @@ package org.radargun.stages;
 import org.radargun.CacheWrapper;
 import org.radargun.DistStageAck;
 import org.radargun.state.MasterState;
-import org.radargun.stressors.InitStressor;
+import org.radargun.stressors.PutGetWarmupStressor;
 
 import java.util.List;
 
@@ -13,7 +13,7 @@ import java.util.List;
  * @author pruivo
  * @since 4.0
  */
-public class InitCacheStage extends AbstractDistStage {
+public class WebSessionWarmupStage extends AbstractDistStage {
 
     //allows execution without contention
     private boolean noContentionEnabled = false;
@@ -37,16 +37,16 @@ public class InitCacheStage extends AbstractDistStage {
             log.info("Not executing any test as the wrapper is not set up on this slave ");
             return ack;
         }
-        InitStressor initStressor = new InitStressor();
-        initStressor.setSlaveIdx(this.slaveIndex);
-        initStressor.setNoContentionEnabled(noContentionEnabled);
-        initStressor.setNumberOfKeys(numberOfKeys);
-        initStressor.setSizeOfValue(sizeOfValue);
-        initStressor.setNumOfThreads(numOfThreads);
-        initStressor.setBucketPrefix(bucketPrefix);
+        PutGetWarmupStressor putGetWarmupStressor = new PutGetWarmupStressor();
+        putGetWarmupStressor.setSlaveIdx(this.slaveIndex);
+        putGetWarmupStressor.setNoContentionEnabled(noContentionEnabled);
+        putGetWarmupStressor.setNumberOfKeys(numberOfKeys);
+        putGetWarmupStressor.setSizeOfValue(sizeOfValue);
+        putGetWarmupStressor.setNumOfThreads(numOfThreads);
+        putGetWarmupStressor.setBucketPrefix(bucketPrefix);
 
         long startTime = System.currentTimeMillis();
-        initStressor.stress(wrapper);
+        putGetWarmupStressor.stress(wrapper);
         long duration = System.currentTimeMillis() - startTime;
         log.info("The init stage took: " + (duration / 1000) + " seconds.");
         ack.setPayload(duration);

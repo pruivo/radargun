@@ -15,9 +15,9 @@ import java.util.Random;
  * @author pruivo
  * @since 4.0
  */
-public class InitStressor implements CacheWrapperStressor {
+public class PutGetWarmupStressor implements CacheWrapperStressor {
 
-    private static Log log = LogFactory.getLog(InitStressor.class);
+    private static Log log = LogFactory.getLog(PutGetWarmupStressor.class);
 
     private Random r = new Random();
 
