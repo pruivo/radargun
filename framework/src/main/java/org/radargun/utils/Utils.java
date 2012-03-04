@@ -3,6 +3,7 @@ package org.radargun.utils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import javax.management.MBeanAttributeInfo;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FilenameFilter;
@@ -225,4 +226,19 @@ public class Utils {
          throw new IllegalStateException(e);
       }
    }
+
+     public static String mBeanAttributes2String(MBeanAttributeInfo[] attributeInfoArray) {
+        StringBuilder sb = new StringBuilder("[");
+        if (attributeInfoArray == null || attributeInfoArray.length == 0) {
+            sb.append("]");
+            return sb.toString();
+        }
+        sb.append(attributeInfoArray[0].getName());
+        for (int i = 1; i < attributeInfoArray.length; ++i) {
+            sb.append(",").append(attributeInfoArray[i].getName());
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+
 }

@@ -1,8 +1,5 @@
 package org.radargun.cachewrappers;
 
-//import eu.cloudtm.rmi.statistics.InfinispanStatistics;
-//import eu.cloudtm.rmi.statistics.stream_lib.StreamLibStatsContainer;
-
 import org.infinispan.Cache;
 import org.infinispan.CacheException;
 import org.infinispan.config.Configuration;
@@ -23,14 +20,17 @@ import org.radargun.utils.Utils;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.transaction.TransactionManager;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.lang.management.ManagementFactory;
-import java.nio.Buffer;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.radargun.utils.Utils.mBeanAttributes2String;
 
 public class InfinispanWrapper implements CacheWrapper {
+    private static final String GET_ATTRIBUTE_ERROR = "Exception while obtaining the attribute [%s] from [%s]";
 
     private static Log log = LogFactory.getLog(InfinispanWrapper.class);
     DefaultCacheManager cacheManager;
@@ -220,23 +220,17 @@ public class InfinispanWrapper implements CacheWrapper {
     //================================================= JMX STATS ====================================================
     @Override
     public Map<String, String> getAdditionalStats() {
-        //collect stats from JMX
-        Map<String, String> result = new HashMap<String, String>();
-
-        for (Stats s : Stats.values()) {
-            result.put(s.toString(), String.valueOf(stats[s.ordinal()].get()));
-        }
-
+        Map<String, String> results = new HashMap<String, String>();
         MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
         String cacheComponentString = getCacheComponentBaseString(mBeanServer);
 
-        log.info("Obtain jmx stats from " + cacheComponentString);
-
         if(cacheComponentString != null) {
-            result.putAll(getStatsFromTotalOrderValidator(cacheComponentString, mBeanServer));
+            saveStatsFromStreamLibStatistics(cacheComponentString, mBeanServer);
+            getStatsFromTotalOrderValidator(cacheComponentString, mBeanServer, results);
+        } else {
+            log.info("Not collecting additional stats. Infinspan MBeans not found");
         }
-
-        return result;
+        return results;
     }
 
     private String getCacheComponentBaseString(MBeanServer mBeanServer) {
@@ -260,28 +254,75 @@ public class InfinispanWrapper implements CacheWrapper {
         return null;
     }
 
-    private Map<String, String> getStatsFromTotalOrderValidator(String baseName, MBeanServer mBeanServer) {
-        Map<String, String> result = new HashMap<String, String>();
+    private void saveStatsFromStreamLibStatistics(String baseName, MBeanServer mBeanServer) {
+        try {
+            ObjectName streamLibStats = new ObjectName(baseName + "StreamLibStatistics");
+
+            if (!mBeanServer.isRegistered(streamLibStats)) {
+                log.info("Not collecting statistics from Stream Lib component. It is no registered");
+                return;
+            }
+
+            String filePath = "top-keys-" + cache.getAdvancedCache().getRpcManager().getAddress();
+
+            log.info("Collecting statistics from Stream Lib component [" + streamLibStats + "] and save them in " +
+                    filePath);
+            log.debug("Attributes available are " +
+                    mBeanAttributes2String(mBeanServer.getMBeanInfo(streamLibStats).getAttributes()));
+
+            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(filePath));
+
+            bufferedWriter.write("RemoteTopGets=" + getMapAttribute(mBeanServer, streamLibStats,"RemoteTopGets")
+                    .toString());
+            bufferedWriter.newLine();
+            bufferedWriter.write("LocalTopGets=" + getMapAttribute(mBeanServer, streamLibStats,"LocalTopGets")
+                    .toString());
+            bufferedWriter.newLine();
+            bufferedWriter.write("RemoteTopPuts=" + getMapAttribute(mBeanServer, streamLibStats,"RemoteTopPuts")
+                    .toString());
+            bufferedWriter.newLine();
+            bufferedWriter.write("LocalTopPuts=" + getMapAttribute(mBeanServer, streamLibStats,"LocalTopPuts")
+                    .toString());
+            bufferedWriter.newLine();
+            bufferedWriter.flush();
+            bufferedWriter.close();
+
+        } catch (Exception e) {
+            log.warn("Unable to collect stats from Stream Lib Statistic component");
+        }
+    }
+
+    private void getStatsFromTotalOrderValidator(String baseName, MBeanServer mBeanServer, Map<String, String> results) {
         try {
             ObjectName toValidator = new ObjectName(baseName + "TotalOrderValidator");
+
+            if (!mBeanServer.isRegistered(toValidator)) {
+                log.info("Not collecting statistics from Total Order component. It is not registered");
+                return;
+            }
+
+            log.info("Collecting statistics from Total Order component [" + toValidator + "]");
+            log.debug("Attributes available are " +
+                    mBeanAttributes2String(mBeanServer.getMBeanInfo(toValidator).getAttributes()));
+
             double avgWaitingQueue = getDoubleAttribute(mBeanServer, toValidator, "averageWaitingTimeInQueue");
             double avgValidationDur = getDoubleAttribute(mBeanServer, toValidator, "averageValidationDuration");
             double avgInitDur = getDoubleAttribute(mBeanServer, toValidator, "averageInitializationDuration");
 
-            result.put("AVG_WAITING_TIME_IN_QUEUE(msec)", String.valueOf(avgWaitingQueue));
-            result.put("AVG_VALIDATION_DURATION(msec)", String.valueOf(avgValidationDur));
-            result.put("AVG_INIT_DURATION(msec)", String.valueOf(avgInitDur));
+            results.put("AVG_WAITING_TIME_IN_QUEUE(msec)", String.valueOf(avgWaitingQueue));
+            results.put("AVG_VALIDATION_DURATION(msec)", String.valueOf(avgValidationDur));
+            results.put("AVG_INIT_DURATION(msec)", String.valueOf(avgInitDur));
         } catch (Exception e) {
             log.warn("Unable to collect stats from Total Order Validator component");
         }
-        return result;
     }
+
 
     private Long getLongAttribute(MBeanServer mBeanServer, ObjectName component, String attr) {
         try {
             return (Long)mBeanServer.getAttribute(component, attr);
         } catch (Exception e) {
-            //attr not found or another problem
+            log.debug(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
         }
         return -1L;
     }
@@ -290,8 +331,17 @@ public class InfinispanWrapper implements CacheWrapper {
         try {
             return (Double)mBeanServer.getAttribute(component, attr);
         } catch (Exception e) {
-            //attr not found or another problem
+            log.debug(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
         }
         return -1D;
+    }
+
+    private Map<Object, Object> getMapAttribute(MBeanServer mBeanServer, ObjectName component, String attr) {
+        try {
+            return (Map<Object, Object>)mBeanServer.getAttribute(component, attr);
+        } catch (Exception e) {
+            log.debug(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
+        }
+        return Collections.emptyMap();
     }
 }
