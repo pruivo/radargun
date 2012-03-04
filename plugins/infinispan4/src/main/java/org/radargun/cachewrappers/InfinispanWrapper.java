@@ -3,13 +3,11 @@ package org.radargun.cachewrappers;
 import org.infinispan.Cache;
 import org.infinispan.config.Configuration;
 import org.infinispan.context.Flag;
-import org.infinispan.distribution.DistributionManager;
 import org.infinispan.distribution.ch.ConsistentHash;
 import org.infinispan.factories.ComponentRegistry;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.remoting.rpc.RpcManager;
 import org.infinispan.remoting.transport.Address;
-
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.radargun.CacheWrapper;
@@ -28,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.radargun.utils.Utils.mBeanAttributes2String;
 
 public class InfinispanWrapper implements CacheWrapper {
 
@@ -37,6 +36,8 @@ public class InfinispanWrapper implements CacheWrapper {
     TransactionManager tm;
     boolean started = false;
     String config;
+
+    private static final String GET_ATTRIBUTE_ERROR = "Exception while obtaining the attribute [%s] from [%s]";
 
     public void setUp(String config, boolean isLocal, int nodeIndex, TypedProperties confAttributes) throws Exception {
         this.config = config;
@@ -160,10 +161,6 @@ public class InfinispanWrapper implements CacheWrapper {
         }
     }
 
-    public Cache<Object, Object> getCache() {
-        return cache;
-    }
-
     @Override
     public int getCacheSize() {
         return cache.size();
@@ -171,17 +168,17 @@ public class InfinispanWrapper implements CacheWrapper {
     //================================================= JMX STATS ====================================================
     @Override
     public Map<String, String> getAdditionalStats() {
-        saveTopKStats();
-        return Collections.emptyMap();
-    }
-
-    public void saveTopKStats() {
+        Map<String, String> results = new HashMap<String, String>();
         MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
         String cacheComponentString = getCacheComponentBaseString(mBeanServer);
-        log.info("Obtain jmx stats from " + cacheComponentString);
+
         if(cacheComponentString != null) {
             saveStatsFromStreamLibStatistics(cacheComponentString, mBeanServer);
+            getStatsFromTotalOrderValidator(cacheComponentString, mBeanServer, results);
+        } else {
+            log.info("Not collecting additional stats. Infinspan MBeans not found");
         }
+        return results;
     }
 
     private String getCacheComponentBaseString(MBeanServer mBeanServer) {
@@ -209,7 +206,16 @@ public class InfinispanWrapper implements CacheWrapper {
         try {
             ObjectName streamLibStats = new ObjectName(baseName + "StreamLibStatistics");
 
+            if (!mBeanServer.isRegistered(streamLibStats)) {
+                log.info("Not collecting statistics from Stream Lib component. It is no registered");
+                return;
+            }
+
             String filePath = "top-keys-" + cache.getAdvancedCache().getRpcManager().getAddress();
+
+            log.info("Collecting statistics from Stream Lib component [" + streamLibStats + "] and save them in " +
+                    filePath + ". Attributes available are " +
+                    mBeanAttributes2String(mBeanServer.getMBeanInfo(streamLibStats).getAttributes()));
 
             BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(filePath));
 
@@ -233,11 +239,36 @@ public class InfinispanWrapper implements CacheWrapper {
         }
     }
 
+    private void getStatsFromTotalOrderValidator(String baseName, MBeanServer mBeanServer, Map<String, String> results) {
+        try {
+            ObjectName toValidator = new ObjectName(baseName + "TotalOrderValidator");
+
+            if (!mBeanServer.isRegistered(toValidator)) {
+                log.info("Not collecting statistics from Total Order component. It is not registered");
+                return;
+            }
+
+            log.info("Collecting statistics from Total Order component [" + toValidator + "]. Attributes available are " +
+                    mBeanAttributes2String(mBeanServer.getMBeanInfo(toValidator).getAttributes()));
+
+            double avgWaitingQueue = getDoubleAttribute(mBeanServer, toValidator, "averageWaitingTimeInQueue");
+            double avgValidationDur = getDoubleAttribute(mBeanServer, toValidator, "averageValidationDuration");
+            double avgInitDur = getDoubleAttribute(mBeanServer, toValidator, "averageInitializationDuration");
+
+            results.put("AVG_WAITING_TIME_IN_QUEUE(msec)", String.valueOf(avgWaitingQueue));
+            results.put("AVG_VALIDATION_DURATION(msec)", String.valueOf(avgValidationDur));
+            results.put("AVG_INIT_DURATION(msec)", String.valueOf(avgInitDur));
+        } catch (Exception e) {
+            log.warn("Unable to collect stats from Total Order Validator component");
+        }
+    }
+
+
     private Long getLongAttribute(MBeanServer mBeanServer, ObjectName component, String attr) {
         try {
             return (Long)mBeanServer.getAttribute(component, attr);
         } catch (Exception e) {
-            //attr not found or another problem
+            log.debug(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
         }
         return -1L;
     }
@@ -246,7 +277,7 @@ public class InfinispanWrapper implements CacheWrapper {
         try {
             return (Double)mBeanServer.getAttribute(component, attr);
         } catch (Exception e) {
-            //attr not found or another problem
+            log.debug(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
         }
         return -1D;
     }
@@ -255,8 +286,7 @@ public class InfinispanWrapper implements CacheWrapper {
         try {
             return (Map<Object, Object>)mBeanServer.getAttribute(component, attr);
         } catch (Exception e) {
-            //attr not found or another problem
-            //e.printStackTrace();
+            log.debug(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
         }
         return Collections.emptyMap();
     }
