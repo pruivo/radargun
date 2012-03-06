@@ -30,264 +30,291 @@ import static org.radargun.utils.Utils.mBeanAttributes2String;
 
 public class InfinispanWrapper implements CacheWrapper {
 
-    private static Log log = LogFactory.getLog(InfinispanWrapper.class);
-    DefaultCacheManager cacheManager;
-    private Cache<Object, Object> cache;
-    TransactionManager tm;
-    boolean started = false;
-    String config;
+   private static Log log = LogFactory.getLog(InfinispanWrapper.class);
+   DefaultCacheManager cacheManager;
+   private Cache<Object, Object> cache;
+   TransactionManager tm;
+   boolean started = false;
+   String config;
 
-    private static final String GET_ATTRIBUTE_ERROR = "Exception while obtaining the attribute [%s] from [%s]";
+   private static final String GET_ATTRIBUTE_ERROR = "Exception while obtaining the attribute [%s] from [%s]";
 
-    public void setUp(String config, boolean isLocal, int nodeIndex, TypedProperties confAttributes) throws Exception {
-        this.config = config;
-        if (!started) {
-            cacheManager = new DefaultCacheManager(config);
-            // use a named cache, based on the 'default'
-            cacheManager.defineConfiguration("x", new Configuration());
-            cache = cacheManager.getCache("x");
-            tm = cache.getAdvancedCache().getTransactionManager();
-            started = true;
-        }
-        log.info("Loading JGroups form: " + org.jgroups.Version.class.getProtectionDomain().getCodeSource().getLocation());
-        log.info("JGroups version: " + org.jgroups.Version.printDescription());
-        blockForRehashing();
-        injectEvenConsistentHash(confAttributes);
-    }
+   public void setUp(String config, boolean isLocal, int nodeIndex, TypedProperties confAttributes) throws Exception {
+      this.config = config;
+      if (!started) {
+         cacheManager = new DefaultCacheManager(config);
+         // use a named cache, based on the 'default'
+         cacheManager.defineConfiguration("x", new Configuration());
+         cache = cacheManager.getCache("x");
+         tm = cache.getAdvancedCache().getTransactionManager();
+         started = true;
+      }
+      log.info("Loading JGroups form: " + org.jgroups.Version.class.getProtectionDomain().getCodeSource().getLocation());
+      log.info("JGroups version: " + org.jgroups.Version.printDescription());
+      blockForRehashing();
+      injectEvenConsistentHash(confAttributes);
+   }
 
-    public void tearDown() throws Exception {
-        List<Address> addressList = cacheManager.getMembers();
-        if (started) {
-            cacheManager.stop();
-            log.trace("Stopped, previous view is " + addressList);
-            started = false;
-        }
-    }
+   public void tearDown() throws Exception {
+      List<Address> addressList = cacheManager.getMembers();
+      if (started) {
+         cacheManager.stop();
+         log.trace("Stopped, previous view is " + addressList);
+         started = false;
+      }
+   }
 
-    public void put(String bucket, Object key, Object value) throws Exception {
-        cache.put(key, value);
-    }
+   public void put(String bucket, Object key, Object value) throws Exception {
+      cache.put(key, value);
+   }
 
-    public Object get(String bucket, Object key) throws Exception {
-        return cache.get(key);
-    }
+   public Object get(String bucket, Object key) throws Exception {
+      return cache.get(key);
+   }
 
-    public void empty() throws Exception {
-        RpcManager rpcManager = cache.getAdvancedCache().getRpcManager();
-        int clusterSize = 0;
-        if (rpcManager != null) {
-            clusterSize = rpcManager.getTransport().getMembers().size();
-        }
-        //use keySet().size() rather than size directly as cache.size might not be reliable
-        log.info("Cache size before clear (cluster size= " + clusterSize +")" + cache.keySet().size());
+   public void empty() throws Exception {
+      RpcManager rpcManager = cache.getAdvancedCache().getRpcManager();
+      int clusterSize = 0;
+      if (rpcManager != null) {
+         clusterSize = rpcManager.getTransport().getMembers().size();
+      }
+      //use keySet().size() rather than size directly as cache.size might not be reliable
+      log.info("Cache size before clear (cluster size= " + clusterSize +")" + cache.keySet().size());
 
-        cache.getAdvancedCache().withFlags(Flag.CACHE_MODE_LOCAL).clear();
-        log.info("Cache size after clear: " + cache.keySet().size());
-    }
+      cache.getAdvancedCache().withFlags(Flag.CACHE_MODE_LOCAL).clear();
+      log.info("Cache size after clear: " + cache.keySet().size());
+   }
 
-    public int getNumMembers() {
-        ComponentRegistry componentRegistry = cache.getAdvancedCache().getComponentRegistry();
-        if (componentRegistry.getStatus().startingUp()) {
-            log.trace("We're in the process of starting up.");
-        }
-        if (cacheManager.getMembers() != null) {
-            log.trace("Members are: " + cacheManager.getMembers());
-        }
-        return cacheManager.getMembers() == null ? 0 : cacheManager.getMembers().size();
-    }
+   public int getNumMembers() {
+      ComponentRegistry componentRegistry = cache.getAdvancedCache().getComponentRegistry();
+      if (componentRegistry.getStatus().startingUp()) {
+         log.trace("We're in the process of starting up.");
+      }
+      if (cacheManager.getMembers() != null) {
+         log.trace("Members are: " + cacheManager.getMembers());
+      }
+      return cacheManager.getMembers() == null ? 0 : cacheManager.getMembers().size();
+   }
 
-    public String getInfo() {
-        return "Running : " + cache.getVersion() +  ", config:" + config ;
-    }
+   public String getInfo() {
+      return "Running : " + cache.getVersion() +  ", config:" + config ;
+   }
 
-    public Object getReplicatedData(String bucket, String key) throws Exception {
-        return get(bucket, key);
-    }
+   public Object getReplicatedData(String bucket, String key) throws Exception {
+      return get(bucket, key);
+   }
 
-    public Object startTransaction() {
-        if (tm == null) return null;
-        try {
-            tm.begin();
-            return tm.getTransaction();
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+   public Object startTransaction() {
+      if (tm == null) return null;
+      try {
+         tm.begin();
+         return tm.getTransaction();
+      }
+      catch (Exception e) {
+         throw new RuntimeException(e);
+      }
+   }
 
-    public void endTransaction(boolean successful) {
-        if (tm == null) return;
-        try {
-            if (successful)
-                tm.commit();
-            else
-                tm.rollback();
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+   public void endTransaction(boolean successful) {
+      if (tm == null) return;
+      try {
+         if (successful)
+            tm.commit();
+         else
+            tm.rollback();
+      }
+      catch (Exception e) {
+         throw new RuntimeException(e);
+      }
+   }
 
-    @Override
-    public int size() {
-        return cache.keySet().size();
-    }
+   @Override
+   public int size() {
+      return cache.keySet().size();
+   }
 
-    private void blockForRehashing() throws InterruptedException {
-        // should we be blocking until all rehashing, etc. has finished?
-        long gracePeriod = MINUTES.toMillis(15);
-        long giveup = System.currentTimeMillis() + gracePeriod;
-        if (cache.getConfiguration().getCacheMode().isDistributed()) {
-            while (!cache.getAdvancedCache().getDistributionManager().isJoinComplete() && System.currentTimeMillis() < giveup)
-                Thread.sleep(200);
-        }
+   private void blockForRehashing() throws InterruptedException {
+      // should we be blocking until all rehashing, etc. has finished?
+      long gracePeriod = MINUTES.toMillis(15);
+      long giveup = System.currentTimeMillis() + gracePeriod;
+      if (cache.getConfiguration().getCacheMode().isDistributed()) {
+         while (!cache.getAdvancedCache().getDistributionManager().isJoinComplete() && System.currentTimeMillis() < giveup)
+            Thread.sleep(200);
+      }
 
-        if (cache.getConfiguration().getCacheMode().isDistributed() && !cache.getAdvancedCache().getDistributionManager().isJoinComplete())
-            throw new RuntimeException("Caches haven't discovered and joined the cluster even after " + Utils.prettyPrintTime(gracePeriod));
-    }
+      if (cache.getConfiguration().getCacheMode().isDistributed() && !cache.getAdvancedCache().getDistributionManager().isJoinComplete())
+         throw new RuntimeException("Caches haven't discovered and joined the cluster even after " + Utils.prettyPrintTime(gracePeriod));
+   }
 
-    private void injectEvenConsistentHash(TypedProperties confAttributes) {
-        if (cache.getConfiguration().getCacheMode().isDistributed()) {
-            ConsistentHash ch = cache.getAdvancedCache().getDistributionManager().getConsistentHash();
-            if (ch instanceof EvenSpreadingConsistentHash) {
-                int threadsPerNode = confAttributes.getIntProperty("threadsPerNode", -1);
-                if (threadsPerNode < 0) throw new IllegalStateException("When EvenSpreadingConsistentHash is used threadsPerNode must also be set.");
-                int keysPerThread = confAttributes.getIntProperty("keysPerThread", -1);
-                if (keysPerThread < 0) throw new IllegalStateException("When EvenSpreadingConsistentHash is used must also be set.");
-                ((EvenSpreadingConsistentHash)ch).init(threadsPerNode, keysPerThread);
-                log.info("Using an even consistent hash!");
+   private void injectEvenConsistentHash(TypedProperties confAttributes) {
+      if (cache.getConfiguration().getCacheMode().isDistributed()) {
+         ConsistentHash ch = cache.getAdvancedCache().getDistributionManager().getConsistentHash();
+         if (ch instanceof EvenSpreadingConsistentHash) {
+            int threadsPerNode = confAttributes.getIntProperty("threadsPerNode", -1);
+            if (threadsPerNode < 0) throw new IllegalStateException("When EvenSpreadingConsistentHash is used threadsPerNode must also be set.");
+            int keysPerThread = confAttributes.getIntProperty("keysPerThread", -1);
+            if (keysPerThread < 0) throw new IllegalStateException("When EvenSpreadingConsistentHash is used must also be set.");
+            ((EvenSpreadingConsistentHash)ch).init(threadsPerNode, keysPerThread);
+            log.info("Using an even consistent hash!");
+         }
+
+      }
+   }
+
+   @Override
+   public int getCacheSize() {
+      return cache.size();
+   }
+   //================================================= JMX STATS ====================================================
+   @Override
+   public Map<String, String> getAdditionalStats() {
+      Map<String, String> results = new HashMap<String, String>();
+      MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
+      String cacheComponentString = getCacheComponentBaseString(mBeanServer);
+
+      if(cacheComponentString != null) {
+         saveStatsFromStreamLibStatistics(cacheComponentString, mBeanServer);
+         getStatsFromStatistic(cacheComponentString, mBeanServer, results);
+         getStatsFromTotalOrderValidator(cacheComponentString, mBeanServer, results);
+      } else {
+         log.info("Not collecting additional stats. Infinspan MBeans not found");
+      }
+      return results;
+   }
+
+   private String getCacheComponentBaseString(MBeanServer mBeanServer) {
+      String domain = cacheManager.getGlobalConfiguration().getJmxDomain();
+      for(ObjectName name : mBeanServer.queryNames(null, null)) {
+         if(name.getDomain().equals(domain)) {
+
+            if("Cache".equals(name.getKeyProperty("type"))) {
+               String cacheName = name.getKeyProperty("name");
+               String cacheManagerName = name.getKeyProperty("manager");
+               return new StringBuilder(domain)
+                     .append(":type=Cache,name=")
+                     .append(cacheName.startsWith("\"") ? cacheName :
+                                   ObjectName.quote(cacheName))
+                     .append(",manager=").append(cacheManagerName.startsWith("\"") ? cacheManagerName :
+                                                       ObjectName.quote(cacheManagerName))
+                     .append(",component=").toString();
             }
+         }
+      }
+      return null;
+   }
 
-        }
-    }
+   private void saveStatsFromStreamLibStatistics(String baseName, MBeanServer mBeanServer) {
+      try {
+         ObjectName streamLibStats = new ObjectName(baseName + "StreamLibStatistics");
 
-    @Override
-    public int getCacheSize() {
-        return cache.size();
-    }
-    //================================================= JMX STATS ====================================================
-    @Override
-    public Map<String, String> getAdditionalStats() {
-        Map<String, String> results = new HashMap<String, String>();
-        MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
-        String cacheComponentString = getCacheComponentBaseString(mBeanServer);
+         if (!mBeanServer.isRegistered(streamLibStats)) {
+            log.info("Not collecting statistics from Stream Lib component. It is no registered");
+            return;
+         }
 
-        if(cacheComponentString != null) {
-            saveStatsFromStreamLibStatistics(cacheComponentString, mBeanServer);
-            getStatsFromTotalOrderValidator(cacheComponentString, mBeanServer, results);
-        } else {
-            log.info("Not collecting additional stats. Infinspan MBeans not found");
-        }
-        return results;
-    }
+         String filePath = "top-keys-" + cache.getAdvancedCache().getRpcManager().getAddress();
 
-    private String getCacheComponentBaseString(MBeanServer mBeanServer) {
-        String domain = cacheManager.getGlobalConfiguration().getJmxDomain();
-        for(ObjectName name : mBeanServer.queryNames(null, null)) {
-            if(name.getDomain().equals(domain)) {
+         log.info("Collecting statistics from Stream Lib component [" + streamLibStats + "] and save them in " +
+                        filePath + ". Attributes available are " +
+                        mBeanAttributes2String(mBeanServer.getMBeanInfo(streamLibStats).getAttributes()));
 
-                if("Cache".equals(name.getKeyProperty("type"))) {
-                    String cacheName = name.getKeyProperty("name");
-                    String cacheManagerName = name.getKeyProperty("manager");
-                    return new StringBuilder(domain)
-                            .append(":type=Cache,name=")
-                            .append(cacheName.startsWith("\"") ? cacheName :
-                                    ObjectName.quote(cacheName))
-                            .append(",manager=").append(cacheManagerName.startsWith("\"") ? cacheManagerName :
-                                    ObjectName.quote(cacheManagerName))
-                            .append(",component=").toString();
-                }
-            }
-        }
-        return null;
-    }
+         BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(filePath));
 
-    private void saveStatsFromStreamLibStatistics(String baseName, MBeanServer mBeanServer) {
-        try {
-            ObjectName streamLibStats = new ObjectName(baseName + "StreamLibStatistics");
+         bufferedWriter.write("RemoteTopGets=" + getMapAttribute(mBeanServer, streamLibStats,"RemoteTopGets")
+               .toString());
+         bufferedWriter.newLine();
+         bufferedWriter.write("LocalTopGets=" + getMapAttribute(mBeanServer, streamLibStats,"LocalTopGets")
+               .toString());
+         bufferedWriter.newLine();
+         bufferedWriter.write("RemoteTopPuts=" + getMapAttribute(mBeanServer, streamLibStats,"RemoteTopPuts")
+               .toString());
+         bufferedWriter.newLine();
+         bufferedWriter.write("LocalTopPuts=" + getMapAttribute(mBeanServer, streamLibStats,"LocalTopPuts")
+               .toString());
+         bufferedWriter.newLine();
+         bufferedWriter.flush();
+         bufferedWriter.close();
 
-            if (!mBeanServer.isRegistered(streamLibStats)) {
-                log.info("Not collecting statistics from Stream Lib component. It is no registered");
-                return;
-            }
+      } catch (Exception e) {
+         log.warn("Unable to collect stats from Stream Lib Statistic component");
+      }
+   }
 
-            String filePath = "top-keys-" + cache.getAdvancedCache().getRpcManager().getAddress();
+   private void getStatsFromTotalOrderValidator(String baseName, MBeanServer mBeanServer, Map<String, String> results) {
+      try {
+         ObjectName toValidator = new ObjectName(baseName + "TotalOrderValidator");
 
-            log.info("Collecting statistics from Stream Lib component [" + streamLibStats + "] and save them in " +
-                    filePath + ". Attributes available are " +
-                    mBeanAttributes2String(mBeanServer.getMBeanInfo(streamLibStats).getAttributes()));
+         if (!mBeanServer.isRegistered(toValidator)) {
+            log.info("Not collecting statistics from Total Order component. It is not registered");
+            return;
+         }
 
-            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(filePath));
+         log.info("Collecting statistics from Total Order component [" + toValidator + "]. Attributes available are " +
+                        mBeanAttributes2String(mBeanServer.getMBeanInfo(toValidator).getAttributes()));
 
-            bufferedWriter.write("RemoteTopGets=" + getMapAttribute(mBeanServer, streamLibStats,"RemoteTopGets")
-                    .toString());
-            bufferedWriter.newLine();
-            bufferedWriter.write("LocalTopGets=" + getMapAttribute(mBeanServer, streamLibStats,"LocalTopGets")
-                    .toString());
-            bufferedWriter.newLine();
-            bufferedWriter.write("RemoteTopPuts=" + getMapAttribute(mBeanServer, streamLibStats,"RemoteTopPuts")
-                    .toString());
-            bufferedWriter.newLine();
-            bufferedWriter.write("LocalTopPuts=" + getMapAttribute(mBeanServer, streamLibStats,"LocalTopPuts")
-                    .toString());
-            bufferedWriter.newLine();
-            bufferedWriter.flush();
-            bufferedWriter.close();
+         double avgWaitingQueue = getDoubleAttribute(mBeanServer, toValidator, "averageWaitingTimeInQueue");
+         double avgValidationDur = getDoubleAttribute(mBeanServer, toValidator, "averageValidationDuration");
+         double avgInitDur = getDoubleAttribute(mBeanServer, toValidator, "averageInitializationDuration");
 
-        } catch (Exception e) {
-            log.warn("Unable to collect stats from Stream Lib Statistic component");
-        }
-    }
+         results.put("AVG_WAITING_TIME_IN_QUEUE(msec)", String.valueOf(avgWaitingQueue));
+         results.put("AVG_VALIDATION_DURATION(msec)", String.valueOf(avgValidationDur));
+         results.put("AVG_INIT_DURATION(msec)", String.valueOf(avgInitDur));
+      } catch (Exception e) {
+         log.warn("Unable to collect stats from Total Order Validator component");
+      }
+   }
 
-    private void getStatsFromTotalOrderValidator(String baseName, MBeanServer mBeanServer, Map<String, String> results) {
-        try {
-            ObjectName toValidator = new ObjectName(baseName + "TotalOrderValidator");
+   private void getStatsFromStatistic(String baseName, MBeanServer mBeanServer, Map<String, String> results) {
+      try {
+         ObjectName stats = new ObjectName(baseName + "TLStatistics");
 
-            if (!mBeanServer.isRegistered(toValidator)) {
-                log.info("Not collecting statistics from Total Order component. It is not registered");
-                return;
-            }
+         if (!mBeanServer.isRegistered(stats)) {
+            log.info("Not collecting statistics from Statistic component. It is not registered");
+            return;
+         }
 
-            log.info("Collecting statistics from Total Order component [" + toValidator + "]. Attributes available are " +
-                    mBeanAttributes2String(mBeanServer.getMBeanInfo(toValidator).getAttributes()));
+         log.info("Collecting statistics from Statistic component [" + stats + "]");
+         log.debug("Attributes available are " +
+                         mBeanAttributes2String(mBeanServer.getMBeanInfo(stats).getAttributes()));
 
-            double avgWaitingQueue = getDoubleAttribute(mBeanServer, toValidator, "averageWaitingTimeInQueue");
-            double avgValidationDur = getDoubleAttribute(mBeanServer, toValidator, "averageValidationDuration");
-            double avgInitDur = getDoubleAttribute(mBeanServer, toValidator, "averageInitializationDuration");
+         long totalRemoteGets = getLongAttribute(mBeanServer, stats, "GetsInRemoteKeys");
+         long totalLocalGets = getLongAttribute(mBeanServer, stats, "GetsInLocalKeys");
+         long totalRemotePuts = getLongAttribute(mBeanServer, stats, "PutsInRemoteKeys");
+         long totalLocalPuts = getLongAttribute(mBeanServer, stats, "PutsInLocalKeys");
 
-            results.put("AVG_WAITING_TIME_IN_QUEUE(msec)", String.valueOf(avgWaitingQueue));
-            results.put("AVG_VALIDATION_DURATION(msec)", String.valueOf(avgValidationDur));
-            results.put("AVG_INIT_DURATION(msec)", String.valueOf(avgInitDur));
-        } catch (Exception e) {
-            log.warn("Unable to collect stats from Total Order Validator component");
-        }
-    }
+         results.put("TOTAL_REMOTE_GETS", String.valueOf(totalRemoteGets));
+         results.put("TOTAL_LOCAL_GETS", String.valueOf(totalLocalGets));
+         results.put("TOTAL_REMOTE_PUTS", String.valueOf(totalRemotePuts));
+         results.put("TOTAL_LOCAL_PUTS", String.valueOf(totalLocalPuts));
+      } catch (Exception e) {
+         log.warn("Unable to collect stats from Distribution Manager component");
+      }
+   }
 
+   private Long getLongAttribute(MBeanServer mBeanServer, ObjectName component, String attr) {
+      try {
+         return (Long)mBeanServer.getAttribute(component, attr);
+      } catch (Exception e) {
+         log.debug(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
+      }
+      return -1L;
+   }
 
-    private Long getLongAttribute(MBeanServer mBeanServer, ObjectName component, String attr) {
-        try {
-            return (Long)mBeanServer.getAttribute(component, attr);
-        } catch (Exception e) {
-            log.debug(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
-        }
-        return -1L;
-    }
+   private Double getDoubleAttribute(MBeanServer mBeanServer, ObjectName component, String attr) {
+      try {
+         return (Double)mBeanServer.getAttribute(component, attr);
+      } catch (Exception e) {
+         log.debug(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
+      }
+      return -1D;
+   }
 
-    private Double getDoubleAttribute(MBeanServer mBeanServer, ObjectName component, String attr) {
-        try {
-            return (Double)mBeanServer.getAttribute(component, attr);
-        } catch (Exception e) {
-            log.debug(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
-        }
-        return -1D;
-    }
-
-    private Map<Object, Object> getMapAttribute(MBeanServer mBeanServer, ObjectName component, String attr) {
-        try {
-            return (Map<Object, Object>)mBeanServer.getAttribute(component, attr);
-        } catch (Exception e) {
-            log.debug(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
-        }
-        return Collections.emptyMap();
-    }
+   private Map<Object, Object> getMapAttribute(MBeanServer mBeanServer, ObjectName component, String attr) {
+      try {
+         return (Map<Object, Object>)mBeanServer.getAttribute(component, attr);
+      } catch (Exception e) {
+         log.debug(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
+      }
+      return Collections.emptyMap();
+   }
 }
