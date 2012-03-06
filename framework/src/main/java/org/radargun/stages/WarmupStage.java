@@ -5,7 +5,6 @@ import org.radargun.DistStageAck;
 import org.radargun.state.MasterState;
 import org.radargun.stressors.WarmupStressor;
 import org.radargun.tpcc.TPCCPopulation;
-import org.radargun.tpcc.TPCCTools;
 
 import java.util.List;
 
@@ -24,8 +23,14 @@ public class WarmupStage extends AbstractDistStage {
 
    private int operationCount = 1000;
    private int numWarehouse;
-   
+
    private boolean light = false;
+
+   //DIE
+   private boolean threadParallelLoad = false;
+   private int numLoaderThreads = 4;
+   private int batchLevel = 100;
+
 
    public DistStageAck executeOnSlave() {
       DefaultDistStageAck ack = newDefaultStageAck();
@@ -44,14 +49,19 @@ public class WarmupStage extends AbstractDistStage {
 
    private void warmup(CacheWrapper wrapper) {
       TPCCPopulation.NB_WAREHOUSE=numWarehouse;
+      WarmupStressor warmupStressor = null;
 
-      WarmupStressor warmupStressor = new WarmupStressor();
+      warmupStressor = new WarmupStressor();
+
       warmupStressor.setBucket("warmup_bucket" + String.valueOf(getSlaveIndex()) + "_");
       warmupStressor.setKeyPrefix("warmup_key_" + String.valueOf(getSlaveIndex()) + "_");
       warmupStressor.setOperationCount(operationCount);
       warmupStressor.setSlaveIndex(getSlaveIndex());
       warmupStressor.setNumSlaves(getActiveSlaveCount());
       warmupStressor.setLight(this.light);
+      warmupStressor.setThreadParallelLoad(this.threadParallelLoad);
+      warmupStressor.setNumLoadersThread(this.numLoaderThreads);
+      warmupStressor.setBatchLevel(this.batchLevel);
       warmupStressor.stress(wrapper);
    }
 
@@ -70,23 +80,33 @@ public class WarmupStage extends AbstractDistStage {
       this.operationCount = operationCount;
    }
 
-    public int getNumWarehouse() {
-        return numWarehouse;
-    }
+   public int getNumWarehouse() {
+      return numWarehouse;
+   }
 
-    public void setNumWarehouse(int numWarehouse) {
-        this.numWarehouse = numWarehouse;
-    }
-    
-    public void setLight(boolean light){
-    	this.light = light;
-    }
-    
-    public boolean getLight(){
-    	return this.light;
-    }
+   public void setNumWarehouse(int numWarehouse) {
+      this.numWarehouse = numWarehouse;
+   }
 
-    @Override
+   public void setLight(boolean light){
+      this.light = light;
+   }
+
+   public boolean getLight(){
+      return this.light;
+   }
+   public void setThreadParallelLoad(String s){
+      if(s.equals("true"))
+         this.threadParallelLoad = true;
+   }
+   public void setNumOfThreads(int t){
+      this.numLoaderThreads = t;
+   }
+   public void setBatchLevel(int l){
+      this.batchLevel = l;
+   }
+
+   @Override
    public String toString() {
       return "WarmupStage {" +
             "operationCount=" + operationCount + ", " + super.toString();

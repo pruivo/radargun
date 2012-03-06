@@ -5,12 +5,10 @@ import org.apache.commons.logging.LogFactory;
 import org.radargun.CacheWrapper;
 import org.radargun.CacheWrapperStressor;
 import org.radargun.stages.WarmupStage;
-import org.radargun.CacheWrapper;
 import org.radargun.tpcc.TPCCPopulation;
+import org.radargun.tpcc.ThreadParallelTPCCPopulation;
 
 import java.util.Map;
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Do <code>operationCount</code> puts and  <code>operationCount</code> gets on the cache wrapper.
@@ -32,8 +30,14 @@ public class WarmupStressor implements CacheWrapperStressor {
    private int slaveIndex;
 
    private int numSlaves;
-   
+
    private boolean light;
+
+   //For thread-grain parallel warmup
+   private boolean threadParallelLoad = false;
+   private int numLoadersThread = 4;
+   private int batchlevel = 100;
+
 
    private static final int WARMUP_THREADS = 5; // yes, hard coded.
 
@@ -57,11 +61,17 @@ public class WarmupStressor implements CacheWrapperStressor {
       this.wrapper = w;
       log.info("Cache warmup started!");
 
+      TPCCPopulation tpccPopulation;
+      if(this.threadParallelLoad){
+         log.info("Peforming thread-parallel population...");
+         tpccPopulation = new ThreadParallelTPCCPopulation(this.wrapper, this.slaveIndex, this.numSlaves, this.light,this.numLoadersThread,this.batchlevel);         
+      }
 
-
-
-      log.info("Peforming population...");
-      new TPCCPopulation(this.wrapper, this.slaveIndex, this.numSlaves, this.light);
+      else{
+         log.info("Peforming population...");
+         tpccPopulation = new TPCCPopulation(this.wrapper, this.slaveIndex, this.numSlaves, this.light);         
+      }
+      tpccPopulation.performPopulation();
       log.info("Population ended");
 
 
@@ -95,7 +105,7 @@ public class WarmupStressor implements CacheWrapperStressor {
       log.info("Joining warmupThreads");
       for (Thread t: warmupThreads) t.join();
       */
-      log.info("Cache warmup ended!");
+      log.info("Cache warmup ended with " + wrapper.getCacheSize()+" elements!");
    }
 
    private void doPut(int operationId, int threadId) {
@@ -132,15 +142,15 @@ public class WarmupStressor implements CacheWrapperStressor {
 
    public void setSlaveIndex(int slaveIndex){
 
-       this.slaveIndex=slaveIndex;
+      this.slaveIndex=slaveIndex;
    }
 
    public void setNumSlaves(int numSlaves){
-       this.numSlaves=numSlaves;
+      this.numSlaves=numSlaves;
    }
-   
+
    public void setLight(boolean light){
-	   this.light = light;
+      this.light = light;
    }
 
    @Override
@@ -156,4 +166,19 @@ public class WarmupStressor implements CacheWrapperStressor {
       wrapper.empty();
       wrapper = null;
    }
+
+
+   public void setNumLoadersThread(int n){
+      this.numLoadersThread = n;
+   }
+
+   public void setThreadParallelLoad(boolean b){
+      this.threadParallelLoad = b;
+   }
+
+   public void setBatchLevel(int b){
+      this.batchlevel = b;
+   }
 }
+
+

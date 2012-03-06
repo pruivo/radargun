@@ -18,11 +18,14 @@
             delayBetweenStartingSlaves = "1000"/>
 
       <ClusterValidation
-            partialReplication="false"/>
+            partialReplication="true"/>
 
       <Warmup
             numWarehouse="1"
-            light="false"/>
+            light="false"
+            threadParallelLoad="true" 
+            batchLevel="150" 
+            numOfThreads="2"/>
 
       <CacheSize
             statName="CACHE_SIZE_BEFORE_BENCH"/>

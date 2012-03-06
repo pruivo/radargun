@@ -39,7 +39,7 @@
                 enabled="true"/>
         <clustering mode="d">
             <sync
-                    replTimeout="15000"/>
+                    replTimeout="150000"/>
             <hash
                     numVirtualNodes="1"
                     numOwners="1"
