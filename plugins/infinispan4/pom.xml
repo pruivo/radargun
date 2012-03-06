@@ -24,7 +24,7 @@
             <groupId>org.infinispan</groupId>
             <artifactId>infinispan-core</artifactId>
             <version>5.0.1.FINAL</version>
-            <scope>tests</scope>
+            <scope>test</scope>
             <type>test-jar</type>
         </dependency>
 
