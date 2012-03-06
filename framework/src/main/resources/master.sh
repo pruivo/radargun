@@ -32,6 +32,8 @@ help_and_exit() {
   wrappedecho ""
   wrappedecho "   -h       Displays this help screen"
   wrappedecho ""
+  wrappedecho "   -i value Sets the initial number of slaves"
+  wrappedecho ""
 
   exit 0
 }
@@ -85,6 +87,10 @@ do
     "-h")
       help_and_exit
       ;;
+    "-i")
+      SLAVE_COUNT_ARG_I="-DIslaves=$2 "
+      shift
+      ;;
     *)
       wrappedecho "Warning: unknown argument ${1}" 
       help_and_exit
@@ -109,7 +115,7 @@ if ! [ "x${MASTER}" = "x" ] ; then
   fi
 fi
 
-java ${JVM_OPTS} -classpath $CP ${D_VARS} $SLAVE_COUNT_ARG org.radargun.LaunchMaster -config ${CONFIG} > stdout_master.out 2>&1 &
+java ${JVM_OPTS} -classpath $CP ${D_VARS} $SLAVE_COUNT_ARG $SLAVE_COUNT_ARG_I org.radargun.LaunchMaster -config ${CONFIG} > stdout_master.out 2>&1 &
 export RADARGUN_MASTER_PID=$!
 HOST_NAME=`hostname`
 echo "Master's PID is $RADARGUN_MASTER_PID running on ${HOST_NAME}"

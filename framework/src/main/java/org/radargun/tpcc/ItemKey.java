@@ -7,7 +7,7 @@ import java.io.ObjectOutput;
 
 import org.infinispan.container.key.ContextAwareKey;
 
-public class ItemKey implements Externalizable, ContextAwareKey{
+public class ItemKey implements Externalizable, ContextAwareKey {
 	
 	private String key;
 	
