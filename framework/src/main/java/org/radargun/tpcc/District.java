@@ -135,8 +135,12 @@ public class District implements Serializable {
         this.d_next_o_id = d_next_o_id;
     }
     
-    private TPCCKey getKey(){
+    /*private TPCCKey getKey(){
         return new TPCCKey("DISTRICT_"+this.d_w_id+"_"+this.d_id,(int )this.d_w_id, false);
+    }*/
+   
+   private String getKey(){
+        return "DISTRICT_"+this.d_w_id+"_"+this.d_id;
     }
 
     public void store(CacheWrapper wrapper)throws Throwable{

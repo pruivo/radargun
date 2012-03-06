@@ -54,11 +54,13 @@ public class NewOrder implements Serializable {
         this.no_w_id = no_w_id;
     }
     
-    private TPCCKey getKey(){
+    /*private TPCCKey getKey(){
         return new TPCCKey("NEWORDER_"+this.no_w_id+"_"+this.no_d_id+"_"+this.no_o_id, (int)this.no_w_id, false);
-    }
+    }*/
 
-    
+   private String getKey(){
+        return "NEWORDER_"+this.no_w_id+"_"+this.no_d_id+"_"+this.no_o_id;
+    } 
 
     public void store(CacheWrapper wrapper)throws Throwable{
 

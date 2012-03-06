@@ -232,6 +232,7 @@ public class InfinispanWrapper implements CacheWrapper {
          getStatsFromDistributionInterceptor(cacheComponentString, mBeanServer, results);
          saveStatsFromStreamLibStatistics(cacheComponentString, mBeanServer);
          getStatsFromTotalOrderValidator(cacheComponentString, mBeanServer, results);
+         getStatsFromStatistic(cacheComponentString, mBeanServer, results);
       } else {
          log.info("Not collecting additional stats. Infinspan MBeans not found");
       }

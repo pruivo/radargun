@@ -61,7 +61,7 @@ public final class CustomerDAC {
         	
         	Iterator<Long> itr = customerLookup.getIds().iterator();
         	
-        	while(itr.hasNext()){
+        	while (itr.hasNext()){
         		
         		long c_id = itr.next();
         		

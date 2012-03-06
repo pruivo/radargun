@@ -74,17 +74,14 @@ public class Item implements Serializable {
         this.i_data = i_data;
     }
     
-    private ItemKey getKey(){
+    /*private ItemKey getKey(){
         return new ItemKey("ITEM_"+this.i_id);
-    }
-
-    /*
-    private String getKey(){
-
-        return "ITEM_"+this.i_id;
-    }
+    }*/
     
-    */
+    
+    private String getKey(){
+        return "ITEM_"+this.i_id;
+    }       
 
     public void store(CacheWrapper wrapper) throws Throwable{
 
