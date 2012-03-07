@@ -53,11 +53,35 @@ public class Utils {
 
    public static String printMemoryFootprint(boolean before) {
       Runtime run = Runtime.getRuntime();
-      String memoryInfo = "Memory - free: " + kb(run.freeMemory()) + " - max:" + kbString(run.maxMemory()) + "- total:" + kbString(run.totalMemory());
+      String memoryInfo = "Memory - free: " + format(run.freeMemory()) + " - max:" + format(run.maxMemory()) + 
+            "- total:" + format(run.totalMemory());
       if (before) {
          return "Before executing clear, memory looks like this: " + memoryInfo;
       } else {
          return "After executing cleanup, memory looks like this: " + memoryInfo;
+      }
+   }
+   
+   private static String format(long bytes) {
+      double val = bytes;
+      int mag = 0;
+      while (val > 1024) {
+         val = val / 1024;
+         mag++;
+      }
+
+      String formatted = MEM_FMT.format(val);
+      switch (mag) {
+         case 0:
+            return formatted + " bytes";
+         case 1:
+            return formatted + " kb";
+         case 2:
+            return formatted + " Mb";
+         case 3:
+            return formatted + " Gb";
+         default:
+            return "WTF?";
       }
    }
 

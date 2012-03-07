@@ -7,7 +7,7 @@
                 perThreadSimulTime="30000000000"
                 opsCountStatusLog="5000"
                 numberOfKeys="1000"
-                sizeOfAnAttribute="1000"
+                sizeOfValue="1000"
                 numOfThreads="8"
                 writePercentage="50"
                 lowerBoundOp="10"

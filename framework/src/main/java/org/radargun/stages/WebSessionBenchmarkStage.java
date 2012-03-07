@@ -24,7 +24,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
     private int numberOfKeys = 10000;
 
     //Each attribute will be a byte[] of this size
-    private int sizeOfAnAttribute = 1000;
+    private int sizeOfValue = 1000;
 
     //Out of the total number of request, this define the frequency of writes (percentage)
     private int writePercentage = 20;
@@ -50,9 +50,6 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
     //allows execution without contention
     private boolean noContentionEnabled = false;
 
-    //indicates what the kind of stressor to run
-    private String stressorType = "PutGetStressor";
-
     private CacheWrapper cacheWrapper;
     private int opsCountStatusLog = 5000;
     private boolean reportNanos = false;
@@ -77,7 +74,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
         stressor.setNumberOfKeys(numberOfKeys);
         stressor.setNumOfThreads(numOfThreads);
         stressor.setOpsCountStatusLog(opsCountStatusLog);
-        stressor.setSizeOfAnAttribute(sizeOfAnAttribute);
+        stressor.setSizeOfValue(sizeOfValue);
         stressor.setWritePercentage(writePercentage);
         stressor.setCoordinatorParticipation(coordinatorParticipation);
         stressor.setReadOnlyTransactionsEnabled(readOnlyTransactionsEnabled);
@@ -131,7 +128,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
         return "WebSessionBenchmarkStage {" +
                 "opsCountStatusLog=" + opsCountStatusLog +
                 ", numberOfKeys=" + numberOfKeys +
-                ", sizeOfAnAttribute=" + sizeOfAnAttribute +
+                ", sizeOfValue=" + sizeOfValue +
                 ", writePercentage=" + writePercentage +
                 ", numOfThreads=" + numOfThreads +
                 ", reportNanos=" + reportNanos +
@@ -141,7 +138,6 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
                 ", perThreadSimulTime=" + perThreadSimulTime +
                 ", readOnlyTransactionsEnabled=" + readOnlyTransactionsEnabled +
                 ", noContentionEnabled=" + noContentionEnabled +
-                ", stressorType=" + stressorType +
                 ", cacheWrapper=" + cacheWrapper +
                 ", " + super.toString();
     }
@@ -162,8 +158,8 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
         this.numberOfKeys = numberOfKeys;
     }
 
-    public void setSizeOfAnAttribute(int sizeOfAnAttribute) {
-        this.sizeOfAnAttribute = sizeOfAnAttribute;
+    public void setSizeOfValue(int sizeOfValue) {
+        this.sizeOfValue = sizeOfValue;
     }
 
     public void setNumOfThreads(int numOfThreads) {
@@ -192,9 +188,5 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
 
     public void setNoContentionEnabled(boolean noContentionEnabled) {
         this.noContentionEnabled = noContentionEnabled;
-    }
-
-    public void setStressorType(String stressorType) {
-        this.stressorType = stressorType;
     }
 }

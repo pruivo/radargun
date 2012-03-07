@@ -474,7 +474,7 @@ public class PutGetStressor implements CacheWrapperStressor {
         this.numberOfKeys = numberOfKeys;
     }
 
-    public void setSizeOfAnAttribute(int sizeOfValue) {
+    public void setSizeOfValue(int sizeOfValue) {
         this.sizeOfValue = sizeOfValue;
     }
 
