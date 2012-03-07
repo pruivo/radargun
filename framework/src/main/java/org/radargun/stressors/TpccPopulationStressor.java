@@ -1,21 +1,21 @@
 package org.radargun.stressors;
 
-import java.util.Map;
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.radargun.CacheWrapper;
-import org.radargun.CacheWrapperStressor;
 import org.radargun.stages.TpccPopulationStage;
+import org.radargun.tpcc.ThreadParallelTpccPopulation;
 import org.radargun.tpcc.TpccPopulation;
 import org.radargun.tpcc.TpccTools;
+
+import java.util.Map;
 
 /**
  * Populate <code>numWarehouses</code> Warehouses in cache.
  *
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
+ * @author Diego Didona, didona@gsd.inesc-id.pt
+ * @author Pedro Ruivo
  */
 public class TpccPopulationStressor extends AbstractCacheWrapperStressor {
 
@@ -33,7 +33,12 @@ public class TpccPopulationStressor extends AbstractCacheWrapperStressor {
 
    private int numSlaves;
 
-   private CacheWrapper wrapper;
+   //For thread-grain parallel warmup
+   private boolean threadParallelLoad = false;
+
+   private int numLoadersThread = 4;
+
+   private int batchLevel = 100;
 
    public Map<String, String> stress(CacheWrapper wrapper) {
       if (wrapper == null) {
@@ -48,11 +53,43 @@ public class TpccPopulationStressor extends AbstractCacheWrapperStressor {
       return null;
    }
 
-   public void performPopulationOperations(CacheWrapper w) throws Exception {
-      this.wrapper = w;
-      log.info("Performing population...");
-      new TpccPopulation(this.wrapper, this.numWarehouses, this.slaveIndex, this.numSlaves, this.cLastMask, this.olIdMask, this.cIdMask);
-      log.info("Population ended");
+   public void performPopulationOperations(CacheWrapper wrapper) throws Exception {
+
+      TpccPopulation tpccPopulation;
+      if(this.threadParallelLoad){
+         log.info("Performing thread-parallel population...");
+         tpccPopulation = new ThreadParallelTpccPopulation(wrapper, this.numWarehouses, this.slaveIndex,
+                                                           this.numSlaves, this.cLastMask, this.olIdMask,
+                                                           this.cIdMask,this.numLoadersThread,this.batchLevel);
+      }
+      else{
+         log.info("Performing population...");
+         tpccPopulation = new TpccPopulation(wrapper, this.numWarehouses, this.slaveIndex, this.numSlaves,
+                                             this.cLastMask, this.olIdMask, this.cIdMask);
+      }
+      tpccPopulation.performPopulation();
+      log.info("Population ended with " + wrapper.getCacheSize()+" elements!");
+   }
+
+   @Override
+   public String toString() {
+      return "TpccPopulationStressor{" +
+            "numWarehouses=" + this.numWarehouses +
+            ", cLastMask=" + TpccTools.A_C_LAST +
+            ", olIdMask=" + TpccTools.A_OL_I_ID +
+            ", cIdMask=" + TpccTools.A_C_ID +
+            ", slaveIndex=" + this.slaveIndex +
+            ", numSlaves=" + this.numSlaves +
+            ", threadParallelLoad=" + threadParallelLoad +
+            ", numLoadersThread=" + numLoadersThread +
+            ", batchLevel=" + batchLevel +
+            "}";
+   }
+
+
+   public void destroy() throws Exception {
+
+      //Don't destroy data in cache!
    }
 
    public void setNumWarehouses(int numWarehouses) {
@@ -84,21 +121,15 @@ public class TpccPopulationStressor extends AbstractCacheWrapperStressor {
       this.cIdMask = cIdMask;
    }
 
-   @Override
-   public String toString() {
-      return "TpccPopulationStressor{" +
-            "numWarehouses=" + this.numWarehouses +
-            "cLastMask=" + TpccTools.A_C_LAST +
-            "olIdMask=" + TpccTools.A_OL_I_ID +
-            "cIdMask=" + TpccTools.A_C_ID +
-            "slaveIndex=" + this.slaveIndex +
-            "numSlaves=" + this.numSlaves + "}";
+   public void setNumLoadersThread(int n){
+      this.numLoadersThread = n;
    }
 
-
-   public void destroy() throws Exception {
-
-      //Don't destroy data in cache!
+   public void setThreadParallelLoad(boolean b){
+      this.threadParallelLoad = b;
    }
 
-}
+   public void setBatchLevel(int b){
+      this.batchLevel = b;
+   }
+}   

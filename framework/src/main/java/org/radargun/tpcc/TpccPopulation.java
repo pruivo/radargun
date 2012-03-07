@@ -3,24 +3,19 @@ package org.radargun.tpcc;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.radargun.CacheWrapper;
-import org.radargun.tpcc.domain.Customer;
-import org.radargun.tpcc.domain.CustomerLookup;
-import org.radargun.tpcc.domain.District;
-import org.radargun.tpcc.domain.History;
-import org.radargun.tpcc.domain.Item;
-import org.radargun.tpcc.domain.NewOrder;
-import org.radargun.tpcc.domain.Order;
-import org.radargun.tpcc.domain.OrderLine;
-import org.radargun.tpcc.domain.Stock;
-import org.radargun.tpcc.domain.Warehouse;
+import org.radargun.tpcc.domain.*;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryUsage;
 import java.util.Date;
 
+import static org.radargun.utils.Utils.memString;
+
 /**
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
+ * @author Diego Didona, didona@gsd.inesc-id.pt
+ * @author Pedro Ruivo
  */
 public class TpccPopulation {
 
@@ -32,19 +27,19 @@ public class TpccPopulation {
 
    private long POP_OL_I_ID = TpccTools.NULL_NUMBER;
 
-   private boolean _new_order = false;
+   protected boolean _new_order = false;
 
    private int _seqIdCustomer[];
 
-   private CacheWrapper wrapper;
+   protected CacheWrapper wrapper;
 
    private MemoryMXBean memoryBean;
 
-   private int numWarehouses;
+   protected int numWarehouses;
 
-   private int slaveIndex;
+   protected int slaveIndex;
 
-   private int numSlaves;
+   protected int numSlaves;
 
    private long cLastMask;
 
@@ -73,6 +68,9 @@ public class TpccPopulation {
 
       this.cIdMask = cIdMask;
 
+   }
+
+   public void performPopulation(){
       initializeToolsParameters();
 
       populateItem();
@@ -163,8 +161,7 @@ public class TpccPopulation {
       return POP_OL_I_ID;
    }
 
-
-   private void populateItem() {
+   protected void populateItem() {
       log.info("populate items");
 
       long init_id_item = 1;
@@ -172,12 +169,12 @@ public class TpccPopulation {
 
       if (numSlaves > 1) {
          num_of_items = TpccTools.NB_MAX_ITEM / numSlaves;
-         long reminder = TpccTools.NB_MAX_ITEM % numSlaves;
+         long remainder = TpccTools.NB_MAX_ITEM % numSlaves;
 
          init_id_item = (slaveIndex * num_of_items) + 1;
 
          if (slaveIndex == numSlaves - 1) {
-            num_of_items += reminder;
+            num_of_items += remainder;
          }
 
 
@@ -199,10 +196,7 @@ public class TpccPopulation {
 
 
       }
-      MemoryUsage u1 = this.memoryBean.getHeapMemoryUsage();
-      log.info("Memory Statistics (Heap) - used=" + u1.getUsed() + " bytes; committed=" + u1.getCommitted() + " bytes");
-      MemoryUsage u2 = this.memoryBean.getNonHeapMemoryUsage();
-      log.info("Memory Statistics (NonHeap) - used=" + u2.getUsed() + " bytes; committed=" + u2.getCommitted() + " bytes");
+      printMemoryInfo();
    }
 
    private void populateWarehouses() {
@@ -216,8 +210,7 @@ public class TpccPopulation {
                                                       TpccTools.aleaChainec(10, 20), TpccTools.aleaChainec(10, 20),
                                                       TpccTools.aleaChainec(10, 20), TpccTools.aleaChainel(2, 2),
                                                       TpccTools.aleaChainen(4, 4) + TpccTools.CHAINE_5_1,
-                                                      TpccTools.aleaFloat(Float.valueOf("0.0000").floatValue(),
-                                                                          Float.valueOf("0.2000").floatValue(), 4),
+                                                      TpccTools.aleaFloat(Float.valueOf("0.0000"), Float.valueOf("0.2000"), 4),
                                                       TpccTools.WAREHOUSE_YTD);
 
 
@@ -235,224 +228,219 @@ public class TpccPopulation {
 
             populateDistricts(i);
 
-            MemoryUsage u1 = this.memoryBean.getHeapMemoryUsage();
-            log.info("Memory Statistics (Heap) - used=" + u1.getUsed() + " bytes; committed=" + u1.getCommitted() + " bytes");
-            MemoryUsage u2 = this.memoryBean.getNonHeapMemoryUsage();
-            log.info("Memory Statistics (NonHeap) - used=" + u2.getUsed() + " bytes; committed=" + u2.getCommitted() + " bytes");
-
+            printMemoryInfo();
          }
       }
-
    }
 
-   private void populateStock(int id_wharehouse) {
+   protected void populateStock(int id_warehouse) {
       log.info("populate stocks");
-      if (id_wharehouse < 0) return;
-      else {
-
-         long init_id_item = 1;
-         long num_of_items = TpccTools.NB_MAX_ITEM;
-
-         if (numSlaves > 1) {
-            num_of_items = TpccTools.NB_MAX_ITEM / numSlaves;
-            long reminder = TpccTools.NB_MAX_ITEM % numSlaves;
-
-            init_id_item = (slaveIndex * num_of_items) + 1;
-
-            if (slaveIndex == numSlaves - 1) {
-               num_of_items += reminder;
-            }
-
-
-         }
-         log.info(" STOCK for Warehouse " + id_wharehouse + " - ITEMS=" + init_id_item + ",...," + (init_id_item - 1 + num_of_items));
-         for (long i = init_id_item; i <= (init_id_item - 1 + num_of_items); i++) {
-
-            Stock newStock = new Stock(i,
-                                       id_wharehouse,
-                                       TpccTools.aleaNumber(10, 100),
-                                       TpccTools.aleaChainel(24, 24),
-                                       TpccTools.aleaChainel(24, 24),
-                                       TpccTools.aleaChainel(24, 24),
-                                       TpccTools.aleaChainel(24, 24),
-                                       TpccTools.aleaChainel(24, 24),
-                                       TpccTools.aleaChainel(24, 24),
-                                       TpccTools.aleaChainel(24, 24),
-                                       TpccTools.aleaChainel(24, 24),
-                                       TpccTools.aleaChainel(24, 24),
-                                       TpccTools.aleaChainel(24, 24),
-                                       0,
-                                       0,
-                                       0,
-                                       TpccTools.sData());
-
-
-            boolean successful = false;
-            while (!successful) {
-               try {
-                  newStock.store(wrapper);
-                  successful = true;
-               } catch (Throwable e) {
-                  log.warn(e);
-               }
-            }
-
-
-         }
+      if (id_warehouse < 0) {
+         return;
       }
-   }
 
-   private void populateDistricts(int id_wharehouse) {
-      log.info("populate districts");
-      if (id_wharehouse < 0) return;
-      else {
-         int init_id_district = 1;
-         int num_of_districts = TpccTools.NB_MAX_DISTRICT;
+      long init_id_item = 1;
+      long num_of_items = TpccTools.NB_MAX_ITEM;
 
-         if (numSlaves > 1) {
-            num_of_districts = TpccTools.NB_MAX_DISTRICT / numSlaves;
-            int reminder = TpccTools.NB_MAX_DISTRICT % numSlaves;
+      if (numSlaves > 1) {
+         num_of_items = TpccTools.NB_MAX_ITEM / numSlaves;
+         long remainder = TpccTools.NB_MAX_ITEM % numSlaves;
 
-            if (slaveIndex <= reminder) {
-               init_id_district = (slaveIndex * (num_of_districts + 1)) + 1;
-            } else {
-               init_id_district = (((reminder) * (num_of_districts + 1)) + ((slaveIndex - reminder) * num_of_districts)) + 1;
-            }
-            if (slaveIndex < reminder) {
-               num_of_districts += 1;
-            }
+         init_id_item = (slaveIndex * num_of_items) + 1;
 
-            log.info("Index:" + slaveIndex + "; Init:" + init_id_district + "; Num:" + num_of_districts);
+         if (slaveIndex == numSlaves - 1) {
+            num_of_items += remainder;
          }
-         for (int id_district = init_id_district; id_district <= (init_id_district - 1 + num_of_districts); id_district++) {
-            log.info(" DISTRICT " + id_district);
-
-            District newDistrict = new District(id_wharehouse,
-                                                id_district,
-                                                TpccTools.aleaChainec(6, 10),
-                                                TpccTools.aleaChainec(10, 20),
-                                                TpccTools.aleaChainec(10, 20),
-                                                TpccTools.aleaChainec(10, 20),
-                                                TpccTools.aleaChainel(2, 2),
-                                                TpccTools.aleaChainen(4, 4) + TpccTools.CHAINE_5_1,
-                                                TpccTools.aleaFloat(Float.valueOf("0.0000").floatValue(), Float.valueOf("0.2000").floatValue(), 4),
-                                                TpccTools.WAREHOUSE_YTD,
-                                                3001);
 
 
-            boolean successful = false;
-            while (!successful) {
-               try {
-                  newDistrict.store(wrapper);
-                  successful = true;
-               } catch (Throwable e) {
-                  log.warn(e);
-               }
-            }
-
-
-            populateCustomers(id_wharehouse, id_district);
-            populateOrders(id_wharehouse, id_district);
-         }
       }
-   }
+      log.info(" STOCK for Warehouse " + id_warehouse + " - ITEMS=" + init_id_item + ",...," + (init_id_item - 1 + num_of_items));
+      for (long i = init_id_item; i <= (init_id_item - 1 + num_of_items); i++) {
 
-   private void populateCustomers(int id_wharehouse, int id_district) {
-      log.info("populate customer");
-      if (id_wharehouse < 0 || id_district < 0) return;
-      else {
-         log.info(" CUSTOMER " + id_wharehouse + ", " + id_district);
-         
-         String c_last = null;
-         for (int i = 1; i <= TpccTools.NB_MAX_CUSTOMER; i++) {
-
-        	c_last = c_last();
-        	 
-            Customer newCustomer = new Customer(id_wharehouse,
-                                                id_district,
-                                                i,
-                                                TpccTools.aleaChainec(8, 16),
-                                                "OE",
-                                                c_last,
-                                                TpccTools.aleaChainec(10, 20),
-                                                TpccTools.aleaChainec(10, 20),
-                                                TpccTools.aleaChainec(10, 20),
-                                                TpccTools.aleaChainel(2, 2),
-                                                TpccTools.aleaChainen(4, 4) + TpccTools.CHAINE_5_1,
-                                                TpccTools.aleaChainen(16, 16),
-                                                new Date(System.currentTimeMillis()),
-                                                (TpccTools.aleaNumber(1, 10) == 1) ? "BC" : "GC",
-                                                500000.0, TpccTools.aleaDouble(0., 0.5, 4), -10.0, 10.0, 1, 0, TpccTools.aleaChainec(300, 500));
-
-
-            boolean successful = false;
-            while (!successful) {
-               try {
-                  newCustomer.store(wrapper);
-                  successful = true;
-               } catch (Throwable e) {
-                  log.warn(e);
-               }
-            }
-            
-            CustomerLookup customerLookup = new CustomerLookup(c_last, id_wharehouse, id_district);
-            
-            successful=false;
-            
-            while (!successful){
-                try {
-                    customerLookup.load(wrapper);
-                    successful=true;
-                } catch (Throwable e) {
-                    log.warn(e);
-                }
-            }
-            
-            customerLookup.addId(i);
-            
-            successful=false;
-            
-            while (!successful){
-                try {
-                    customerLookup.store(wrapper);
-                    successful=true;
-                } catch (Throwable e) {
-                    log.warn(e);
-                }
-            }
-
-
-            populateHistory(i, id_wharehouse, id_district);
-         }
-      }
-   }
-
-   private void populateHistory(int id_customer, int id_wharehouse, int id_district) {
-      //log.info("populate history");
-      if (id_customer < 0 || id_wharehouse < 0 || id_district < 0) return;
-      else {
-
-         History newHistory = new History(id_customer, id_district, id_wharehouse, id_district, id_wharehouse, new Date(System.currentTimeMillis()), 10, TpccTools.aleaChainec(12, 24));
+         Stock newStock = new Stock(i,
+                                    id_warehouse,
+                                    TpccTools.aleaNumber(10, 100),
+                                    TpccTools.aleaChainel(24, 24),
+                                    TpccTools.aleaChainel(24, 24),
+                                    TpccTools.aleaChainel(24, 24),
+                                    TpccTools.aleaChainel(24, 24),
+                                    TpccTools.aleaChainel(24, 24),
+                                    TpccTools.aleaChainel(24, 24),
+                                    TpccTools.aleaChainel(24, 24),
+                                    TpccTools.aleaChainel(24, 24),
+                                    TpccTools.aleaChainel(24, 24),
+                                    TpccTools.aleaChainel(24, 24),
+                                    0,
+                                    0,
+                                    0,
+                                    TpccTools.sData());
 
 
          boolean successful = false;
          while (!successful) {
             try {
-               newHistory.store(wrapper, this.slaveIndex);
+               newStock.store(wrapper);
+               successful = true;
+            } catch (Throwable e) {
+               log.warn(e);
+            }
+         }
+      }
+   }
+
+   private void populateDistricts(int id_warehouse) {
+      log.info("populate districts");
+      if (id_warehouse < 0) {
+         return;
+      }
+
+      int init_id_district = 1;
+      int num_of_districts = TpccTools.NB_MAX_DISTRICT;
+
+      if (numSlaves > 1) {
+         num_of_districts = TpccTools.NB_MAX_DISTRICT / numSlaves;
+         int remainder = TpccTools.NB_MAX_DISTRICT % numSlaves;
+
+         if (slaveIndex <= remainder) {
+            init_id_district = (slaveIndex * (num_of_districts + 1)) + 1;
+         } else {
+            init_id_district = (((remainder) * (num_of_districts + 1)) + ((slaveIndex - remainder) * num_of_districts)) + 1;
+         }
+         if (slaveIndex < remainder) {
+            num_of_districts += 1;
+         }
+
+         log.info("Index:" + slaveIndex + "; Init:" + init_id_district + "; Num:" + num_of_districts);
+      }
+      for (int id_district = init_id_district; id_district <= (init_id_district - 1 + num_of_districts); id_district++) {
+         log.info(" DISTRICT " + id_district);
+
+         District newDistrict = new District(id_warehouse,
+                                             id_district,
+                                             TpccTools.aleaChainec(6, 10),
+                                             TpccTools.aleaChainec(10, 20),
+                                             TpccTools.aleaChainec(10, 20),
+                                             TpccTools.aleaChainec(10, 20),
+                                             TpccTools.aleaChainel(2, 2),
+                                             TpccTools.aleaChainen(4, 4) + TpccTools.CHAINE_5_1,
+                                             TpccTools.aleaFloat(Float.valueOf("0.0000"), Float.valueOf("0.2000"), 4),
+                                             TpccTools.WAREHOUSE_YTD,
+                                             3001);
+
+
+         boolean successful = false;
+         while (!successful) {
+            try {
+               newDistrict.store(wrapper);
                successful = true;
             } catch (Throwable e) {
                log.warn(e);
             }
          }
 
+         populateCustomers(id_warehouse, id_district);
+
+         populateOrders(id_warehouse, id_district);
+      }
+   }
+
+   protected void populateCustomers(int id_warehouse, int id_district) {
+      log.info("populate customer");
+      if (id_warehouse < 0 || id_district < 0) {
+         return;
+      }
+
+      log.info(" CUSTOMER " + id_warehouse + ", " + id_district);
+
+      for (int i = 1; i <= TpccTools.NB_MAX_CUSTOMER; i++) {
+
+         String c_last = c_last();
+         Customer newCustomer = new Customer(id_warehouse,
+                                             id_district,
+                                             i,
+                                             TpccTools.aleaChainec(8, 16),
+                                             "OE",
+                                             c_last,
+                                             TpccTools.aleaChainec(10, 20),
+                                             TpccTools.aleaChainec(10, 20),
+                                             TpccTools.aleaChainec(10, 20),
+                                             TpccTools.aleaChainel(2, 2),
+                                             TpccTools.aleaChainen(4, 4) + TpccTools.CHAINE_5_1,
+                                             TpccTools.aleaChainen(16, 16),
+                                             new Date(System.currentTimeMillis()),
+                                             (TpccTools.aleaNumber(1, 10) == 1) ? "BC" : "GC",
+                                             500000.0,
+                                             TpccTools.aleaDouble(0., 0.5, 4),
+                                             -10.0,
+                                             10.0,
+                                             1,
+                                             0,
+                                             TpccTools.aleaChainec(300, 500));
+
+         boolean successful = false;
+         while (!successful) {
+            try {
+               newCustomer.store(wrapper);
+               successful = true;
+            } catch (Throwable e) {
+               log.warn(e);
+            }
+         }
+
+         CustomerLookup customerLookup = new CustomerLookup(c_last, id_warehouse, id_district);
+
+         successful=false;
+
+         while (!successful){
+            try {
+               customerLookup.load(wrapper);
+               successful=true;
+            } catch (Throwable e) {
+               log.warn(e);
+            }
+         }
+
+         customerLookup.addId(i);
+
+         successful=false;
+
+         while (!successful){
+            try {
+               customerLookup.store(wrapper);
+               successful=true;
+            } catch (Throwable e) {
+               log.warn(e);
+            }
+         }
+
+         populateHistory(i, id_warehouse, id_district);
+      }
+   }
+
+   protected void populateHistory(int id_customer, int id_warehouse, int id_district) {
+      //log.info("populate history");
+      if (id_customer < 0 || id_warehouse < 0 || id_district < 0) {
+         return;
+      }
+
+      History newHistory = new History(id_customer, id_district, id_warehouse, id_district, id_warehouse, new Date(System.currentTimeMillis()), 10, TpccTools.aleaChainec(12, 24));
+
+      boolean successful = false;
+      while (!successful) {
+         try {
+            newHistory.store(wrapper, this.slaveIndex);
+            successful = true;
+         } catch (Throwable e) {
+            log.warn(e);
+         }
       }
    }
 
 
-   private void populateOrders(int id_wharehouse, int id_district) {
+   protected void populateOrders(int id_warehouse, int id_district) {
       log.info("populate order");
       this._new_order = false;
-      log.info(" ORDER " + id_wharehouse + ", " + id_district);
+      log.info(" ORDER " + id_warehouse + ", " + id_district);
       for (int id_order = 1; id_order <= TpccTools.NB_MAX_ORDER; id_order++) {
 
          int o_ol_cnt = TpccTools.aleaNumber(5, 15);
@@ -460,7 +448,7 @@ public class TpccPopulation {
 
          Order newOrder = new Order(id_order,
                                     id_district,
-                                    id_wharehouse,
+                                    id_warehouse,
                                     generateSeqAlea(0, TpccTools.NB_MAX_CUSTOMER - 1),
                                     aDate,
                                     (id_order < TpccTools.LIMIT_ORDER) ? TpccTools.aleaNumber(1, 10) : 0,
@@ -478,13 +466,15 @@ public class TpccPopulation {
             }
          }
 
-         populateOrderLines(id_wharehouse, id_district, id_order, o_ol_cnt, aDate);
+         populateOrderLines(id_warehouse, id_district, id_order, o_ol_cnt, aDate);
 
-         if (id_order >= TpccTools.LIMIT_ORDER) populateNewOrder(id_wharehouse, id_district, id_order);
+         if (id_order >= TpccTools.LIMIT_ORDER) {
+            populateNewOrder(id_warehouse, id_district, id_order);
+         }
       }
    }
 
-   private void populateOrderLines(int id_wharehouse, int id_district, int id_order, int o_ol_cnt, Date aDate) {
+   protected void populateOrderLines(int id_warehouse, int id_district, int id_order, int o_ol_cnt, Date aDate) {
       //log.info("populate order line");
       for (int i = 0; i < o_ol_cnt; i++) {
 
@@ -499,18 +489,16 @@ public class TpccPopulation {
             delivery_date = aDate;
          }
 
-
          OrderLine newOrderLine = new OrderLine(id_order,
                                                 id_district,
-                                                id_wharehouse,
+                                                id_warehouse,
                                                 i,
                                                 TpccTools.nonUniformRandom(getOL_I_ID(), TpccTools.A_OL_I_ID, 1L, TpccTools.NB_MAX_ITEM),
-                                                id_wharehouse,
+                                                id_warehouse,
                                                 delivery_date,
                                                 5,
                                                 amount,
                                                 TpccTools.aleaChainel(12, 24));
-
 
          boolean successful = false;
          while (!successful) {
@@ -521,15 +509,13 @@ public class TpccPopulation {
                log.warn(e);
             }
          }
-
       }
    }
 
-   private void populateNewOrder(int id_wharehouse, int id_district, int id_order) {
+   protected void populateNewOrder(int id_warehouse, int id_district, int id_order) {
       //log.info("populate new order");
 
-      NewOrder newNewOrder = new NewOrder(id_order, id_district, id_wharehouse);
-
+      NewOrder newNewOrder = new NewOrder(id_order, id_district, id_warehouse);
 
       boolean successful = false;
       while (!successful) {
@@ -540,25 +526,33 @@ public class TpccPopulation {
             log.warn(e);
          }
       }
-
    }
 
 
-   private int generateSeqAlea(int deb, int fin) {
+   protected int generateSeqAlea(int deb, int fin) {
       if (!this._new_order) {
          for (int i = deb; i <= fin; i++) {
             this._seqIdCustomer[i] = i + 1;
          }
          this._new_order = true;
       }
-      int rand = 0;
-      int alea = 0;
+      int rand;
+      int alea;
       do {
          rand = (int) TpccTools.nonUniformRandom(getC_ID(), TpccTools.A_C_ID, deb, fin);
          alea = this._seqIdCustomer[rand];
       } while (alea == TpccTools.NULL_NUMBER);
       _seqIdCustomer[rand] = TpccTools.NULL_NUMBER;
       return alea;
+   }
+
+   protected void printMemoryInfo() {
+      MemoryUsage u1 = this.memoryBean.getHeapMemoryUsage();
+      log.info("Memory Statistics (Heap) - used=" + memString(u1.getUsed()) +
+                     "; committed=" + memString(u1.getCommitted()));
+      MemoryUsage u2 = this.memoryBean.getNonHeapMemoryUsage();
+      log.info("Memory Statistics (NonHeap) - used=" + memString(u2.getUsed()) +
+                     "; committed=" + memString(u2.getCommitted()));
    }
 }
 

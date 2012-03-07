@@ -1,13 +1,12 @@
 
 package org.radargun.stages;
 
-import java.util.List;
-
 import org.radargun.CacheWrapper;
 import org.radargun.DistStageAck;
 import org.radargun.state.MasterState;
-import org.radargun.stressors.FileTpccPopulationStressor;
 import org.radargun.stressors.TpccPopulationStressor;
+
+import java.util.List;
 
 /**
  * This stage shuld be run before the <b>TpccBenchmarkStage</b>. It will perform the population of
@@ -19,11 +18,15 @@ import org.radargun.stressors.TpccPopulationStressor;
  *       - cLastMask : the mask used to generate non-uniformly distributed random customer last names.
  *       - olIdMask : mask used to generate non-uniformly distributed random item numbers.
  *       - cIdMask : mask used to generate non-uniformly distributed random customer numbers.
+ *       - threadParallelLoad: enable/disable the parallelLoading
+ *       - numLoaderThreads: the number of populating threads per node 
+ *       - batchLevel: the size of a transaction in population (i.e., the number of items per transaction) 
  * </pre>
  *
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
+ * @author Diego Didona, didona@gsd.inesc-id.pt
+ * @author Pedro Ruivo
  */
-
 public class TpccPopulationStage extends AbstractDistStage{
 
    /**
@@ -46,9 +49,20 @@ public class TpccPopulationStage extends AbstractDistStage{
     */
    private long cIdMask = 1023;
 
-   private boolean populateFromFile = false;
+   /**
+    * enable/disable the parallelLoading 
+    */
+   private boolean threadParallelLoad = false;
 
-   private String folder = "/tmp/";
+   /**
+    * the number of populating threads per node 
+    */
+   private int numLoaderThreads = 4;
+
+   /**
+    * the size of a transaction in population (i.e., the number of item per transaction) 
+    */
+   private int batchLevel = 100;
 
    public DistStageAck executeOnSlave() {
       DefaultDistStageAck ack = newDefaultStageAck();
@@ -66,25 +80,17 @@ public class TpccPopulationStage extends AbstractDistStage{
    }
 
    private void populate(CacheWrapper wrapper) {
-      if (!populateFromFile) {
-         TpccPopulationStressor populationStressor = new TpccPopulationStressor();
-         populationStressor.setNumWarehouses(numWarehouses);
-         populationStressor.setSlaveIndex(getSlaveIndex());
-         populationStressor.setNumSlaves(getActiveSlaveCount());
-         populationStressor.setCLastMask(this.cLastMask);
-         populationStressor.setOlIdMask(this.olIdMask);
-         populationStressor.setCIdMask(this.cIdMask);
-         populationStressor.stress(wrapper);
-      } else {
-         FileTpccPopulationStressor populationStressor = new FileTpccPopulationStressor();
-         populationStressor.setNumWarehouses(numWarehouses);
-         populationStressor.setFolder(folder);
-         populationStressor.setNumSlaves(getActiveSlaveCount());
-         populationStressor.setCLastMask(this.cLastMask);
-         populationStressor.setOlIdMask(this.olIdMask);
-         populationStressor.setCIdMask(this.cIdMask);
-         populationStressor.stress(wrapper);
-      }
+      TpccPopulationStressor populationStressor = new TpccPopulationStressor();
+      populationStressor.setNumWarehouses(numWarehouses);
+      populationStressor.setSlaveIndex(getSlaveIndex());
+      populationStressor.setNumSlaves(getActiveSlaveCount());
+      populationStressor.setCLastMask(this.cLastMask);
+      populationStressor.setOlIdMask(this.olIdMask);
+      populationStressor.setCIdMask(this.cIdMask);
+      populationStressor.setThreadParallelLoad(threadParallelLoad);
+      populationStressor.setNumLoadersThread(numLoaderThreads);
+      populationStressor.setBatchLevel(batchLevel);
+      populationStressor.stress(wrapper);
    }
 
    public boolean processAckOnMaster(List<DistStageAck> acks, MasterState masterState) {
@@ -97,7 +103,7 @@ public class TpccPopulationStage extends AbstractDistStage{
       }
       return true;
    }
-
+      
    public void setNumWarehouses(int numWarehouses) {
       this.numWarehouses = numWarehouses;
    }
@@ -114,12 +120,16 @@ public class TpccPopulationStage extends AbstractDistStage{
       this.cIdMask = cIdMask;
    }
 
-   public void setPopulateFromFile(boolean populateFromFile) {
-      this.populateFromFile = populateFromFile;
+   public void setThreadParallelLoad(boolean threadParallelLoad) {
+      this.threadParallelLoad = threadParallelLoad;
    }
 
-   public void setFolder(String folder) {
-      this.folder = folder;
+   public void setNumLoaderThreads(int numLoaderThreads) {
+      this.numLoaderThreads = numLoaderThreads;
+   }
+
+   public void setBatchLevel(int batchLevel) {
+      this.batchLevel = batchLevel;
    }
 
    @Override
@@ -129,7 +139,9 @@ public class TpccPopulationStage extends AbstractDistStage{
             ", cLastMask=" + cLastMask +
             ", olIdMask=" + olIdMask +
             ", cIdMask=" + cIdMask +
+            ", threadParallelLoad=" + threadParallelLoad +
+            ", numLoaderThreads=" + numLoaderThreads +
+            ", batchLevel=" + batchLevel +
             ", " + super.toString();
    }
-
 }
