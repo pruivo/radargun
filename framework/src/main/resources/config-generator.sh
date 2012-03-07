@@ -133,7 +133,7 @@ echo "            olIdMask=\"${OL_ID_MASK}\"" >> ${DEST_FILE}
 echo "            cIdMask=\"${C_ID_MASK}\"" >> ${DEST_FILE}
 echo "            threadParallelLoad=\"${PARALLEL_POPULATION}\"" >> ${DEST_FILE} 
 echo "            batchLevel=\"${POPULATION_BATCH_LEVEL}\"" >> ${DEST_FILE}
-echo "            numOfThreads=\"${POPULATION_THREADS}\"/>" >> ${DEST_FILE}
+echo "            numLoaderThreads=\"${POPULATION_THREADS}\"/>" >> ${DEST_FILE}
 
 echo "      <CacheSize" >> ${DEST_FILE}
 echo "            statName=\"CACHE_SIZE_BEFORE_BENCH\" />" >> ${DEST_FILE}
