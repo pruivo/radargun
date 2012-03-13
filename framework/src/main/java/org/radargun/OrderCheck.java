@@ -30,7 +30,7 @@ public class OrderCheck {
          String line;
 
          while ((line = br.readLine()) != null) {
-            String[] split = line.split("[=:]");
+            String[] split = line.split("[|]");
 
             String key = split[0];
             String value = split[1];
