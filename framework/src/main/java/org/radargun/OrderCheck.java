@@ -5,6 +5,9 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * // TODO: Document this
@@ -19,7 +22,7 @@ public class OrderCheck {
          System.exit(1);
       }
 
-      HashMap<String, StringBuilder> allKeys = new HashMap<String, StringBuilder>();
+      HashMap<String, List<String>> allKeys = new HashMap<String, List<String>>();
 
       try {
          BufferedReader br = new BufferedReader(new FileReader(args[0]));
@@ -27,18 +30,24 @@ public class OrderCheck {
          String line;
 
          while ((line = br.readLine()) != null) {
-            if (line.startsWith("++")) {
-               String key = getKey(line);
-               String value = getValue(line);
+            String[] split = line.split("[=:]");
 
-               StringBuilder sb = allKeys.get(key);
-               if (sb == null) {
-                  sb = new StringBuilder(key).append("=").append(value);
-                  allKeys.put(key, sb);
-               } else {
-                  sb.append(",").append(value);
-               }
+            String key = split[0];
+            String value = split[1];
+            String version = split[2];
+
+            if (value.length() > 10) {
+               value = value.substring(0, 10);
             }
+
+            List<String> list = allKeys.get(key);
+            if (list == null) {
+               list = new LinkedList<String>();
+               allKeys.put(key, list);
+            }
+            list.add(value + ":" + version);
+
+
          }
          br.close();
       } catch (FileNotFoundException e) {
@@ -47,28 +56,13 @@ public class OrderCheck {
          e.printStackTrace();  // TODO: Customise this generated block
       }
 
-      for (StringBuilder sb : allKeys.values()) {
-         System.out.println(sb.toString());
+      for (Map.Entry<String, List<String>> entry : allKeys.entrySet()) {
+         System.out.print(entry.getKey());
+         for (String s : entry.getValue()) {
+            System.out.print("|");
+            System.out.print(s);
+         }
+         System.out.println();
       }
-   }
-
-   private static String getValue(String line) {
-      String[] split1 = line.split("=");
-      if (split1.length < 2) {
-         return "";
-      }
-      return split1[1];
-   }
-
-   private static String getKey(String line) {
-      String[] split1 = line.split("=");
-      if (split1.length <= 0) {
-         return "";
-      }
-      String[] split2 = split1[0].split(" ");
-      if (split2.length < 3) {
-         return "";
-      }
-      return split2[2];
    }
 }
