@@ -15,7 +15,7 @@ import java.util.Map;
  * @author pruivo
  * @since 4.0
  */
-public class OrderCheck {
+public class OrderKeysUpdate {
    public static void main(String[] args) {
       if (args.length == 0) {
          System.err.println("Error. file expected");
