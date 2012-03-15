@@ -297,8 +297,11 @@ public class InfinispanWrapper implements CacheWrapper {
          ObjectName toValidator = new ObjectName(baseName + "TotalOrderValidator");
 
          if (!mBeanServer.isRegistered(toValidator)) {
-            log.info("Not collecting statistics from Total Order component. It is not registered");
-            return;
+            toValidator  = new ObjectName(baseName + "TotalOrderManager");
+            if (!mBeanServer.isRegistered(toValidator)) {
+               log.info("Not collecting statistics from Total Order component. It is not registered");
+               return;
+            }
          }
 
          log.info("Collecting statistics from Total Order component [" + toValidator + "]");
