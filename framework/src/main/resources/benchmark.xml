@@ -21,7 +21,7 @@
             partialReplication="true"/>
 
       <Warmup
-            numWarehouse="1"
+            numWarehouses="1"
             light="false"
             threadParallelLoad="true" 
             batchLevel="150" 

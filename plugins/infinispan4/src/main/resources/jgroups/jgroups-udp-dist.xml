@@ -71,5 +71,6 @@
          min_threshold="0.4"/>
    <FRAG2
          frag_size="60K"/>
+   <pmcast.GROUP_MULTICAST/>
    <pbcast.STATE_TRANSFER/>
 </config>

@@ -111,14 +111,12 @@
                               <include name="**/*" />
                            </fileset>
                         </copy>
-
-                        
-
-                     
-
-                                            
-
-                        
+                        <chmod perm="ugo+rwx" type="file">
+                           <fileset dir="${distribution.artifact}/plugins/infinispan4/bin">
+                              <include name="**/*.sh" />
+                              <include name="**/*.py" />
+                           </fileset>
+                        </chmod>
                      </tasks>
                   </configuration>
                </execution>

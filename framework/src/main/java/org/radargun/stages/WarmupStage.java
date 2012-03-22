@@ -22,7 +22,7 @@ import java.util.List;
 public class WarmupStage extends AbstractDistStage {
 
    private int operationCount = 1000;
-   private int numWarehouse;
+   private int numWarehouses;
 
    private boolean light = false;
 
@@ -48,7 +48,7 @@ public class WarmupStage extends AbstractDistStage {
    }
 
    private void warmup(CacheWrapper wrapper) {
-      TPCCPopulation.NB_WAREHOUSE=numWarehouse;
+      TPCCPopulation.NB_WAREHOUSE= numWarehouses;
       WarmupStressor warmupStressor = null;
 
       warmupStressor = new WarmupStressor();
@@ -80,28 +80,23 @@ public class WarmupStage extends AbstractDistStage {
       this.operationCount = operationCount;
    }
 
-   public int getNumWarehouse() {
-      return numWarehouse;
-   }
-
-   public void setNumWarehouse(int numWarehouse) {
-      this.numWarehouse = numWarehouse;
+   public void setNumWarehouses(int numWarehouses) {
+      this.numWarehouses = numWarehouses;
    }
 
    public void setLight(boolean light){
       this.light = light;
    }
 
-   public boolean getLight(){
-      return this.light;
-   }
    public void setThreadParallelLoad(String s){
       if(s.equals("true"))
          this.threadParallelLoad = true;
    }
-   public void setNumOfThreads(int t){
+   
+   public void setNumLoaderThreads(int t){
       this.numLoaderThreads = t;
    }
+   
    public void setBatchLevel(int l){
       this.batchLevel = l;
    }
