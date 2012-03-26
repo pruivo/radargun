@@ -5,6 +5,8 @@ import org.apache.commons.logging.LogFactory;
 import org.radargun.CacheWrapper;
 
 import java.util.Date;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,44 +18,39 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Diego Didona <didona@gsd.inesc-id.pt>
  * @author Pedro Ruivo      
 */
+@SuppressWarnings({"ALL"})
 public class ThreadParallelTPCCPopulation extends TPCCPopulation{
 
    private static Log log = LogFactory.getLog(ThreadParallelTPCCPopulation.class);
+   private static final long MAX_SLEEP_BEFORE_RETRY = 30000; //30 seconds
+   
    private int parallelThreads = 4;
    private int elementsPerBlock = 100;  //items loaded per transaction
-
-
-
 
    public ThreadParallelTPCCPopulation(CacheWrapper c, int slaveIndex, int numSlaves, boolean light, int parallelThreads, int batchLevel){
       super(c,slaveIndex,numSlaves,light);
       this.parallelThreads = parallelThreads;
       this.elementsPerBlock = batchLevel;
-
    }
 
    protected void populate_item(){
+      log.trace("Populating Items");
+      
+      long init_id_item = 1;
+      long num_of_items = TPCCTools.NB_MAX_ITEM;
 
-      long init_id_item=1;
-      long num_of_items=TPCCTools.NB_MAX_ITEM;
-
-      if(numSlaves>1){
+      if(numSlaves > 1){
          long remainder=TPCCTools.NB_MAX_ITEM % numSlaves;
          num_of_items=(TPCCTools.NB_MAX_ITEM-remainder)/numSlaves;
-
 
          init_id_item=(slaveIndex*num_of_items)+1;
 
          if(slaveIndex==numSlaves-1){
             num_of_items+=remainder;
          }
-
-
       }
 
       //Now compute the number of item per thread
-
-
       long thread_remainder = num_of_items % parallelThreads;
       long items_per_thread = (num_of_items - thread_remainder) / parallelThreads;
 
@@ -77,7 +74,7 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
    protected void populate_stock(int id_warehouse){
       if (id_warehouse < 0)
          return;
-
+      log.trace("Populating Stock for warehouse " + id_warehouse);
 
       long init_id_item=1;
       long num_of_items=TPCCTools.NB_MAX_ITEM;
@@ -86,14 +83,11 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
          long remainder=TPCCTools.NB_MAX_ITEM % numSlaves;
          num_of_items=(TPCCTools.NB_MAX_ITEM-remainder)/numSlaves;
 
-
          init_id_item=(slaveIndex*num_of_items)+1;
 
          if(slaveIndex==numSlaves-1){
             num_of_items+=remainder;
          }
-
-
       }
 
       //Now, per thread
@@ -112,13 +106,14 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
       }
 
       waitForCompletion(waitFor);
-
-
    }
 
    protected void populate_customer(int id_warehouse, int id_district){
-      if (id_warehouse < 0 || id_district < 0);
-      log.debug(" CUSTOMER " + id_warehouse + ", " + id_district);
+      if (id_warehouse < 0 || id_district < 0) {
+         return;
+      }
+      
+      log.trace("Populating Customers for warehouse " + id_warehouse + " and district " + id_district);
 
       long thread_remainder = TPCCTools.NB_MAX_CUSTOMER % parallelThreads;
       long items_per_thread = (TPCCTools.NB_MAX_CUSTOMER - thread_remainder) / parallelThreads;
@@ -144,7 +139,7 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
    }
 
    private void populate_customer_lookup(ConcurrentHashMap<CustomerLookupQuadruple,Integer> map){
-      log.debug("Populating customer lookup ");
+      log.trace("Populating customer lookup ");
 
       Vector<CustomerLookupQuadruple> vec_map = new Vector<CustomerLookupQuadruple>(map.keySet());
       long totalEntries = vec_map.size();
@@ -203,6 +198,8 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
 
 
    protected void populate_order(int id_warehouse, int id_district){
+      log.trace("Populating Orders for warehouse " + id_warehouse + " and district " + id_district);
+      
       this._new_order = false;
 
       long thread_remainder = TPCCTools.NB_MAX_ORDER % parallelThreads;
@@ -229,11 +226,11 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
 
    private void waitForCompletion(Thread[] threads){
       try{
-         for(int i=0;i<threads.length;i++){
-            log.debug("Waiting for the end of Thread " + i);
-            threads[i].join();
+         for(Thread thread : threads){
+            log.trace("Waiting for the end of " + thread);
+            thread.join();
          }
-         log.debug("All threads have finished! Movin' on");
+         log.trace("All threads have finished! Movin' on");
       }
       catch(InterruptedException ie){
          ie.printStackTrace();
@@ -242,13 +239,9 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
    }
 
 
-
-
-
-
    /*
-       Pupulator threads' classes
-   */
+    * ######################################### POPULATING THREADS ################################
+    */
 
    private class PopulateOrderThread extends Thread{
       private long lowerBound;
@@ -257,10 +250,16 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
       private int id_district;
       private CacheWrapper wrapper;
 
-      public String toString(){
-         return "PopulateOrderThread Node "+slaveIndex+" lowerBound "+lowerBound+" upperBound "+upperBound+" warehouse "+id_warehouse+" district "+id_district;
+      @Override
+      public String toString() {
+         return "PopulateOrderThread{" +
+               "lowerBound=" + lowerBound +
+               ", upperBound=" + upperBound +
+               ", id_warehouse=" + id_warehouse +
+               ", id_district=" + id_district +
+               '}';
       }
-
+            
       public PopulateOrderThread(long l, long u, int w, int d, CacheWrapper c){
 
          this.lowerBound = l;
@@ -271,7 +270,7 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
       }
 
       public void run(){
-         log.debug("Started " + this);
+         logStart(toString());
          long remainder = (upperBound - lowerBound) % elementsPerBlock;
          long numBatches = (upperBound - lowerBound - remainder) / elementsPerBlock;
          long elementsPerBatch = elementsPerBlock;
@@ -287,22 +286,36 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
          long toAdd;
 
          for(int j=1;j<=numBatches;j++){
-            log.debug(this + " " + j + "-th batch out of " + numBatches);
+            logBatch(toString(), j, numBatches);
 
             toAdd = elementsPerBatch + ((j==numBatches)? remainder:0);
 
-            do {
+            LinkedList<Integer> seqAleaList = new LinkedList<Integer>();
+            boolean useList = false;
+            
+            do {               
                startTransactionIfNeeded();
 
+               Iterator<Integer> iterator = seqAleaList.iterator();
+               
                for(long id_order=base;id_order<base+toAdd;id_order++){
 
+                  int generatedSeqAlea = 0;
+                  
+                  if (useList && iterator.hasNext()) {
+                     generatedSeqAlea = iterator.next();
+                  } else {
+                     generatedSeqAlea = generate_seq_alea(0, TPCCTools.NB_MAX_CUSTOMER-1);
+                     seqAleaList.add(generatedSeqAlea);
+                  }
+                  
                   int o_ol_cnt = TPCCTools.alea_number(5, 15);
                   Date aDate = new Date((new java.util.Date()).getTime());
 
                   Order newOrder= new Order(id_order,
                                             id_district,
                                             id_warehouse,
-                                            generate_seq_alea(0, TPCCTools.NB_MAX_CUSTOMER-1),
+                                            generatedSeqAlea,
                                             aDate,
                                             (id_order < TPCCTools.LIMIT_ORDER)?TPCCTools.alea_number(1, 10):0,
                                             o_ol_cnt,
@@ -315,11 +328,13 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
                      populate_new_order(id_warehouse, id_district, (int)id_order);
                   }
                }
+               
+               useList = true;
             } while (!endTransactionIfNeeded());
             base+=(toAdd);
 
          }
-         log.debug("Ended "+this);
+         logFinish(toString());
 
       }
 
@@ -347,24 +362,27 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
       private int id_district;
       private ConcurrentHashMap<CustomerLookupQuadruple,Integer> lookupContentionAvoidance;
 
-      public String toString(){
-         return "PopulateCustomerThread "+ +slaveIndex+" lowerBound "+lowerBound+" upperBound "+upperBound+" warehouse "+id_warehouse+" district "+id_district;
+      @Override
+      public String toString() {
+         return "PopulateCustomerThread{" +
+               "lowerBound=" + lowerBound +
+               ", upperBound=" + upperBound +
+               ", id_warehouse=" + id_warehouse +
+               ", id_district=" + id_district +
+               '}';
       }
-
+            
       public PopulateCustomerThread(long lowerBound, long upperBound, int id_warehouse, int id_district, CacheWrapper wrapper,ConcurrentHashMap c){
-
          this.lowerBound = lowerBound;
          this.upperBound = upperBound;
          this.cacheWrapper = wrapper;
          this.id_district = id_district;
          this.id_warehouse = id_warehouse;
          this.lookupContentionAvoidance = c;
-
-
       }
 
       public void run(){
-         log.debug("Started " + this);
+         logStart(toString());
          long remainder = (upperBound - lowerBound) % elementsPerBlock;
          long numBatches = (upperBound - lowerBound - remainder)  / elementsPerBlock;
 
@@ -379,6 +397,8 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
 
 
          for(int j=1; j<=numBatches; j++){
+            logBatch(toString(), j, numBatches);
+            
             toAdd = elementsPerBatch + ((j==numBatches)? remainder:0);
 
             do {
@@ -444,7 +464,7 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
 
 
          }
-         log.debug("Ended " + this);
+         logFinish(toString());
 
       }
 
@@ -500,10 +520,13 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
       private CacheWrapper cacheWrapper;
 
       @Override
-      public String toString(){
-         return "PopulateItemThread "+slaveIndex+" lowerBound "+lowerBound+" upperBound "+upperBound;
+      public String toString() {
+         return "PopulateItemThread{" +
+               "lowerBound=" + lowerBound +
+               ", upperBound=" + upperBound +
+               '}';
       }
-
+            
       public PopulateItemThread(long low, long up, CacheWrapper c){
 
          this.lowerBound = low;
@@ -514,7 +537,8 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
       }
 
       public void run(){
-         log.debug("Started" + this);
+         logStart(toString());
+         
          long remainder = (upperBound - lowerBound) % elementsPerBlock;
          long numBatches = (upperBound - lowerBound - remainder ) / elementsPerBlock;
          long base = lowerBound;
@@ -528,6 +552,8 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
          }
 
          for(long batch = 1; batch <=numBatches; batch++){
+            logBatch(toString(), batch, numBatches);
+            
             toAdd = elementsPerBatch + ((batch==numBatches)? remainder:0);
             //Process a batch of elementsperBlock element
 
@@ -544,7 +570,7 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
             } while (!endTransactionIfNeeded());
             base+=(toAdd);
          }
-         log.debug("Ended " + this);
+         logFinish(toString());
       }
 
 
@@ -570,25 +596,27 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
 
       private long lowerBound;
       private long upperBound;
-      private int id_wharehouse;
+      private int id_warehouse;
       private CacheWrapper cacheWrapper;
 
       @Override
-      public String toString(){
-         return "node "+slaveIndex+" lowerBound "+lowerBound+" upperBound "+upperBound+" Warehouse "+id_wharehouse;
+      public String toString() {
+         return "PopulateStockThread{" +
+               "lowerBound=" + lowerBound +
+               ", upperBound=" + upperBound +
+               ", id_warehouse=" + id_warehouse +
+               '}';
       }
-
-      public PopulateStockThread(long low, long up, int id_wharehouse, CacheWrapper c){
+            
+      public PopulateStockThread(long low, long up, int id_warehouse, CacheWrapper c){
          this.lowerBound = low;
          this.upperBound = up;
          this.cacheWrapper = c;
-         this.id_wharehouse = id_wharehouse;
-
-
+         this.id_warehouse = id_warehouse;
       }
 
       public void run(){
-         log.debug("Started " + this);
+         logStart(toString());
          //
          long remainder = (upperBound - lowerBound) % elementsPerBlock;
          long numBatches = (upperBound - lowerBound - remainder ) / elementsPerBlock;
@@ -603,6 +631,8 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
          }
 
          for(long batch = 1; batch <=numBatches; batch++){
+            logBatch(toString(), batch, numBatches);
+            
             toAdd = elementsPerBatch + ((batch==numBatches)? remainder:0);
             //Process a batch of elementsperBlock element
 
@@ -610,7 +640,7 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
                startTransactionIfNeeded();
                for(long i=base; i<base+toAdd;i++){
                   Stock newStock=new Stock(i,
-                                           this.id_wharehouse,
+                                           this.id_warehouse,
                                            TPCCTools.alea_number(10, 100),
                                            TPCCTools.alea_chainel(24, 24),
                                            TPCCTools.alea_chainel(24, 24),
@@ -631,7 +661,7 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
             } while (!endTransactionIfNeeded());
             base+=(toAdd);
          }
-         log.debug("Ended " +this);
+         logFinish(toString());
 
       }
 
@@ -649,8 +679,6 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
          }
 
       }
-
-
    }
 
    private class PopulateCustomerLookupThread extends Thread{
@@ -659,10 +687,14 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
       private long upperBound;
       private CacheWrapper wrapper;
 
-      public String toString(){
-         return "PopulateCustomerLookupThread lowerBound "+lowerBound+" upperBound "+upperBound;
+      @Override
+      public String toString() {
+         return "PopulateCustomerLookupThread{" +
+               "lowerBound=" + lowerBound +
+               ", upperBound=" + upperBound +
+               '}';
       }
-
+                 
       public PopulateCustomerLookupThread(long l, long u, Vector v, CacheWrapper c){
          this.vector = v;
          this.lowerBound = l;
@@ -671,7 +703,7 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
       }
 
       public void run(){
-         log.debug("Starting " + this);
+         logStart(toString());
          //I have to put +1  because it's inclusive
          long remainder = (upperBound - lowerBound  +1) % elementsPerBlock;
          long numBatches = (upperBound - lowerBound + 1 - remainder ) / elementsPerBlock;
@@ -686,6 +718,7 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
          }
 
          for(long batch = 1; batch <=numBatches; batch++){
+            logBatch(toString(), batch, numBatches);
             toAdd = elementsPerBatch + ((batch==numBatches)? remainder:0);
 
             do {
@@ -701,8 +734,7 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
             } while (!endTransactionIfNeeded());
             base+=toAdd;
          }
-         log.debug("Ending " + this);
-
+         logFinish(toString());
       }
 
 
@@ -758,11 +790,10 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
          CustomerLookupQuadruple that = (CustomerLookupQuadruple) o;
          //The customer id does not count!!! it's not part of the key
          //if (id_customer != that.id_customer) return false;
-         if (id_district != that.id_district) return false;
-         if (id_warehouse != that.id_warehouse) return false;
-         if (c_last != null ? !c_last.equals(that.c_last) : that.c_last != null) return false;
+         return id_district == that.id_district && 
+               id_warehouse == that.id_warehouse &&
+               !(c_last != null ? !c_last.equals(that.c_last) : that.c_last != null);
 
-         return true;
       }
 
       @Override
@@ -815,8 +846,9 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
       try {
          wrapper.endTransaction(true);
       } catch (Throwable t) {
-         log.warn("Error committing transaction. retrying");
+         log.warn("Error committing transaction. Error is " + t.getMessage(), t);
          sleepRandomly();
+         log.warn("Retrying transaction...");
          return false;
       }
       return true;
@@ -829,10 +861,22 @@ public class ThreadParallelTPCCPopulation extends TPCCPopulation{
          do {
             sleepFor = r.nextLong(); 
          } while (sleepFor <= 0);
-         Thread.sleep(sleepFor);
+         Thread.sleep(sleepFor % MAX_SLEEP_BEFORE_RETRY);
       } catch (InterruptedException e) {
          //no-op
       }
+   }
+   
+   private void logStart(String thread) {
+      log.debug("Starting " + thread);
+   }
+   
+   private void logFinish(String thread) {
+      log.debug("Ended " + thread);
+   }
+   
+   private void logBatch(String thread, long batch, long numberOfBatches) {
+      log.debug(thread + " is populating the " + batch + " batch out of " + numberOfBatches);
    }
 
 }

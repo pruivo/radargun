@@ -8,6 +8,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryUsage;
 import java.util.Date;
+import static org.radargun.utils.Utils.memString;
 
 /**
  * Created by IntelliJ IDEA.
@@ -37,8 +38,7 @@ public class TPCCPopulation {
    protected int slaveIndex;
    protected int numSlaves;
 
-   protected boolean light;
-
+   protected boolean light;     
 
    public TPCCPopulation(CacheWrapper wrapper, int slaveIndex, int numSlaves, boolean light) {
 
@@ -136,10 +136,7 @@ public class TPCCPopulation {
 
 
       }
-      MemoryUsage u1=this.memoryBean.getHeapMemoryUsage();
-      log.info("Memory Statistics (Heap) - used="+u1.getUsed()+" bytes; committed="+u1.getCommitted()+" bytes");
-      MemoryUsage u2=this.memoryBean.getNonHeapMemoryUsage();
-      log.info("Memory Statistics (NonHeap) - used="+u2.getUsed()+" bytes; committed="+u2.getCommitted()+" bytes");
+      printMemoryInfo();
    }
 
    private void populate_warehouse() {
@@ -172,10 +169,7 @@ public class TPCCPopulation {
 
             populate_district(i);
 
-            MemoryUsage u1=this.memoryBean.getHeapMemoryUsage();
-            log.info("Memory Statistics (Heap) - used="+u1.getUsed()+" bytes; committed="+u1.getCommitted()+" bytes");
-            MemoryUsage u2=this.memoryBean.getNonHeapMemoryUsage();
-            log.info("Memory Statistics (NonHeap) - used="+u2.getUsed()+" bytes; committed="+u2.getCommitted()+" bytes");
+            printMemoryInfo();
 
          }
       }
@@ -520,5 +514,14 @@ public class TPCCPopulation {
       } while (alea == TPCCTools.NULL_NUMBER);
       _seqIdCustomer[rand] = TPCCTools.NULL_NUMBER;
       return alea;
+   }
+   
+   protected void printMemoryInfo() {
+      MemoryUsage u1 = this.memoryBean.getHeapMemoryUsage();
+      log.info("Memory Statistics (Heap) - used=" + memString(u1.getUsed()) +
+                     "; committed=" + memString(u1.getCommitted()));
+      MemoryUsage u2 = this.memoryBean.getNonHeapMemoryUsage();
+      log.info("Memory Statistics (NonHeap) - used=" + memString(u2.getUsed()) +
+                     "; committed=" + memString(u2.getCommitted()));
    }
 }
