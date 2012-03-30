@@ -39,7 +39,7 @@ public class GetKeysStage extends AbstractDistStage {
                         .append("] ==============");
                 bw.newLine();
                 for (String key : bucketAndKeys.getValue()) {
-                    if (cacheWrapper.isKeyLocal(key)) {
+                    if (cacheWrapper.isKeyLocal(bucked, key)) {
                         bw.append(key);
                         bw.append("=>");
                         bw.append(String.valueOf(cacheWrapper.get(bucked, key)));

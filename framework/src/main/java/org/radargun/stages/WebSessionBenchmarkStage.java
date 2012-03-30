@@ -19,174 +19,182 @@ import static org.radargun.utils.Utils.numberFormat;
  */
 public class WebSessionBenchmarkStage extends AbstractDistStage {
 
-    //for each session there will be created fixed number of attributes. On those attributes all the GETs and PUTs are
-    // performed (for PUT is overwrite)
-    private int numberOfKeys = 10000;
+   //for each session there will be created fixed number of attributes. On those attributes all the GETs and PUTs are
+   // performed (for PUT is overwrite)
+   private int numberOfKeys = 10000;
 
-    //Each attribute will be a byte[] of this size
-    private int sizeOfValue = 1000;
+   //Each attribute will be a byte[] of this size
+   private int sizeOfValue = 1000;
 
-    //Out of the total number of request, this define the frequency of writes (percentage)
-    private int writePercentage = 20;
+   //Out of the total number of request, this define the frequency of writes (percentage)
+   private int writeOperationPercentage = 20;
 
-    //the number of threads that will work on this slave
-    private int numOfThreads = 10;
+   //The percentage of write transactions generated
+   private int writeTransactionPercentage = 100;
 
-    //indicates that the coordinator executes transactions or not
-    private boolean coordinatorParticipation = true;
+   //the number of threads that will work on this slave
+   private int numOfThreads = 10;
 
-    //needed to compute the uniform distribution of operations per transaction
-    private int lowerBoundOp = 100;
+   //indicates that the coordinator executes transactions or not
+   private boolean coordinatorParticipation = true;
 
-    // as above
-    private int upperBoundOp = 100;
+   //needed to compute the uniform distribution of operations per transaction
+   private int lowerBoundOp = 100;
 
-    //simulation time
-    private long perThreadSimulTime;
+   // as above
+   private int upperBoundOp = 100;
 
-    //allows read only transaction
-    private boolean readOnlyTransactionsEnabled = false;
+   //simulation time
+   private long perThreadSimulTime;
 
-    //allows execution without contention
-    private boolean noContentionEnabled = false;
+   //allows read only transaction
+   private boolean readOnlyTransactionsEnabled = false;
 
-    private CacheWrapper cacheWrapper;
-    private int opsCountStatusLog = 5000;
-    private boolean reportNanos = false;
+   //allows execution without contention
+   private boolean noContentionEnabled = false;
 
-
-    public DistStageAck executeOnSlave() {
-        DefaultDistStageAck result = new DefaultDistStageAck(slaveIndex, slaveState.getLocalAddress());
-        this.cacheWrapper = slaveState.getCacheWrapper();
-        if (cacheWrapper == null) {
-            log.info("Not running test on this slave as the wrapper hasn't been configured.");
-            return result;
-        }
-
-        log.info("Starting WebSessionBenchmarkStage: " + this.toString());
-
-        PutGetStressor stressor = new PutGetStressor();
-        stressor.setSlaveIdx(getSlaveIndex());
-        stressor.setLowerBoundOp(lowerBoundOp);
-        stressor.setUpperBoundOp(upperBoundOp);
-        stressor.setSimulationTime(perThreadSimulTime);
-        stressor.setBucketPrefix(getSlaveIndex() + "");
-        stressor.setNumberOfKeys(numberOfKeys);
-        stressor.setNumOfThreads(numOfThreads);
-        stressor.setOpsCountStatusLog(opsCountStatusLog);
-        stressor.setSizeOfValue(sizeOfValue);
-        stressor.setWritePercentage(writePercentage);
-        stressor.setCoordinatorParticipation(coordinatorParticipation);
-        stressor.setReadOnlyTransactionsEnabled(readOnlyTransactionsEnabled);
-        stressor.setNoContentionEnabled(noContentionEnabled);
+   private CacheWrapper cacheWrapper;
+   private int opsCountStatusLog = 5000;
+   private boolean reportNanos = false;
 
 
-        try {
-            Map<String, String> results = stressor.stress(cacheWrapper);
-            result.setPayload(results);
-            return result;
-        } catch (Exception e) {
-            log.warn("Exception while initializing the test", e);
-            result.setError(true);
-            result.setRemoteException(e);
-            result.setErrorMessage(e.getMessage());
-            return result;
-        }
-    }
+   public DistStageAck executeOnSlave() {
+      DefaultDistStageAck result = new DefaultDistStageAck(slaveIndex, slaveState.getLocalAddress());
+      this.cacheWrapper = slaveState.getCacheWrapper();
+      if (cacheWrapper == null) {
+         log.info("Not running test on this slave as the wrapper hasn't been configured.");
+         return result;
+      }
 
-    public boolean processAckOnMaster(List<DistStageAck> acks, MasterState masterState) {
-        logDurationInfo(acks);
-        boolean success = true;
-        Map<Integer, Map<String, Object>> results = new HashMap<Integer, Map<String, Object>>();
-        masterState.put("results", results);
-        for (DistStageAck ack : acks) {
-            DefaultDistStageAck wAck = (DefaultDistStageAck) ack;
-            if (wAck.isError()) {
-                success = false;
-                log.warn("Received error ack: " + wAck);
-            } else {
-                if (log.isTraceEnabled())
-                    log.trace(wAck);
+      log.info("Starting WebSessionBenchmarkStage: " + this.toString());
+
+      PutGetStressor stressor = new PutGetStressor();
+      stressor.setSlaveIdx(getSlaveIndex());
+      stressor.setLowerBoundOp(lowerBoundOp);
+      stressor.setUpperBoundOp(upperBoundOp);
+      stressor.setSimulationTime(perThreadSimulTime);
+      stressor.setBucketPrefix(getSlaveIndex() + "");
+      stressor.setNumberOfKeys(numberOfKeys);
+      stressor.setNumOfThreads(numOfThreads);
+      stressor.setOpsCountStatusLog(opsCountStatusLog);
+      stressor.setSizeOfValue(sizeOfValue);
+      stressor.setWriteOperationPercentage(writeOperationPercentage);
+      stressor.setWriteTransactionPercentage(writeTransactionPercentage);
+      stressor.setCoordinatorParticipation(coordinatorParticipation);
+      stressor.setNoContentionEnabled(noContentionEnabled);
+
+
+      try {
+         Map<String, String> results = stressor.stress(cacheWrapper);
+         result.setPayload(results);
+         return result;
+      } catch (Exception e) {
+         log.warn("Exception while initializing the test", e);
+         result.setError(true);
+         result.setRemoteException(e);
+         result.setErrorMessage(e.getMessage());
+         return result;
+      }
+   }
+
+   public boolean processAckOnMaster(List<DistStageAck> acks, MasterState masterState) {
+      logDurationInfo(acks);
+      boolean success = true;
+      Map<Integer, Map<String, Object>> results = new HashMap<Integer, Map<String, Object>>();
+      masterState.put("results", results);
+      for (DistStageAck ack : acks) {
+         DefaultDistStageAck wAck = (DefaultDistStageAck) ack;
+         if (wAck.isError()) {
+            success = false;
+            log.warn("Received error ack: " + wAck);
+         } else {
+            if (log.isTraceEnabled())
+               log.trace(wAck);
+         }
+         Map<String, Object> benchResult = (Map<String, Object>) wAck.getPayload();
+         if (benchResult != null) {
+            results.put(ack.getSlaveIndex(), benchResult);
+            Object reqPerSes = benchResult.get("REQ_PER_SEC");
+            if (reqPerSes == null) {
+               throw new IllegalStateException("This should be there!");
             }
-            Map<String, Object> benchResult = (Map<String, Object>) wAck.getPayload();
-            if (benchResult != null) {
-                results.put(ack.getSlaveIndex(), benchResult);
-                Object reqPerSes = benchResult.get("REQ_PER_SEC");
-                if (reqPerSes == null) {
-                    throw new IllegalStateException("This should be there!");
-                }
-                log.info("On slave " + ack.getSlaveIndex() + " we had " + numberFormat(parseDouble(reqPerSes.toString())) + " requests per second");
-            } else {
-                log.trace("No report received from slave: " + ack.getSlaveIndex());
-            }
-        }
-        return success;
-    }
+            log.info("On slave " + ack.getSlaveIndex() + " we had " + numberFormat(parseDouble(reqPerSes.toString())) + " requests per second");
+         } else {
+            log.trace("No report received from slave: " + ack.getSlaveIndex());
+         }
+      }
+      return success;
+   }
 
-    @Override
-    public String toString() {
-        return "WebSessionBenchmarkStage {" +
-                "opsCountStatusLog=" + opsCountStatusLog +
-                ", numberOfKeys=" + numberOfKeys +
-                ", sizeOfValue=" + sizeOfValue +
-                ", writePercentage=" + writePercentage +
-                ", numOfThreads=" + numOfThreads +
-                ", reportNanos=" + reportNanos +
-                ", coordinatorParticipation=" + coordinatorParticipation +
-                ", lowerBoundOp=" + lowerBoundOp +
-                ", upperBoundOp=" + upperBoundOp +
-                ", perThreadSimulTime=" + perThreadSimulTime +
-                ", readOnlyTransactionsEnabled=" + readOnlyTransactionsEnabled +
-                ", noContentionEnabled=" + noContentionEnabled +
-                ", cacheWrapper=" + cacheWrapper +
-                ", " + super.toString();
-    }
+   @Override
+   public String toString() {
+      return "WebSessionBenchmarkStage {" +
+            "opsCountStatusLog=" + opsCountStatusLog +
+            ", numberOfKeys=" + numberOfKeys +
+            ", sizeOfValue=" + sizeOfValue +
+            ", writeOperationPercentage=" + writeOperationPercentage +
+            ", writeTransactionPercentage=" + writeTransactionPercentage +
+            ", numOfThreads=" + numOfThreads +
+            ", reportNanos=" + reportNanos +
+            ", coordinatorParticipation=" + coordinatorParticipation +
+            ", lowerBoundOp=" + lowerBoundOp +
+            ", upperBoundOp=" + upperBoundOp +
+            ", perThreadSimulTime=" + perThreadSimulTime +
+            ", readOnlyTransactionsEnabled=" + readOnlyTransactionsEnabled +
+            ", noContentionEnabled=" + noContentionEnabled +
+            ", cacheWrapper=" + cacheWrapper +
+            ", " + super.toString();
+   }
 
-    public void setLowerBoundOp(int lb){
-        this.lowerBoundOp=lb;
-    }
+   public void setLowerBoundOp(int lb){
+      this.lowerBoundOp=lb;
+   }
 
-    public void setUpperBoundOp(int ub){
-        this.upperBoundOp=ub;
-    }
+   public void setUpperBoundOp(int ub){
+      this.upperBoundOp=ub;
+   }
 
-    public void setPerThreadSimulTime(long l){
-        this.perThreadSimulTime=l;
-    }
+   public void setPerThreadSimulTime(long l){
+      this.perThreadSimulTime=l;
+   }
 
-    public void setNumberOfKeys(int numberOfKeys) {
-        this.numberOfKeys = numberOfKeys;
-    }
+   public void setNumberOfKeys(int numberOfKeys) {
+      this.numberOfKeys = numberOfKeys;
+   }
 
-    public void setSizeOfValue(int sizeOfValue) {
-        this.sizeOfValue = sizeOfValue;
-    }
+   public void setSizeOfValue(int sizeOfValue) {
+      this.sizeOfValue = sizeOfValue;
+   }
 
-    public void setNumOfThreads(int numOfThreads) {
-        this.numOfThreads = numOfThreads;
-    }
+   public void setNumOfThreads(int numOfThreads) {
+      this.numOfThreads = numOfThreads;
+   }
 
-    public void setReportNanos(boolean reportNanos) {
-        this.reportNanos = reportNanos;
-    }
+   public void setReportNanos(boolean reportNanos) {
+      this.reportNanos = reportNanos;
+   }
 
-    public void setWritePercentage(int writePercentage) {
-        this.writePercentage = writePercentage;
-    }
+   public void setWriteOperationPercentage(int writeOperationPercentage) {
+      this.writeOperationPercentage = writeOperationPercentage;
+   }
 
-    public void setOpsCountStatusLog(int opsCountStatusLog) {
-        this.opsCountStatusLog = opsCountStatusLog;
-    }
+   public void setOpsCountStatusLog(int opsCountStatusLog) {
+      this.opsCountStatusLog = opsCountStatusLog;
+   }
 
-    public void setCoordinatorParticipation(boolean coordinatorParticipation) {
-        this.coordinatorParticipation = coordinatorParticipation;
-    }
+   public void setCoordinatorParticipation(boolean coordinatorParticipation) {
+      this.coordinatorParticipation = coordinatorParticipation;
+   }
 
-    public void setReadOnlyTransactionsEnabled(boolean readOnlyTransactionsEnabled) {
-        this.readOnlyTransactionsEnabled = readOnlyTransactionsEnabled;
-    }
+   public void setReadOnlyTransactionsEnabled(boolean readOnlyTransactionsEnabled) {
+      this.readOnlyTransactionsEnabled = readOnlyTransactionsEnabled;
+   }
 
-    public void setNoContentionEnabled(boolean noContentionEnabled) {
-        this.noContentionEnabled = noContentionEnabled;
-    }
+   public void setNoContentionEnabled(boolean noContentionEnabled) {
+      this.noContentionEnabled = noContentionEnabled;
+   }
+
+   public void setWriteTransactionPercentage(int writeTransactionPercentage) {
+      this.writeTransactionPercentage = writeTransactionPercentage;
+   }
 }

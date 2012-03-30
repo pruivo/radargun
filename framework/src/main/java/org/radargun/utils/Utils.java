@@ -53,7 +53,7 @@ public class Utils {
 
    public static String printMemoryFootprint(boolean before) {
       Runtime run = Runtime.getRuntime();
-      String memoryInfo = "Memory - free: " + format(run.freeMemory()) + " - max:" + format(run.maxMemory()) + 
+      String memoryInfo = "Memory - free: " + format(run.freeMemory()) + " - max:" + format(run.maxMemory()) +
             "- total:" + format(run.totalMemory());
       if (before) {
          return "Before executing clear, memory looks like this: " + memoryInfo;
@@ -61,7 +61,7 @@ public class Utils {
          return "After executing cleanup, memory looks like this: " + memoryInfo;
       }
    }
-   
+
    private static String format(long bytes) {
       double val = bytes;
       int mag = 0;
@@ -251,18 +251,22 @@ public class Utils {
       }
    }
 
-     public static String mBeanAttributes2String(MBeanAttributeInfo[] attributeInfoArray) {
-        StringBuilder sb = new StringBuilder("[");
-        if (attributeInfoArray == null || attributeInfoArray.length == 0) {
-            sb.append("]");
-            return sb.toString();
-        }
-        sb.append(attributeInfoArray[0].getName());
-        for (int i = 1; i < attributeInfoArray.length; ++i) {
-            sb.append(",").append(attributeInfoArray[i].getName());
-        }
-        sb.append("]");
-        return sb.toString();
-    }
+   public static String mBeanAttributes2String(MBeanAttributeInfo[] attributeInfoArray) {
+      StringBuilder sb = new StringBuilder("[");
+      if (attributeInfoArray == null || attributeInfoArray.length == 0) {
+         sb.append("]");
+         return sb.toString();
+      }
+      sb.append(attributeInfoArray[0].getName());
+      for (int i = 1; i < attributeInfoArray.length; ++i) {
+         sb.append(",").append(attributeInfoArray[i].getName());
+      }
+      sb.append("]");
+      return sb.toString();
+   }
+   
+   public static long convertNanosToMillis(long nanos) {
+      return nanos / 1000000;
+   }
 
 }

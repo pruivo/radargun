@@ -9,7 +9,7 @@
                 numberOfKeys="1000"
                 sizeOfValue="1000"
                 numOfThreads="8"
-                writePercentage="50"
+                writeOperationPercentage="50"
                 lowerBoundOp="10"
                 upperBoundOp="10"
                 coordinatorParticipation="true"

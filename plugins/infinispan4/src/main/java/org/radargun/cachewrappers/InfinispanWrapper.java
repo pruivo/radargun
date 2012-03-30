@@ -23,7 +23,12 @@ import javax.transaction.TransactionManager;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.lang.management.ManagementFactory;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedSet;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -188,7 +193,7 @@ public class InfinispanWrapper implements CacheWrapper {
    }
 
    @Override
-   public boolean isKeyLocal(String key) {
+   public boolean isKeyLocal(String bucket, String key) {
       DistributionManager dm = cache.getAdvancedCache().getDistributionManager();
       return dm == null || dm.isLocal(key);
    }
