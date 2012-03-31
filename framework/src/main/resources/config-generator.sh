@@ -11,7 +11,8 @@ SIZE_OF_VALUE="1000"
 NUMBER_OF_THREADS="2"
 #in seconds
 SIMULATION_TIME="300"
-WRITE_PERCENTAGE="50"
+WRITE_OP_PERCENTAGE="50"
+WRITE_TX_PERCENTAGE="100"
 LOWER_BOUND_OPERATIONS="10"
 UPPER_BOUND_OPERATIONS="10"
 COORDINATION_EXEC_TX="true"
@@ -37,8 +38,10 @@ echo ""
 echo "  -nr-thread <value>               the number of threads executing transactions in each node"
 echo "                                   default: ${NUMBER_OF_THREADS}"
 echo ""
-echo "  -write-percentage <value>        percentage of write transactions (0 to 100)"
-echo "                                   default: ${WRITE_PERCENTAGE}"
+echo "  -write-op-percentage <value>     percentage of write operation in a write transactions (0 to 100)"
+echo "                                   default: ${WRITE_OP_PERCENTAGE}"
+echo "  -write-tx-percentage <value>     percentage of write transactions (0 to 100)"
+echo "                                   default: ${WRITE_TX_PERCENTAGE}"
 echo ""
 echo "  -config <value>                  the path for the configuration of the cache"
 echo "                                   default: ${CACHE_CONFIG_FILE}"
@@ -75,7 +78,8 @@ case $1 in
   -nr-keys) NUMBER_OF_KEYS=$2; shift 2;;
   -value-size) SIZE_OF_VALUE=$2; shift 2;;
   -nr-thread) NUMBER_OF_THREADS=$2; shift 2;;
-  -write-percentage) WRITE_PERCENTAGE=$2; shift 2;;
+  -write-op-percentage) WRITE_OP_PERCENTAGE=$2; shift 2;;
+  -write-tx-percentage) WRITE_TX_PERCENTAGE=$2; shift 2;;
   -config) CACHE_CONFIG_FILE=$2; shift 2;;
   -min-op) LOWER_BOUND_OPERATIONS=$2; shift 2;;
   -max-op) UPPER_BOUND_OPERATIONS=$2; shift 2;;
@@ -129,7 +133,8 @@ echo "            opsCountStatusLog=\"5000\"" >> ${DEST_FILE}
 echo "            numberOfKeys=\"${NUMBER_OF_KEYS}\"" >> ${DEST_FILE}
 echo "            sizeOfValue=\"${SIZE_OF_VALUE}\"" >> ${DEST_FILE}
 echo "            numOfThreads=\"${NUMBER_OF_THREADS}\"" >> ${DEST_FILE}
-echo "            writeOperationPercentage=\"${WRITE_PERCENTAGE}\"" >> ${DEST_FILE}
+echo "            writeOperationPercentage=\"${WRITE_OP_PERCENTAGE}\"" >> ${DEST_FILE}
+echo "            writeTransactionPercentage=\"${WRITE_TX_PERCENTAGE}\"" >> ${DEST_FILE}
 echo "            lowerBoundOp=\"${LOWER_BOUND_OPERATIONS}\"" >> ${DEST_FILE}
 echo "            upperBoundOp=\"${UPPER_BOUND_OPERATIONS}\"" >> ${DEST_FILE}
 echo "            coordinatorParticipation=\"${COORDINATION_EXEC_TX}\"" >> ${DEST_FILE}
