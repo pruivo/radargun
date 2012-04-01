@@ -19,7 +19,7 @@ ORDER_STATUS_WEIGHT="5.0"
 PARALLEL_POPULATION="true"
 POPULATION_THREADS="2"
 POPULATION_BATCH_LEVEL="100"
-
+SAME_WAREHOUSE="false"
 
 help_and_exit(){
 echo "usage: ${0} <options>"
@@ -73,6 +73,9 @@ echo ""
 echo "  -distributed                     set the configuration to use distributed mode"
 echo "                                   default: is set to replicated mode"
 echo ""
+echo "  -same-warehouse-access           each node picks a warehouse in the beginning and works over that warehouse"
+echo "                                   default: picks a random warehouse when the transaction starts"
+echo ""
 echo "  -h                               show this message and exit"
 exit 0
 }
@@ -94,7 +97,8 @@ case $1 in
   -population-threads) POPULATION_THREADS=$2; shift 2;;
   -population-batch-level) POPULATION_BATCH_LEVEL=$2; shift 2;;
   -no-parallel-population) PARALLEL_POPULATION="false"; shift 1;;
-  -distributed) PARTIAL_REPLICATION="true"; shift 1;;  
+  -distributed) PARTIAL_REPLICATION="true"; shift 1;;
+  -same-warehouse-access) SAME_WAREHOUSE="true"; shift 1;;
   -*) echo "WARNING: unknown option '$1'. It will be ignored" >&2; shift 1;;
   *) echo "WARNING: unknown parameter '$1'. It will be ignored"; shift 1;;
 esac
@@ -142,6 +146,7 @@ echo "      <TpccBenchmark" >> ${DEST_FILE}
 echo "            numOfThreads=\"${NUMBER_OF_THREADS}\"" >> ${DEST_FILE}
 echo "            perThreadSimulTime=\"${SIMULATION_TIME}\"" >> ${DEST_FILE}
 echo "            arrivalRate=\"${ARRIVAL_RATE}\"" >> ${DEST_FILE}
+echo "            accessSameWarehouse=\"${SAME_WAREHOUSE}\"" >> ${DEST_FILE}
 echo "            paymentWeight=\"${PAYMENT_WEIGHT}\"" >> ${DEST_FILE}
 echo "            orderStatusWeight=\"${ORDER_STATUS_WEIGHT}\"/>" >> ${DEST_FILE}
 
