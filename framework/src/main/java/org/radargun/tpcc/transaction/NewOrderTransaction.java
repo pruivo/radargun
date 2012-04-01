@@ -16,6 +16,7 @@ import java.util.Date;
 
 /**
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
+ * @author Pedro Ruivo
  */
 public class NewOrderTransaction implements TpccTransaction {
 
@@ -35,10 +36,13 @@ public class NewOrderTransaction implements TpccTransaction {
 
    private long[] orderQuantities;
 
-   public NewOrderTransaction() {
+   public NewOrderTransaction(int warehouseID) {
 
-      this.terminalWarehouseID = TpccTools.randomNumber(1, TpccTools.NB_WAREHOUSES);
-
+      if (warehouseID <= 0) {
+         this.terminalWarehouseID = TpccTools.randomNumber(1, TpccTools.NB_WAREHOUSES);
+      } else {
+         this.terminalWarehouseID = warehouseID;
+      }
 
       this.districtID = TpccTools.randomNumber(1, TpccTools.NB_MAX_DISTRICT);
       this.customerID = TpccTools.nonUniformRandom(TpccTools.C_C_ID, TpccTools.A_C_ID, 1, TpccTools.NB_MAX_CUSTOMER);

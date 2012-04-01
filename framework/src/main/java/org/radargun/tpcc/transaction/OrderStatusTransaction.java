@@ -17,6 +17,7 @@ import java.util.List;
 
 /**
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
+ * @author Pedro Ruivo
  */
 public class OrderStatusTransaction implements TpccTransaction {
 
@@ -30,9 +31,13 @@ public class OrderStatusTransaction implements TpccTransaction {
 
    private boolean customerByName;
 
-   public OrderStatusTransaction() {
+   public OrderStatusTransaction(int warehouseID) {
 
-      this.terminalWarehouseID = TpccTools.randomNumber(1, TpccTools.NB_WAREHOUSES);
+      if (warehouseID <= 0) {
+         this.terminalWarehouseID = TpccTools.randomNumber(1, TpccTools.NB_WAREHOUSES);
+      } else {
+         this.terminalWarehouseID = warehouseID;
+      }
 
       // clause 2.6.1.2
       this.districtID = TpccTools.randomNumber(1, TpccTools.NB_MAX_DISTRICT);

@@ -17,6 +17,7 @@ import java.util.List;
 
 /**
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
+ * @author Pedro Ruivo
  */
 public class PaymentTransaction implements TpccTransaction {
 
@@ -38,11 +39,15 @@ public class PaymentTransaction implements TpccTransaction {
 
    private int slaveIndex;
 
-   public PaymentTransaction(int slaveIndex) {
+   public PaymentTransaction(int slaveIndex, int warehouseID) {
 
       this.slaveIndex = slaveIndex;
 
-      this.terminalWarehouseID = TpccTools.randomNumber(1, TpccTools.NB_WAREHOUSES);
+      if (warehouseID <= 0) {
+         this.terminalWarehouseID = TpccTools.randomNumber(1, TpccTools.NB_WAREHOUSES);
+      } else {
+         this.terminalWarehouseID = warehouseID;
+      }
 
       this.districtID = TpccTools.randomNumber(1, TpccTools.NB_MAX_DISTRICT);
 

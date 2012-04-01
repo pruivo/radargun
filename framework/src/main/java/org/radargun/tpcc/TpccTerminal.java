@@ -8,6 +8,7 @@ import org.radargun.tpcc.transaction.TpccTransaction;
 
 /**
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
+ * @author Pedro Ruivo
  */
 public class TpccTerminal {
 
@@ -29,18 +30,18 @@ public class TpccTerminal {
       this.indexNode = indexNode;
    }
 
-   public TpccTransaction choiceTransaction() {
+   public TpccTransaction choiceTransaction(int localWarehouseID) {
 
       double transactionType = TpccTools.doubleRandomNumber(0, 100);
 
 
       if (transactionType <= this.paymentWeight) {
-         return new PaymentTransaction(this.indexNode);
+         return new PaymentTransaction(this.indexNode, localWarehouseID);
       } else if (transactionType <= this.paymentWeight + this.orderStatusWeight) {
-         return new OrderStatusTransaction();
+         return new OrderStatusTransaction(localWarehouseID);
 
       } else {
-         return new NewOrderTransaction();
+         return new NewOrderTransaction(localWarehouseID);
       }
 
 

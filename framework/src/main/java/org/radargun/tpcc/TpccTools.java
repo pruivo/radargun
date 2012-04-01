@@ -2,10 +2,14 @@ package org.radargun.tpcc;
 
 import java.io.UnsupportedEncodingException;
 import java.lang.management.ManagementFactory;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 
 /**
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
+ * @author Pedro Ruivo
  */
 public final class TpccTools {
 
@@ -191,5 +195,14 @@ public final class TpccTools {
       return (((randomNumberForNonUniform(0, x) | randomNumberForNonUniform(min, max)) + type) % (max - min + 1)) + min;
    }
 
+   public static List<Integer> selectLocalWarehouse(int numberOfSlaves, int slaveIdx) {
+      List<Integer> result = new ArrayList<Integer>((NB_WAREHOUSES / numberOfSlaves) + 1);
+      int init = slaveIdx % NB_WAREHOUSES;
 
+      for (int i = init + 1; i <= NB_WAREHOUSES; i += numberOfSlaves) {
+         result.add(i);
+      }
+
+      return result;
+   }
 }

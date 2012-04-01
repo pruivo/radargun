@@ -26,13 +26,11 @@ import org.radargun.stressors.TpccStressor;
  * </pre>
  *
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
+ * @author Pedro Ruivo
  */
 public class TpccBenchmarkStage extends AbstractDistStage {
    
    private static final String SIZE_INFO = "SIZE_INFO";
-   
-
-   public static final String SESSION_PREFIX = "SESSION";
 
    /**
     * the number of threads that will work on this slave
@@ -59,6 +57,11 @@ public class TpccBenchmarkStage extends AbstractDistStage {
     */
    private double orderStatusWeight = 5.0D;
 
+   /**
+    * if true, each node will pick a warehouse and all transactions will work over that warehouse. The warehouses are
+    * picked by order, i.e., slave 0 gets warehouse 1,N+1, 2N+1,[...]; ... slave N-1 gets warehouse N, 2N, [...].
+    */
+   private boolean accessSameWarehouse = false;
 
    private CacheWrapper cacheWrapper;
 
@@ -80,10 +83,15 @@ public class TpccBenchmarkStage extends AbstractDistStage {
       tpccStressor.setArrivalRate(this.arrivalRate);
       tpccStressor.setPaymentWeight(this.paymentWeight);
       tpccStressor.setOrderStatusWeight(this.orderStatusWeight);
+      tpccStressor.setAccessSameWarehouse(accessSameWarehouse);
 
       try {
          Map<String, String> results = tpccStressor.stress(cacheWrapper);
-         String sizeInfo = "size info: " + cacheWrapper.getInfo() + ", clusterSize:" + super.getActiveSlaveCount() + ", nodeIndex:" + super.getSlaveIndex() + ", cacheSize: " + cacheWrapper.size();
+         String sizeInfo = "size info: " + cacheWrapper.getInfo() +
+               ", clusterSize:" + super.getActiveSlaveCount() +
+               ", nodeIndex:" + super.getSlaveIndex() +
+               ", cacheSize: " + cacheWrapper.size();
+
          log.info(sizeInfo);
          results.put(SIZE_INFO, sizeInfo);
          result.setPayload(results);
@@ -146,7 +154,9 @@ public class TpccBenchmarkStage extends AbstractDistStage {
       this.orderStatusWeight = orderStatusWeight;
    }
 
-   
+   public void setAccessSameWarehouse(boolean accessSameWarehouse) {
+      this.accessSameWarehouse = accessSameWarehouse;
+   }
 
    @Override
    public String toString() {
@@ -156,6 +166,7 @@ public class TpccBenchmarkStage extends AbstractDistStage {
             ", arrivalRate=" + arrivalRate +
             ", paymentWeight=" + paymentWeight +
             ", orderStatusWeight=" + orderStatusWeight +
+            ", accessSameWarehouse=" + accessSameWarehouse +
             ", cacheWrapper=" + cacheWrapper +
             ", " + super.toString();
    }
