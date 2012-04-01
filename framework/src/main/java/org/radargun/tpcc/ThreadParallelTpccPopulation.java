@@ -243,7 +243,7 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
                                             o_ol_cnt,
                                             1);
 
-                  this.stubbornPut(newOrder);
+                  stubbornPut(newOrder);
                   populateOrderLines(id_warehouse, id_district, (int)id_order, o_ol_cnt, aDate);
 
                   if (id_order >= TpccTools.LIMIT_ORDER){
@@ -259,19 +259,6 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
          logFinish(toString());
 
       }
-
-      private void stubbornPut(Order o){
-         boolean successful=false;
-         while (!successful){
-            try {
-               o.store(wrapper);
-               successful=true;
-            } catch (Throwable e) {
-               logErrorWhilePut(o, e);
-            }
-         }
-      }
-
    }
 
    private class PopulateCustomerThread extends Thread{
@@ -351,7 +338,7 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
                                            TpccTools.aleaChainec(300, 500));
 
 
-                  this.stubbornPut(newCustomer);
+                  stubbornPut(newCustomer);
 
                   if(isBatchingEnabled()){
                      CustomerLookupQuadruple clt = new CustomerLookupQuadruple(c_last,id_warehouse,id_district, i);
@@ -371,42 +358,6 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
             base+=(toAdd);
          }
          logFinish(toString());
-      }
-
-      private void stubbornPut(Customer c){
-         boolean successful=false;
-         while (!successful){
-            try {
-               c.store(wrapper);
-               successful=true;
-            } catch (Throwable e) {
-               logErrorWhilePut(c, e);
-            }
-         }
-      }
-
-      private void stubbornPut(CustomerLookup c){
-         boolean successful=false;
-         while (!successful){
-            try {
-               c.store(wrapper);
-               successful=true;
-            } catch (Throwable e) {
-               logErrorWhilePut(c, e);
-            }
-         }
-      }
-
-      private void stubbornLoad(CustomerLookup c){
-         boolean successful=false;
-         while (!successful){
-            try {
-               c.load(wrapper);
-               successful=true;
-            } catch (Throwable e) {
-               logErrorWhileGet(c, e);
-            }
-         }
       }
    }
 
@@ -457,25 +408,12 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
                                           TpccTools.aleaChainec(14, 24),
                                           TpccTools.aleaFloat(1, 100, 2),
                                           TpccTools.sData());
-                  this.stubbornPut(newItem);
+                  stubbornPut(newItem);
                }
             } while (!endTransactionIfNeeded());
             base+=(toAdd);
          }
          logFinish(toString());
-      }
-
-
-      private void stubbornPut(Item newItem){
-         boolean successful=false;
-         while (!successful){
-            try {
-               newItem.store(wrapper);
-               successful=true;
-            } catch (Throwable e) {
-               logErrorWhilePut(newItem, e);
-            }
-         }
       }
    }
 
@@ -540,26 +478,13 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
                                            0,
                                            0,
                                            TpccTools.sData());
-                  this.stubbornPut(newStock);
+                  stubbornPut(newStock);
                }
             } while (!endTransactionIfNeeded());
             base+=(toAdd);
          }
          logFinish(toString());
 
-      }
-
-
-      private void stubbornPut(Stock newStock){
-         boolean successful=false;
-         while (!successful){
-            try {
-               newStock.store(wrapper);
-               successful = true;
-            } catch (Throwable e) {
-               logErrorWhilePut(newStock, e);
-            }
-         }
       }
    }
 
@@ -608,38 +533,14 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
 
                   CustomerLookupQuadruple clq = this.vector.get((int)i);
                   CustomerLookup customerLookup = new CustomerLookup(clq.c_last, clq.id_warehouse, clq.id_district);
-                  this.stubbornLoad(customerLookup);
+                  stubbornLoad(customerLookup);
                   customerLookup.addId(clq.id_customer);
-                  this.stubbornPut(customerLookup);
+                  stubbornPut(customerLookup);
                }
             } while (!endTransactionIfNeeded());
             base+=toAdd;
          }
          logFinish(toString());
-      }
-
-      private void stubbornPut(CustomerLookup c){
-         boolean successful=false;
-         while (!successful){
-            try {
-               c.store(wrapper);
-               successful=true;
-            } catch (Throwable e) {
-               logErrorWhilePut(c, e);
-            }
-         }
-      }
-
-      private void stubbornLoad(CustomerLookup c){
-         boolean successful=false;
-         while (!successful){
-            try {
-               c.load(wrapper);
-               successful=true;
-            } catch (Throwable e) {
-               logErrorWhileGet(c, e);
-            }
-         }
       }
    }
 
@@ -690,6 +591,32 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
                ", id_customer=" + id_customer +
                '}';
       }
+   }
+
+   @SuppressWarnings("ConstantConditions")
+   private void stubbornPut(DomainObject domainObject){
+      boolean successful=false;
+      do {
+         try {
+            domainObject.store(wrapper);
+            successful=true;
+         } catch (Throwable e) {
+            logErrorWhilePut(domainObject, e);
+         }
+      } while (!successful);
+   }
+
+   @SuppressWarnings("ConstantConditions")
+   private void stubbornLoad(DomainObject domainObject){
+      boolean successful=false;
+      do {
+         try {
+            domainObject.load(wrapper);
+            successful=true;
+         } catch (Throwable e) {
+            logErrorWhileGet(domainObject, e);
+         }
+      } while(!successful);
    }
 
    private boolean isBatchingEnabled(){
