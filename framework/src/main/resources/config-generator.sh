@@ -123,7 +123,7 @@ echo "            runOnAllSlaves=\"true\"/>" >> ${DEST_FILE}
 echo "      <StartCluster" >> ${DEST_FILE}
 echo "            staggerSlaveStartup=\"true\"" >> ${DEST_FILE}
 echo "            delayAfterFirstSlaveStarts=\"5000\"" >> ${DEST_FILE}
-echo "            delayBetweenStartingSlaves = \"1000\"/>" >> ${DEST_FILE}
+echo "            delayBetweenStartingSlaves=\"1000\"/>" >> ${DEST_FILE}
 
 echo "      <ClusterValidation" >> ${DEST_FILE}
 echo "            partialReplication=\"${PARTIAL_REPLICATION}\"/>" >> ${DEST_FILE}

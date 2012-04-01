@@ -62,6 +62,7 @@
          join_timeout="3000"
          max_bundling_time="500"
          view_bundling="true"/>
+   <SEQUENCER/>
    <UFC
          max_credits="4M"
          min_threshold="0.4"/>
