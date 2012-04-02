@@ -472,7 +472,7 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
             log.warn(e);
          }
 
-         TpccTerminal terminal = new TpccTerminal(this.paymentWeight, this.orderStatusWeight, this.nodeIndex);
+         TpccTerminal terminal = new TpccTerminal(this.paymentWeight, this.orderStatusWeight, this.nodeIndex, localWarehouseID);
 
          long delta = 0L;
          long end = 0L;
@@ -529,7 +529,7 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
                }
             } else {
 
-               transaction = terminal.choiceTransaction(localWarehouseID);
+               transaction = terminal.choiceTransaction();
             }
             isReadOnly = transaction.isReadOnly();
 

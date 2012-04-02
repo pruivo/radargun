@@ -22,15 +22,18 @@ public class TpccTerminal {
 
    private int indexNode;
 
+   private int localWarehouseID;
 
-   public TpccTerminal(double paymentWeight, double orderStatusWeight, int indexNode) {
+
+   public TpccTerminal(double paymentWeight, double orderStatusWeight, int indexNode, int localWarehouseID) {
 
       this.paymentWeight = paymentWeight;
       this.orderStatusWeight = orderStatusWeight;
       this.indexNode = indexNode;
+      this.localWarehouseID = localWarehouseID;
    }
 
-   public TpccTransaction choiceTransaction(int localWarehouseID) {
+   public TpccTransaction choiceTransaction() {
 
       double transactionType = TpccTools.doubleRandomNumber(0, 100);
 

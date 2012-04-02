@@ -48,7 +48,8 @@ public class TpccPopulation {
    private long cIdMask;
 
 
-   public TpccPopulation(CacheWrapper wrapper, int numWarehouses, int slaveIndex, int numSlaves, long cLastMask, long olIdMask, long cIdMask) {
+   public TpccPopulation(CacheWrapper wrapper, int numWarehouses, int slaveIndex, int numSlaves, long cLastMask,
+                         long olIdMask, long cIdMask) {
 
       this.wrapper = wrapper;
 
@@ -162,7 +163,7 @@ public class TpccPopulation {
    }
 
    protected void populateItem() {
-      log.info("populate items");
+      log.trace("Populate Items");
 
       long init_id_item = 1;
       long num_of_items = TpccTools.NB_MAX_ITEM;
@@ -179,10 +180,11 @@ public class TpccPopulation {
 
 
       }
-      log.info(" ITEM - ids=" + init_id_item + ",...," + (init_id_item - 1 + num_of_items));
+      logItemsPopulation(init_id_item, init_id_item - 1 + num_of_items);
       for (long i = init_id_item; i <= (init_id_item - 1 + num_of_items); i++) {
 
-         Item newItem = new Item(i, TpccTools.aleaNumber(1, 10000), TpccTools.aleaChainec(14, 24), TpccTools.aleaFloat(1, 100, 2), TpccTools.sData());
+         Item newItem = new Item(i, TpccTools.aleaNumber(1, 10000), TpccTools.aleaChainec(14, 24),
+                                 TpccTools.aleaFloat(1, 100, 2), TpccTools.sData());
 
          boolean successful = false;
          while (!successful) {
@@ -200,10 +202,10 @@ public class TpccPopulation {
    }
 
    private void populateWarehouses() {
-      log.info("populate warehouses");
+      log.trace("Populate warehouses");
       if (this.numWarehouses > 0) {
          for (int i = 1; i <= this.numWarehouses; i++) {
-            log.info(" WAREHOUSE " + i);
+            log.info("Populate Warehouse " + i);
             if (this.slaveIndex == 0) {// Warehouse assigned to node 0 if I have more than one node
                Warehouse newWarehouse = new Warehouse(i,
                                                       TpccTools.aleaChainec(6, 10),
@@ -234,10 +236,11 @@ public class TpccPopulation {
    }
 
    protected void populateStock(int id_warehouse) {
-      log.info("populate stocks");
       if (id_warehouse < 0) {
+         log.warn("Trying to populate Stock for a negative warehouse ID. skipping...");
          return;
       }
+      log.trace("Populating Stock for warehouse " + id_warehouse);
 
       long init_id_item = 1;
       long num_of_items = TpccTools.NB_MAX_ITEM;
@@ -254,7 +257,7 @@ public class TpccPopulation {
 
 
       }
-      log.info(" STOCK for Warehouse " + id_warehouse + " - ITEMS=" + init_id_item + ",...," + (init_id_item - 1 + num_of_items));
+      logStockPopulation(id_warehouse, init_id_item, init_id_item - 1 + num_of_items);
       for (long i = init_id_item; i <= (init_id_item - 1 + num_of_items); i++) {
 
          Stock newStock = new Stock(i,
@@ -289,10 +292,11 @@ public class TpccPopulation {
    }
 
    private void populateDistricts(int id_warehouse) {
-      log.info("populate districts");
       if (id_warehouse < 0) {
+         log.warn("Trying to populate Districts for a negative warehouse ID. skipping...");
          return;
       }
+      log.trace("Populating District for warehouse " + id_warehouse);
 
       int init_id_district = 1;
       int num_of_districts = TpccTools.NB_MAX_DISTRICT;
@@ -309,12 +313,9 @@ public class TpccPopulation {
          if (slaveIndex < remainder) {
             num_of_districts += 1;
          }
-
-         log.info("Index:" + slaveIndex + "; Init:" + init_id_district + "; Num:" + num_of_districts);
       }
+      log.debug("Populate Districts from " + init_id_district + " to " + (init_id_district - 1 + num_of_districts));
       for (int id_district = init_id_district; id_district <= (init_id_district - 1 + num_of_districts); id_district++) {
-         log.info(" DISTRICT " + id_district);
-
          District newDistrict = new District(id_warehouse,
                                              id_district,
                                              TpccTools.aleaChainec(6, 10),
@@ -345,12 +346,12 @@ public class TpccPopulation {
    }
 
    protected void populateCustomers(int id_warehouse, int id_district) {
-      log.info("populate customer");
       if (id_warehouse < 0 || id_district < 0) {
+         log.warn("Trying to populate Customer with a negative warehouse or district ID. skipping...");
          return;
       }
 
-      log.info(" CUSTOMER " + id_warehouse + ", " + id_district);
+      log.trace("Populating Customers for warehouse " + id_warehouse + " and district " + id_district);
 
       for (int i = 1; i <= TpccTools.NB_MAX_CUSTOMER; i++) {
 
@@ -418,12 +419,17 @@ public class TpccPopulation {
    }
 
    protected void populateHistory(int id_customer, int id_warehouse, int id_district) {
-      //log.info("populate history");
-      if (id_customer < 0 || id_warehouse < 0 || id_district < 0) {
+      if (id_warehouse < 0 || id_district < 0 || id_customer < 0) {
+         log.warn("Trying to populate Customer with a negative warehouse or district or customer ID. skipping...");
          return;
       }
 
-      History newHistory = new History(id_customer, id_district, id_warehouse, id_district, id_warehouse, new Date(System.currentTimeMillis()), 10, TpccTools.aleaChainec(12, 24));
+      log.trace("Populating History for warehouse " + id_warehouse + ", district " + id_district + " and customer " +
+                      id_customer);
+
+
+      History newHistory = new History(id_customer, id_district, id_warehouse, id_district, id_warehouse, 
+                                       new Date(System.currentTimeMillis()), 10, TpccTools.aleaChainec(12, 24));
 
       boolean successful = false;
       while (!successful) {
@@ -438,9 +444,13 @@ public class TpccPopulation {
 
 
    protected void populateOrders(int id_warehouse, int id_district) {
-      log.info("populate order");
+      if (id_warehouse < 0 || id_district < 0) {
+         log.warn("Trying to populate Order with a negative warehouse or district ID. skipping...");
+         return;
+      }
+
+      log.trace("Populating Orders for warehouse " + id_warehouse + " and district " + id_district);
       this._new_order = false;
-      log.info(" ORDER " + id_warehouse + ", " + id_district);
       for (int id_order = 1; id_order <= TpccTools.NB_MAX_ORDER; id_order++) {
 
          int o_ol_cnt = TpccTools.aleaNumber(5, 15);
@@ -475,7 +485,13 @@ public class TpccPopulation {
    }
 
    protected void populateOrderLines(int id_warehouse, int id_district, int id_order, int o_ol_cnt, Date aDate) {
-      //log.info("populate order line");
+      if (id_warehouse < 0 || id_district < 0) {
+         log.warn("Trying to populate Order Lines with a negative warehouse or district ID. skipping...");
+         return;
+      }
+
+      log.trace("Populating Orders Lines for warehouse " + id_warehouse + ", district " + id_district + " and order " +
+                      id_order);
       for (int i = 0; i < o_ol_cnt; i++) {
 
          double amount;
@@ -513,7 +529,13 @@ public class TpccPopulation {
    }
 
    protected void populateNewOrder(int id_warehouse, int id_district, int id_order) {
-      //log.info("populate new order");
+      if (id_warehouse < 0 || id_district < 0) {
+         log.warn("Trying to populate New Order with a negative warehouse or district ID. skipping...");
+         return;
+      }
+
+      log.trace("Populating New Order for warehouse " + id_warehouse + ", district " + id_district + " and order " +
+                      id_order);
 
       NewOrder newNewOrder = new NewOrder(id_order, id_district, id_warehouse);
 
@@ -554,7 +576,14 @@ public class TpccPopulation {
       log.info("Memory Statistics (NonHeap) - used=" + memString(u2.getUsed()) +
                      "; committed=" + memString(u2.getCommitted()));
    }
-}
 
+   protected void logStockPopulation(int warehouseID, long initID, long finishID) {
+      log.debug("Populating Stock for Warehouse " + warehouseID + ", Items from " + initID + "to " + finishID);
+   }
+
+   protected void logItemsPopulation(long initID, long finishID) {
+      log.debug("Populate Items from " + initID + " to " + finishID);
+   }
+}
 
 

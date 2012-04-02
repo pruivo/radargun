@@ -400,6 +400,7 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
             toAdd = elementsPerBatch + ((batch==numBatches)? remainder:0);
             //Process a batch of elementsperBlock element
 
+            logItemsPopulation(base, base + toAdd - 1);
             do {
                startTransactionIfNeeded();
                for(long i=base; i<base+toAdd;i++){
@@ -458,6 +459,7 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
             toAdd = elementsPerBatch + ((batch==numBatches)? remainder:0);
             //Process a batch of elementsperBlock element
 
+            logStockPopulation(id_warehouse, base, base + toAdd - 1);
             do {
                startTransactionIfNeeded();
                for(long i=base; i<base+toAdd;i++){
