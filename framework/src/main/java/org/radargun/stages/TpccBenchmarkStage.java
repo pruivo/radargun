@@ -90,7 +90,7 @@ public class TpccBenchmarkStage extends AbstractDistStage {
          String sizeInfo = "size info: " + cacheWrapper.getInfo() +
                ", clusterSize:" + super.getActiveSlaveCount() +
                ", nodeIndex:" + super.getSlaveIndex() +
-               ", cacheSize: " + cacheWrapper.size();
+               ", cacheSize: " + cacheWrapper.getCacheSize();
 
          log.info(sizeInfo);
          results.put(SIZE_INFO, sizeInfo);

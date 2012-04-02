@@ -85,7 +85,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
       putGetStressor.setDurationMillis(durationMillis);
       return putGetStressor.stress(cacheWrapper);
    }
-   
+
    public DistStageAck executeOnSlave() {
       DefaultDistStageAck result = new DefaultDistStageAck(slaveIndex, slaveState.getLocalAddress());
       this.cacheWrapper = slaveState.getCacheWrapper();
@@ -113,7 +113,8 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
     * Important: do not change the format of rhe log below as is is used by ./dist.sh to measure distribution load.
     */
    private String generateSizeInfo() {
-      return "size info: " + cacheWrapper.getInfo() + ", clusterSize:" + super.getActiveSlaveCount() + ", nodeIndex:" + super.getSlaveIndex() + ", cacheSize: " + cacheWrapper.size();
+      return "size info: " + cacheWrapper.getInfo() + ", clusterSize:" + super.getActiveSlaveCount() + ", nodeIndex:" +
+            super.getSlaveIndex() + ", cacheSize: " + cacheWrapper.getCacheSize();
    }
 
    public boolean processAckOnMaster(List<DistStageAck> acks, MasterState masterState) {

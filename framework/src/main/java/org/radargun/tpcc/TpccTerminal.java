@@ -33,20 +33,31 @@ public class TpccTerminal {
       this.localWarehouseID = localWarehouseID;
    }
 
-   public TpccTransaction choiceTransaction() {
+   public TpccTransaction choiceTransaction(boolean canExecuteReadOnly, boolean canExecuteWrite) {
+
+      if (!canExecuteWrite && !canExecuteReadOnly) {
+         throw new IllegalArgumentException("This cache wrapper must be able to execute read-only or write transaction");
+      }
 
       double transactionType = TpccTools.doubleRandomNumber(0, 100);
 
+      double realPaymentWeight = paymentWeight, realOrderStatusWeight = orderStatusWeight;
 
-      if (transactionType <= this.paymentWeight) {
+      if (canExecuteWrite && !canExecuteReadOnly) {
+         realPaymentWeight = paymentWeight + (orderStatusWeight / 2);
+         realOrderStatusWeight = 0;
+      } else if (!canExecuteWrite && canExecuteReadOnly) {
+         realPaymentWeight = 0;
+         realOrderStatusWeight = 100;
+      }
+
+      if (transactionType <= realPaymentWeight) {
          return new PaymentTransaction(this.indexNode, localWarehouseID);
-      } else if (transactionType <= this.paymentWeight + this.orderStatusWeight) {
+      } else if (transactionType <= realPaymentWeight + realOrderStatusWeight) {
          return new OrderStatusTransaction(localWarehouseID);
-
       } else {
          return new NewOrderTransaction(localWarehouseID);
       }
-
-
    }
+
 }

@@ -529,7 +529,8 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
                }
             } else {
 
-               transaction = terminal.choiceTransaction();
+               transaction = terminal.choiceTransaction(cacheWrapper.canExecuteReadOnlyTransactions(),
+                                                        cacheWrapper.canExecuteWriteTransactions());
             }
             isReadOnly = transaction.isReadOnly();
 
@@ -662,12 +663,11 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
    }
 
    private class Producer extends Thread {
-
-
       private double transaction_weight;    //an integer in [0,100]
       private int transaction_type;
       private double producerRate;
       private Random random;
+      private boolean isProducingReadOnlyTx;
 
       public Producer(int transaction_type, double transaction_weight) {
 
@@ -675,22 +675,25 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
          this.transaction_type = transaction_type;
          this.producerRate = ((arrivalRate / 1000.0) * (this.transaction_weight / 100.0)) / numSlaves;
          this.random = new Random(System.currentTimeMillis());
-
+         this.isProducingReadOnlyTx = transaction_type == TpccTerminal.ORDER_STATUS;
 
       }
 
       public void run() {
 
          long time;
+         boolean skipTxProduction;
 
          while (completedThread.get() != numOfThreads) {
 
             try {
+               skipTxProduction = (isProducingReadOnlyTx && !cacheWrapper.canExecuteReadOnlyTransactions()) ||
+                     (!isProducingReadOnlyTx && !cacheWrapper.canExecuteWriteTransactions());
 
-
-               queue.add(new RequestType(System.nanoTime(), this.transaction_type));
-               countJobs.incrementAndGet();
-
+               if (skipTxProduction) {
+                  queue.add(new RequestType(System.nanoTime(), this.transaction_type));
+                  countJobs.incrementAndGet();
+               }
 
                time = (long) (exp(this.producerRate));
 
@@ -706,7 +709,6 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
       }
 
       private double exp(double rate) {
-
          return -Math.log(1.0 - random.nextDouble()) / rate;
       }
 

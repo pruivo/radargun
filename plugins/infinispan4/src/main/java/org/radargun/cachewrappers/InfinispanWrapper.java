@@ -3,12 +3,14 @@ package org.radargun.cachewrappers;
 import com.arjuna.ats.arjuna.common.arjPropertyManager;
 import com.arjuna.ats.internal.arjuna.objectstore.VolatileStore;
 import org.infinispan.Cache;
+import org.infinispan.config.Configuration;
 import org.infinispan.context.Flag;
 import org.infinispan.distribution.ch.ConsistentHash;
 import org.infinispan.factories.ComponentRegistry;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.remoting.rpc.RpcManager;
 import org.infinispan.remoting.transport.Address;
+import org.infinispan.remoting.transport.Transport;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.radargun.CacheWrapper;
@@ -46,6 +48,7 @@ public class InfinispanWrapper implements CacheWrapper {
    boolean started = false;
    String config;
    private volatile boolean enlistExtraXAResource;
+   Transport transport;
 
    public void setUp(String config, boolean isLocal, int nodeIndex, TypedProperties confAttributes) throws Exception {
       this.config = config;
@@ -64,6 +67,7 @@ public class InfinispanWrapper implements CacheWrapper {
          started = true;
          tm = cache.getAdvancedCache().getTransactionManager();
          log.info("Using transaction manager: " + tm);
+         transport = cacheManager.getTransport();
       }
       log.debug("Loading JGroups from: " + org.jgroups.Version.class.getProtectionDomain().getCodeSource().getLocation());
       log.info("JGroups version: " + org.jgroups.Version.printDescription());
@@ -149,11 +153,6 @@ public class InfinispanWrapper implements CacheWrapper {
       }
    }
 
-   @Override
-   public int size() {
-      return cache.keySet().size();
-   }
-
    private void blockForRehashing() throws InterruptedException {
       // should we be blocking until all rehashing, etc. has finished?
       long gracePeriod = MINUTES.toMillis(15);
@@ -197,6 +196,18 @@ public class InfinispanWrapper implements CacheWrapper {
    @Override
    public int getCacheSize() {
       return cache.size();
+   }
+
+   @Override
+   public boolean canExecuteReadOnlyTransactions() {
+      Configuration config = cache.getConfiguration();
+      return !config.isPassiveReplication() || (transport != null && !transport.isCoordinator());
+   }
+
+   @Override
+   public boolean canExecuteWriteTransactions() {
+      Configuration config = cache.getConfiguration();
+      return !config.isPassiveReplication() || (transport != null && transport.isCoordinator());
    }
 
    //================================================= JMX STATS ====================================================
