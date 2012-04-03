@@ -47,9 +47,6 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
    //simulation time
    private long perThreadSimulTime;
 
-   //allows read only transaction
-   private boolean readOnlyTransactionsEnabled = false;
-
    //allows execution without contention
    private boolean noContentionEnabled = false;
 
@@ -140,7 +137,6 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
             ", lowerBoundOp=" + lowerBoundOp +
             ", upperBoundOp=" + upperBoundOp +
             ", perThreadSimulTime=" + perThreadSimulTime +
-            ", readOnlyTransactionsEnabled=" + readOnlyTransactionsEnabled +
             ", noContentionEnabled=" + noContentionEnabled +
             ", cacheWrapper=" + cacheWrapper +
             ", " + super.toString();
@@ -184,10 +180,6 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
 
    public void setCoordinatorParticipation(boolean coordinatorParticipation) {
       this.coordinatorParticipation = coordinatorParticipation;
-   }
-
-   public void setReadOnlyTransactionsEnabled(boolean readOnlyTransactionsEnabled) {
-      this.readOnlyTransactionsEnabled = readOnlyTransactionsEnabled;
    }
 
    public void setNoContentionEnabled(boolean noContentionEnabled) {

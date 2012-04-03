@@ -265,8 +265,8 @@ public class Utils {
       return sb.toString();
    }
    
-   public static long convertNanosToMillis(long nanos) {
-      return nanos / 1000000;
+   public static double convertNanosToMillis(long nanos) {
+      return nanos / 1000000.0;
    }
 
 }

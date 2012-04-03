@@ -152,103 +152,84 @@ public class PutGetStressor implements CacheWrapperStressor {
          writeTxRollbackDuration += stresser.writeTxTollbackDuration;
       }
 
-      //convert nanos to millis
-      totalDuration = convertNanosToMillis(totalDuration);
-      commitFailedReadOnlyTxDuration = convertNanosToMillis(commitFailedReadOnlyTxDuration);
-      commitFailedWriteTxDuration = convertNanosToMillis(commitFailedWriteTxDuration);
-      execFailedReadOnlyTxDuration = convertNanosToMillis(execFailedReadOnlyTxDuration);
-      execFailedWriteTxDuration = convertNanosToMillis(execFailedWriteTxDuration);
-      readOnlyTxDuration = convertNanosToMillis(readOnlyTxDuration);
-      writeTxDuration = convertNanosToMillis(writeTxDuration);
-      readOnlyTxCommitSuccessDuration = convertNanosToMillis(readOnlyTxCommitSuccessDuration);
-      writeTxCommitSuccessDuration = convertNanosToMillis(writeTxCommitSuccessDuration);
-      readOnlyTxCommitFailDuration = convertNanosToMillis(readOnlyTxCommitFailDuration);
-      writeTxCommitFailDuration = convertNanosToMillis(writeTxCommitFailDuration);
-      readOnlyTxRollbackDuration = convertNanosToMillis(readOnlyTxRollbackDuration);
-      writeTxRollbackDuration = convertNanosToMillis(writeTxRollbackDuration);
-
       Map<String, String> results = new LinkedHashMap<String, String>();
 
-      double writeTxPerSec = calculateTxPerSec(numberOfReadOnlyTx, writeTxDuration);
-      double readTxPerSec = calculateTxPerSec(numberOfWriteTx, readOnlyTxDuration);
-      double writeExecErrTxPerSec = calculateTxPerSec(numberOfExecFailedWriteTx, execFailedWriteTxDuration);
-      double readExecErrTxPerSec = calculateTxPerSec(numberOfExecFailedReadOnlyTx, execFailedReadOnlyTxDuration);
-      double writeCommitErrTxPerSec = calculateTxPerSec(numberOfCommitFailedWriteTx, commitFailedWriteTxDuration);
-      double readCommitErrTxPerSec = calculateTxPerSec(numberOfCommitFailedReadOnlyTx, commitFailedReadOnlyTxDuration);
+      results.put("DURATION(msec)", str(convertNanosToMillis(totalDuration) / numOfThreads));
+      results.put("TX_PER_SEC", str(calculateTxPerSec(numberOfReadOnlyTx + numberOfWriteTx,convertNanosToMillis(totalDuration))));
+      results.put("RO_TX_PER_SEC", str(calculateTxPerSec(numberOfReadOnlyTx, convertNanosToMillis(readOnlyTxDuration))));
+      results.put("WRT_TX_SEC", str(calculateTxPerSec(numberOfWriteTx, convertNanosToMillis(writeTxDuration))));
 
-      results.put("DURATION(msec)", str(totalDuration / numOfThreads));
-      results.put("TX_PER_SEC", str(calculateTxPerSec(numberOfReadOnlyTx + numberOfWriteTx,totalDuration)));
-      results.put("RO_TX_PER_SEC", str(readTxPerSec));
-      results.put("WRT_TX_SEC", str(writeTxPerSec));
+      results.put("WRT_TX_DUR(msec)", str(convertNanosToMillis(writeTxDuration / numOfThreads)));
+      results.put("RO_TX_DUR(msec)", str(convertNanosToMillis(readOnlyTxDuration / numOfThreads)));
 
-      if(readTxPerSec != 0) {
-         results.put("AVG_RO_OK_TX_DUR(sec)",str((1 / readTxPerSec) * numOfThreads));
+      if(numberOfReadOnlyTx != 0) {
+         results.put("AVG_RO_OK_TX_DUR(msec)",str(convertNanosToMillis(readOnlyTxDuration / numOfThreads) / numberOfReadOnlyTx));
       } else {
-         results.put("AVG_RO_OK_TX_DUR(sec)",str(0));
+         results.put("AVG_RO_OK_TX_DUR(msec)",str(0));
       }
 
-      if(readExecErrTxPerSec != 0) {
-         results.put("AVG_RO_EXEC_ERR_TX_DUR(sec)",str((1 / readExecErrTxPerSec) * numOfThreads));
+      if(numberOfExecFailedReadOnlyTx != 0) {
+         results.put("AVG_RO_EXEC_ERR_TX_DUR(msec)",str(convertNanosToMillis(execFailedReadOnlyTxDuration / numOfThreads) / numberOfExecFailedReadOnlyTx));
       } else {
-         results.put("AVG_RO_EXEC_ERR_TX_DUR(sec)",str(0));
+         results.put("AVG_RO_EXEC_ERR_TX_DUR(msec)",str(0));
       }
 
-      if(readCommitErrTxPerSec != 0) {
-         results.put("AVG_RO_COMMIT_ERR_TX_DUR(sec)",str((1 / readCommitErrTxPerSec) * numOfThreads));
+      if(numberOfCommitFailedReadOnlyTx != 0) {
+         results.put("AVG_RO_COMMIT_ERR_TX_DUR(msec)",str(convertNanosToMillis(commitFailedReadOnlyTxDuration / numOfThreads) / numberOfCommitFailedReadOnlyTx));
       } else {
-         results.put("AVG_RO_COMMIT_ERR_TX_DUR(sec)",str(0));
+         results.put("AVG_RO_COMMIT_ERR_TX_DUR(msec)",str(0));
       }
 
-      if(writeTxPerSec != 0) {
-         results.put("AVG_WRT_OK_TX_DUR(sec)",str((1 / writeTxPerSec) * numOfThreads));
+      if(numberOfWriteTx != 0) {
+         results.put("AVG_WRT_OK_TX_DUR(msec)",str(convertNanosToMillis(writeTxDuration / numOfThreads) / numberOfWriteTx));
       } else {
-         results.put("AVG_WRT_OK_TX_DUR(sec)",str(0));
+         results.put("AVG_WRT_OK_TX_DUR(msec)",str(0));
       }
 
-      if(writeExecErrTxPerSec != 0) {
-         results.put("AVG_WRT_EXEC_ERR_TX_DUR(sec)",str((1 / writeExecErrTxPerSec) * numOfThreads));
+      if(numberOfExecFailedWriteTx != 0) {
+         results.put("AVG_WRT_EXEC_ERR_TX_DUR(msec)",str(convertNanosToMillis(execFailedWriteTxDuration / numOfThreads) / numberOfExecFailedWriteTx));
       } else {
-         results.put("AVG_WRT_EXEC_ERR_TX_DUR(sec)",str(0));
+         results.put("AVG_WRT_EXEC_ERR_TX_DUR(msec)",str(0));
       }
 
-      if(writeCommitErrTxPerSec != 0) {
-         results.put("AVG_WRT_COMMIT_ERR_TX_DUR(sec)",str((1 / writeCommitErrTxPerSec) * numOfThreads));
+      if(numberOfCommitFailedWriteTx != 0) {
+         results.put("AVG_WRT_COMMIT_ERR_TX_DUR(sec)",str(convertNanosToMillis(commitFailedWriteTxDuration / numOfThreads) / numberOfCommitFailedWriteTx));
       } else {
          results.put("AVG_WRT_COMMIT_ERR_TX_DUR(sec)",str(0));
       }
 
       if(numberOfReadOnlyTx != 0) {
-         results.put("AVG_OK_RO_COMMIT_DUR(msec)",str(readOnlyTxCommitSuccessDuration * 1.0 / numberOfReadOnlyTx));
+         results.put("AVG_OK_RO_COMMIT_DUR(msec)",str(convertNanosToMillis(readOnlyTxCommitSuccessDuration / numOfThreads) / numberOfReadOnlyTx));
       } else {
          results.put("AVG_OK_RO_COMMIT_DUR(msec)",str(0));
       }
 
       if(numberOfCommitFailedReadOnlyTx != 0) {
-         results.put("AVG_ERR_RO_COMMIT_DUR(msec)",str(readOnlyTxCommitFailDuration * 1.0 / numberOfCommitFailedReadOnlyTx));
+         results.put("AVG_ERR_RO_COMMIT_DUR(msec)",str(convertNanosToMillis(readOnlyTxCommitFailDuration / numOfThreads) / numberOfCommitFailedReadOnlyTx));
       } else {
          results.put("AVG_ERR_RO_COMMIT_DUR(msec)",str(0));
       }
 
       if(numberOfExecFailedReadOnlyTx != 0) {
-         results.put("AVG_ERR_RO_COMMIT_DUR(msec)",str(readOnlyTxRollbackDuration * 1.0 / numberOfExecFailedReadOnlyTx));
+         results.put("AVG_ERR_RO_COMMIT_DUR(msec)",str(convertNanosToMillis(readOnlyTxRollbackDuration / numOfThreads) / numberOfExecFailedReadOnlyTx));
       } else {
          results.put("AVG_ERR_RO_COMMIT_DUR(msec)",str(0));
       }
 
       if(numberOfWriteTx != 0) {
-         results.put("AVG_OK_WRT_COMMIT_DUR(msec)",str(writeTxCommitSuccessDuration * 1.0 / numberOfWriteTx));
+         results.put("AVG_OK_WRT_COMMIT_DUR(msec)",str(convertNanosToMillis(writeTxCommitSuccessDuration / numOfThreads) / numberOfWriteTx));
       } else {
          results.put("AVG_OK_WRT_COMMIT_DUR(msec)",str(0));
       }
 
       if(numberOfCommitFailedWriteTx != 0) {
-         results.put("AVG_ERR_WRT_COMMIT_DUR(msec)",str(writeTxCommitFailDuration * 1.0 / numberOfCommitFailedWriteTx));
+         results.put("AVG_ERR_WRT_COMMIT_DUR(msec)",str(convertNanosToMillis(writeTxCommitFailDuration / numOfThreads) / numberOfCommitFailedWriteTx));
       } else {
          results.put("AVG_ERR_WRT_COMMIT_DUR(msec)",str(0));
       }
 
       if(numberOfExecFailedWriteTx != 0) {
-         results.put("AVG_ERR_WRT_COMMIT_DUR(msec)",str(writeTxRollbackDuration * 1.0 / numberOfExecFailedWriteTx));
+         results.put("AVG_ERR_WRT_COMMIT_DUR(msec)",str(convertNanosToMillis(writeTxRollbackDuration / numOfThreads) / numberOfExecFailedWriteTx));
       } else {
          results.put("AVG_ERR_WRT_COMMIT_DUR(msec)",str(0));
       }
@@ -270,7 +251,7 @@ public class PutGetStressor implements CacheWrapperStressor {
       return results;
    }
 
-   private double calculateTxPerSec(int txCount, long txDuration) {
+   private double calculateTxPerSec(int txCount, double txDuration) {
       if (txDuration <= 0) {
          return 0;
       }
@@ -392,7 +373,7 @@ public class PutGetStressor implements CacheWrapperStressor {
                operationLeft = opPerTx(lowerBoundOp,upperBoundOp,privateRandomGenerator);
                readOnlyTransaction = isNextTransactionReadOnly();
 
-               startTx = System.currentTimeMillis();
+               startTx = System.nanoTime();
 
                cacheWrapper.startTransaction();
                log.trace("*** [" + getName() + "] new transaction: " + i + "***");
@@ -565,7 +546,7 @@ public class PutGetStressor implements CacheWrapperStressor {
             //this is printed here just to make sure JIT doesn't
             // skip the call to cacheWrapper.get
             log.info("Thread index '" + threadIndex + "' executed " + (i + 1) + " transactions. Elapsed time: " +
-                           Utils.getDurationString(convertNanosToMillis(elapsedTime)) +
+                           Utils.getDurationString((long) convertNanosToMillis(elapsedTime)) +
                            ". Last value read is " + result);
          }
       }

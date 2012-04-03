@@ -5,7 +5,7 @@ WORKING_DIR=`cd $(dirname $0); cd ..; pwd`
 DEST_FILE=${WORKING_DIR}/conf/ispn.xml
 
 STATS="false"
-JGR_CONFIG="jgroups-udp.xml"
+JGR_CONFIG="jgroups.xml"
 ISOLATION_LEVEL="READ_COMMITTED"
 CONCURRENCY_LEVEL="32"
 WRITE_SKEW="false"
@@ -61,7 +61,9 @@ echo "    -versioned                    enables the versioned cache"
 echo ""
 echo "    -write-skew                   enables the write skew check if the isolation level is REPEATABLE_READ"
 echo ""
-echo "    -to-protocol                  change the commit protoco to Total Order based"
+echo "    -to-protocol                  change the commit protocol to Total Order based"
+echo ""
+echo "    -pb-protocol                  change the commit protocol to Passive Replication based"
 echo ""
 echo "    -deadlock-detector            enable the deadlock detection mechanism"
 echo ""
@@ -88,7 +90,8 @@ case $1 in
   -num-owner) DIST_NUM_OWNERS=$2; shift 2;;
   -versioned) VERSIONS="true"; shift 1;;
   -write-skew) WRITE_SKEW="true"; shift 1;;
-  -to-protocol) TX_PROTOCOL="TOTAL_ORDER"; shift 1;;  
+  -to-protocol) TX_PROTOCOL="TOTAL_ORDER"; shift 1;;
+  -pb-protocol) TX_PROTOCOL="PASSIVE_REPLICATION"; shift 1;;
   -deadlock-detector) DEADLOCK_DETECTION="true"; shift 1;;
   -sync) SYNC=1; shift 1;;
   -stats) STATS="true"; shift 1;;
@@ -172,6 +175,11 @@ echo "                autoCommit=\"true\"" >> ${DEST_FILE}
 
 #Total order protocol
 if [ "${TX_PROTOCOL}" == "TOTAL_ORDER" ]; then
+echo "                transactionProtocol=\"${TX_PROTOCOL}\"" >> ${DEST_FILE}
+fi
+
+#Passive Replication protocol
+if [ "${TX_PROTOCOL}" == "PASSIVE_REPLICATION" ]; then
 echo "                transactionProtocol=\"${TX_PROTOCOL}\"" >> ${DEST_FILE}
 fi
 

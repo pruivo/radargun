@@ -16,7 +16,6 @@ WRITE_TX_PERCENTAGE="100"
 LOWER_BOUND_OPERATIONS="10"
 UPPER_BOUND_OPERATIONS="10"
 COORDINATION_EXEC_TX="true"
-READ_ONLY_TX="false"
 CACHE_CONFIG_FILE="ispn.xml"
 GET_KEYS=""
 
@@ -55,14 +54,14 @@ echo ""
 echo "  -no-coordinator-participation    the coordinator doesn't executes transactions"
 echo "                                   default: coordinator execute transactions"
 echo ""
-echo "  -read-only                       allow the execution of read only transactions"
-echo "                                   default: is is not allowed read only transactions, even if the write percentage is zero"
-echo ""
 echo "  -no-contention                   each thread has it owns keys and it has no conflicts between then"
 echo "                                   default: contention can happen"
 echo ""
 echo "  -distributed                     set the configuration to use distributed mode"
 echo "                                   default: is set to replicated mode"
+echo ""
+echo "  -passive-replication             set the configuration to use passive replication"
+echo "                                   default: use a default scheme"
 echo ""
 echo "  -get-keys                        save the keys (and their values) in the end of the benchmark"
 echo ""
@@ -84,9 +83,9 @@ case $1 in
   -min-op) LOWER_BOUND_OPERATIONS=$2; shift 2;;
   -max-op) UPPER_BOUND_OPERATIONS=$2; shift 2;;
   -no-coordinator-participation) COORDINATION_EXEC_TX="false"; shift 1;;
-  -read-only) READ_ONLY_TX="true"; shift 1;;
   -no-contention) NO_CONTENTION="true"; shift 1;;
   -distributed) PARTIAL_REPLICATION="true"; shift 1;;
+  -passive-replication) PASSIVE_REPLICATION="true"; shift 1;;
   -get-keys) GET_KEYS=1; shift 1;;
   -*) echo "WARNING: unknown option '$1'. It will be ignored" >&2; shift 1;;
   *) break;;
@@ -117,6 +116,7 @@ echo "            delayAfterFirstSlaveStarts=\"5000\"" >> ${DEST_FILE}
 echo "            delayBetweenStartingSlaves=\"1000\"/>" >> ${DEST_FILE}
 
 echo "      <ClusterValidation" >> ${DEST_FILE}
+echo "            passiveReplication=\"${PASSIVE_REPLICATION}\"" >> ${DEST_FILE}
 echo "            partialReplication=\"${PARTIAL_REPLICATION}\"/>" >> ${DEST_FILE}
 
 echo "      <ClearCluster />" >> ${DEST_FILE}
@@ -138,7 +138,6 @@ echo "            writeTransactionPercentage=\"${WRITE_TX_PERCENTAGE}\"" >> ${DE
 echo "            lowerBoundOp=\"${LOWER_BOUND_OPERATIONS}\"" >> ${DEST_FILE}
 echo "            upperBoundOp=\"${UPPER_BOUND_OPERATIONS}\"" >> ${DEST_FILE}
 echo "            coordinatorParticipation=\"${COORDINATION_EXEC_TX}\"" >> ${DEST_FILE}
-echo "            readOnlyTransactionsEnabled=\"${READ_ONLY_TX}\"" >> ${DEST_FILE}
 echo "            noContentionEnabled=\"${NO_CONTENTION}\"/>" >> ${DEST_FILE}
 
 echo "      <CacheSize" >> ${DEST_FILE}
