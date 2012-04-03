@@ -123,8 +123,20 @@ public interface CacheWrapper
    BucketsKeysTreeSet getStressedKeys();
 
    /**
-    *
-    * @return
+    * returns the number of keys in this cache
+    * @return the number of keys in this cache
     */
    int getCacheSize();
+
+   /**
+    * check if this cache can execute read-only transactions
+    * @return true if the cache can execute read-only transactions
+    */
+   boolean canExecuteReadOnlyTransactions();
+
+   /**
+    * check if this cache can execute write transactions
+    * @return true if the cache can execute write transactions
+    */
+   boolean canExecuteWriteTransactions();
 }

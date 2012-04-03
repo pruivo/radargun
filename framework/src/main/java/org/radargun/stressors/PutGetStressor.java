@@ -390,7 +390,7 @@ public class PutGetStressor implements CacheWrapperStressor {
             while(delta < simulationTime){
 
                operationLeft = opPerTx(lowerBoundOp,upperBoundOp,privateRandomGenerator);
-               readOnlyTransaction = privateRandomGenerator.nextInt(100) >= writeTransactionPercentage;
+               readOnlyTransaction = isNextTransactionReadOnly();
 
                startTx = System.currentTimeMillis();
 
@@ -479,6 +479,15 @@ public class PutGetStressor implements CacheWrapperStressor {
                log.info("interrupted exception when sleeping (I'm coordinator and I don't execute transactions)");
             }
          }
+      }
+
+      /**
+       *
+       * @return true if the transaction is a read-only transaction
+       */
+      private boolean isNextTransactionReadOnly() {
+         return cacheWrapper.canExecuteReadOnlyTransactions() &&
+               (!cacheWrapper.canExecuteWriteTransactions() || privateRandomGenerator.nextInt(100) >= writeTransactionPercentage);
       }
 
       private Object executeWriteTransaction(int operationLeft, String bucketId)

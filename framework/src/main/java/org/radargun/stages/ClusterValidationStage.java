@@ -30,6 +30,7 @@ public class ClusterValidationStage extends AbstractDistStage {
 
 
    private boolean isPartialReplication = false;
+   private boolean isPassiveReplication = false;
    private int replicationTryCount = 60;
    private int replicationTimeSleep = 2000;
 
@@ -42,7 +43,7 @@ public class ClusterValidationStage extends AbstractDistStage {
       try {
          wrapper = slaveState.getCacheWrapper();
          int replResult = checkReplicationSeveralTimes();
-         if (!isPartialReplication) {
+         if (!isPartialReplication && !isPassiveReplication) {
             if (replResult > 0) {//only executes this on the slaves on which replication happened.
                int index = confirmReplication();
                if (index >= 0) {
@@ -52,7 +53,7 @@ public class ClusterValidationStage extends AbstractDistStage {
                }
             }
          } else {
-            log.info("Using partial replication, skipping confirm phase");
+            log.info("Using partial/passive replication, skipping confirm phase");
          }
          response.setPayload(replResult);
       } catch (Exception e) {
@@ -98,7 +99,7 @@ public class ClusterValidationStage extends AbstractDistStage {
             return false;
          }
          int replCount = (Integer) defaultStageAck.getPayload();
-         if (isPartialReplication) {
+         if (isPartialReplication || isPassiveReplication) {
             if (!(replCount > 0)) {
                log.warn("Replication hasn't occurred on slave: " + defaultStageAck);
                success = false;
@@ -124,7 +125,9 @@ public class ClusterValidationStage extends AbstractDistStage {
       int tryCount = 0;
       while (tryCount < 5) {
          try {
-            wrapper.put(nodeBucket(getSlaveIndex()), key(getSlaveIndex()), "true");
+            if (wrapper.canExecuteWriteTransactions()) {
+               wrapper.put(nodeBucket(getSlaveIndex()), key(getSlaveIndex()), "true");
+            }
             return;
          }
          catch (Throwable e) {
@@ -141,14 +144,18 @@ public class ClusterValidationStage extends AbstractDistStage {
       int replCount = 0;
       for (int i = 0; i < replicationTryCount; i++) {
          replCount = replicationCount();
-         if ((isPartialReplication && replCount >= 1) || (!isPartialReplication && (replCount == getActiveSlaveCount() - 1))) {
-            log.info("Replication test successfully passed. isPartialReplication? " + isPartialReplication + ", replicationCount = " + replCount);
+         if ((isPartialReplication && replCount >= 1) ||
+               (!isPartialReplication && !isPassiveReplication && (replCount == getActiveSlaveCount() - 1)) ||
+               (isPassiveReplication && replCount == 1)) {
+            log.info("Replication test successfully passed. isPartialReplication? " + isPartialReplication +
+                           ", isPassiveReplication? " + isPassiveReplication +
+                           ", replicationCount = " + replCount);
             return replCount;
          }
          //adding our stuff one more time
          tryToPut();
          log.info("Replication test failed, " + (i + 1) + " tries so far. Sleeping for " + Utils.prettyPrintTime(replicationTimeSleep)
-               + " and trying again.");
+                        + " and trying again.");
          Thread.sleep(replicationTimeSleep);
       }
       log.info("Replication test failed. Last replication count is " + replCount);
@@ -160,7 +167,7 @@ public class ClusterValidationStage extends AbstractDistStage {
       int replicaCount = 0;
       for (int i = 0; i < clusterSize; i++) {
          int currentSlaveIndex = getSlaveIndex();
-         if (i == currentSlaveIndex) {
+         if (i == currentSlaveIndex && !isPassiveReplication) { //the master in passive replication can only see himself data
             continue;
          }
          Object data = tryGet(i);
@@ -204,11 +211,15 @@ public class ClusterValidationStage extends AbstractDistStage {
    private String key(int slaveIndex) {
       return KEY + slaveIndex;
    }
-   
+
+   public void setPassiveReplication(boolean passiveReplication) {
+      isPassiveReplication = passiveReplication;
+   }
 
    @Override
    public String toString() {
       return "ClusterValidationStage {" +
+            "isPassiveReplication=" + isPassiveReplication +
             "isPartialReplication=" + isPartialReplication +
             ", replicationTryCount=" + replicationTryCount +
             ", replicationTimeSleep=" + replicationTimeSleep +

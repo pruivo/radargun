@@ -9,6 +9,7 @@ import org.infinispan.factories.ComponentRegistry;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.remoting.rpc.RpcManager;
 import org.infinispan.remoting.transport.Address;
+import org.infinispan.remoting.transport.Transport;
 import org.infinispan.util.concurrent.TimeoutException;
 import org.infinispan.util.concurrent.locks.DeadlockDetectedException;
 import org.jgroups.logging.Log;
@@ -43,6 +44,7 @@ public class InfinispanWrapper implements CacheWrapper {
    TransactionManager tm;
    boolean started = false;
    String config;
+   Transport transport;
 
    private BucketsKeysTreeSet keys;
 
@@ -74,6 +76,7 @@ public class InfinispanWrapper implements CacheWrapper {
          cacheManager.defineConfiguration("x", new Configuration());
          cache = cacheManager.getCache("x");
          tm=cache.getAdvancedCache().getTransactionManager();
+         transport = cacheManager.getTransport();
 
          started = true;
       }
@@ -222,6 +225,21 @@ public class InfinispanWrapper implements CacheWrapper {
    public int getCacheSize() {
       return cache.size();
    }
+
+   @Override
+   public boolean canExecuteReadOnlyTransactions() {
+      Configuration config = cache.getConfiguration();
+      return !config.isPassiveReplication() || (transport != null && !transport.isCoordinator());
+   }
+
+   @Override
+   public boolean canExecuteWriteTransactions() {
+      Configuration config = cache.getConfiguration();
+      return !config.isPassiveReplication() || (transport != null && transport.isCoordinator());
+   }
+
+
+
    //================================================= JMX STATS ====================================================
    @Override
    public Map<String, String> getAdditionalStats() {
