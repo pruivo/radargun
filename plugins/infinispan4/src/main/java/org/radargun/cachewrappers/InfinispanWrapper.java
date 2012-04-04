@@ -1,7 +1,6 @@
 package org.radargun.cachewrappers;
 
 import org.infinispan.Cache;
-import org.infinispan.CacheException;
 import org.infinispan.config.Configuration;
 import org.infinispan.context.Flag;
 import org.infinispan.distribution.DistributionManager;
@@ -10,8 +9,6 @@ import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.remoting.rpc.RpcManager;
 import org.infinispan.remoting.transport.Address;
 import org.infinispan.remoting.transport.Transport;
-import org.infinispan.util.concurrent.TimeoutException;
-import org.infinispan.util.concurrent.locks.DeadlockDetectedException;
 import org.jgroups.logging.Log;
 import org.jgroups.logging.LogFactory;
 import org.radargun.CacheWrapper;
@@ -30,7 +27,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.radargun.utils.Utils.mBeanAttributes2String;
@@ -47,20 +43,6 @@ public class InfinispanWrapper implements CacheWrapper {
    Transport transport;
 
    private BucketsKeysTreeSet keys;
-
-   private static enum Stats {
-      FAILURES_DUE_TO_TIMEOUT,
-      FAILURES_DUE_TO_DEADLOCK,
-      FAILURES_DUE_TO_WRITE_SKEW
-   }
-
-   private final AtomicLong[] stats = new AtomicLong[Stats.values().length];
-   {
-      for(int i = 0; i < stats.length; i++) {
-         stats[i] = new AtomicLong(0);
-      }
-   }
-
 
    public void setUp(String config, boolean isLocal, int nodeIndex) throws Exception {
       this.config = config;
@@ -106,20 +88,7 @@ public class InfinispanWrapper implements CacheWrapper {
    }
 
    public void put(String bucket, Object key, Object value) throws Exception {
-      try {
-         cache.put(key, value);
-      } catch(TimeoutException e) {
-         stats[Stats.FAILURES_DUE_TO_TIMEOUT.ordinal()].incrementAndGet();
-         throw e;
-      } catch (DeadlockDetectedException e) {
-         stats[Stats.FAILURES_DUE_TO_DEADLOCK.ordinal()].incrementAndGet();
-         throw e;
-      } catch (CacheException e) {
-         if(e.getMessage().startsWith("Detected write skew")) {
-            stats[Stats.FAILURES_DUE_TO_WRITE_SKEW.ordinal()].incrementAndGet();
-         }
-         throw e;
-      }
+      cache.put(key, value);
    }
 
    public Object get(String bucket, Object key) throws Exception {
@@ -130,7 +99,6 @@ public class InfinispanWrapper implements CacheWrapper {
       log.info("Cache size before clear: " + cache.size());
       cache.getAdvancedCache().withFlags(Flag.CACHE_MODE_LOCAL).clear();
       log.info("Cache size after clear: " + cache.size());
-      resetStats();
    }
 
    public int getNumMembers() {
@@ -184,12 +152,6 @@ public class InfinispanWrapper implements CacheWrapper {
       }
    }
 
-   private void resetStats() {
-      for (AtomicLong al : stats) {
-         al.set(0);
-      }
-   }
-
    @Override
    public boolean isCoordinator(){
       return this.cacheManager.isCoordinator();
@@ -228,19 +190,29 @@ public class InfinispanWrapper implements CacheWrapper {
 
    @Override
    public boolean canExecuteReadOnlyTransactions() {
-      Configuration config = cache.getConfiguration();
-      return !config.isPassiveReplication() || (transport != null && !transport.isCoordinator());
+      /*Configuration config = cache.getConfiguration();
+      return !config.isPassiveReplication() || (transport != null && !transport.isCoordinator());*/
+      return true;
    }
 
    @Override
    public boolean canExecuteWriteTransactions() {
-      Configuration config = cache.getConfiguration();
-      return !config.isPassiveReplication() || (transport != null && transport.isCoordinator());
+      /*Configuration config = cache.getConfiguration();
+      return !config.isPassiveReplication() || (transport != null && transport.isCoordinator());*/
+      return true;
    }
 
+   @Override
+   public void resetAdditionalStats() {
+      MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
+      String domain = cacheManager.getGlobalConfiguration().getJmxDomain();
+      for(ObjectName name : mBeanServer.queryNames(null, null)) {
+         if(name.getDomain().equals(domain)) {
+            tryResetStats(name, mBeanServer);
+         }
+      }
+   }
 
-
-   //================================================= JMX STATS ====================================================
    @Override
    public Map<String, String> getAdditionalStats() {
       Map<String, String> results = new HashMap<String, String>();
@@ -254,6 +226,32 @@ public class InfinispanWrapper implements CacheWrapper {
          log.info("Not collecting additional stats. Infinspan MBeans not found");
       }
       return results;
+   }
+
+   //================================================= JMX STATS ====================================================
+
+   private void tryResetStats(ObjectName component, MBeanServer mBeanServer) {
+      Object[] emptyArgs = new Object[0];
+      String[] emptySig = new String[0];
+      try {
+         mBeanServer.invoke(component, "resetStatistics", emptyArgs, emptySig);
+         return;
+      } catch (Exception e) {
+         log.debug("resetStatistics not found in " + component);
+      }
+      try {
+         mBeanServer.invoke(component, "resetStats", emptyArgs, emptySig);
+         return;
+      } catch (Exception e) {
+         log.debug("resetStats not found in " + component);
+      }
+      try {
+         mBeanServer.invoke(component, "reset", emptyArgs, emptySig);
+         return;
+      } catch (Exception e) {
+         log.debug("reset not found in " + component);
+      }
+      log.warn("No stats were reset for component " + component);
    }
 
    private String getCacheComponentBaseString(MBeanServer mBeanServer) {

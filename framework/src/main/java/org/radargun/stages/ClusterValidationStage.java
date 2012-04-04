@@ -220,7 +220,7 @@ public class ClusterValidationStage extends AbstractDistStage {
    public String toString() {
       return "ClusterValidationStage {" +
             "isPassiveReplication=" + isPassiveReplication +
-            "isPartialReplication=" + isPartialReplication +
+            ", isPartialReplication=" + isPartialReplication +
             ", replicationTryCount=" + replicationTryCount +
             ", replicationTimeSleep=" + replicationTimeSleep +
             ", wrapper=" + wrapper + ", " + super.toString();
