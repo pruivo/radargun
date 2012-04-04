@@ -20,6 +20,7 @@ PARALLEL_POPULATION="true"
 POPULATION_THREADS="2"
 POPULATION_BATCH_LEVEL="100"
 SAME_WAREHOUSE="false"
+PASSIVE_REPLICATION="false"
 
 help_and_exit(){
 echo "usage: ${0} <options>"
@@ -73,6 +74,9 @@ echo ""
 echo "  -distributed                     set the configuration to use distributed mode"
 echo "                                   default: is set to replicated mode"
 echo ""
+echo "  -passive-replication             set the configuration to use passive replication"
+echo "                                   default: use a default scheme"
+echo ""
 echo "  -same-warehouse-access           each node picks a warehouse in the beginning and works over that warehouse"
 echo "                                   default: picks a random warehouse when the transaction starts"
 echo ""
@@ -98,6 +102,7 @@ case $1 in
   -population-batch-level) POPULATION_BATCH_LEVEL=$2; shift 2;;
   -no-parallel-population) PARALLEL_POPULATION="false"; shift 1;;
   -distributed) PARTIAL_REPLICATION="true"; shift 1;;
+  -passive-replication) PASSIVE_REPLICATION="true"; shift 1;;
   -same-warehouse-access) SAME_WAREHOUSE="true"; shift 1;;
   -*) echo "WARNING: unknown option '$1'. It will be ignored" >&2; shift 1;;
   *) echo "WARNING: unknown parameter '$1'. It will be ignored"; shift 1;;
@@ -126,6 +131,7 @@ echo "            delayAfterFirstSlaveStarts=\"5000\"" >> ${DEST_FILE}
 echo "            delayBetweenStartingSlaves=\"1000\"/>" >> ${DEST_FILE}
 
 echo "      <ClusterValidation" >> ${DEST_FILE}
+echo "            passiveReplication=\"${PASSIVE_REPLICATION}\"" >> ${DEST_FILE}
 echo "            partialReplication=\"${PARTIAL_REPLICATION}\"/>" >> ${DEST_FILE}
 
 echo "      <ClearCluster />" >> ${DEST_FILE}

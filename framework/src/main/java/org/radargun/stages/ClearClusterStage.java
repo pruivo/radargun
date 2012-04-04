@@ -1,7 +1,5 @@
 package org.radargun.stages;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.radargun.CacheWrapper;
 import org.radargun.DistStageAck;
 import org.radargun.utils.Utils;
@@ -19,7 +17,9 @@ public class ClearClusterStage extends AbstractDistStage {
       for (int i = 0; i < 5; i++) {
          try {
             log.info(Utils.printMemoryFootprint(true));
-            cacheWrapper.empty();
+            if (cacheWrapper.canExecuteWriteTransactions()) {
+               cacheWrapper.empty();
+            }
             return defaultDistStageAck;
          } catch (Exception e) {
             log.warn(e);

@@ -210,7 +210,18 @@ public class InfinispanWrapper implements CacheWrapper {
       return !config.isPassiveReplication() || (transport != null && transport.isCoordinator());
    }
 
-   //================================================= JMX STATS ====================================================
+   @Override
+   public void resetAdditionalStats() {
+      MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
+      String domain = cacheManager.getGlobalConfiguration().getJmxDomain();
+      for(ObjectName name : mBeanServer.queryNames(null, null)) {
+         if(name.getDomain().equals(domain)) {
+            tryResetStats(name, mBeanServer);
+         }
+      }
+   }
+
+
    @Override
    public Map<String, String> getAdditionalStats() {
       Map<String, String> results = new HashMap<String, String>();
@@ -226,6 +237,33 @@ public class InfinispanWrapper implements CacheWrapper {
       }
       return results;
    }
+
+   //================================================= JMX STATS ====================================================
+
+   private void tryResetStats(ObjectName component, MBeanServer mBeanServer) {
+      Object[] emptyArgs = new Object[0];
+      String[] emptySig = new String[0];
+      try {
+         mBeanServer.invoke(component, "resetStatistics", emptyArgs, emptySig);
+         return;
+      } catch (Exception e) {
+         log.debug("resetStatistics not found in " + component);
+      }
+      try {
+         mBeanServer.invoke(component, "resetStats", emptyArgs, emptySig);
+         return;
+      } catch (Exception e) {
+         log.debug("resetStats not found in " + component);
+      }
+      try {
+         mBeanServer.invoke(component, "reset", emptyArgs, emptySig);
+         return;
+      } catch (Exception e) {
+         log.debug("reset not found in " + component);
+      }
+      log.warn("No stats were reset for component " + component);
+   }
+
 
    private String getCacheComponentBaseString(MBeanServer mBeanServer) {
       String domain = cacheManager.getGlobalConfiguration().getJmxDomain();

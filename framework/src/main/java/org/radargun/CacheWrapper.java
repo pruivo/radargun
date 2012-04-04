@@ -109,4 +109,9 @@ public interface CacheWrapper
     * @return true if the cache can execute write transactions
     */
    boolean canExecuteWriteTransactions();
+
+   /**
+    * it resets the additional stats
+    */
+   void resetAdditionalStats();
 }
