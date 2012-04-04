@@ -147,7 +147,6 @@ echo "   <UNICAST2" >> ${DEST_FILE}
 echo "         conn_expiry_timeout=\"0\"" >> ${DEST_FILE}
 echo "         max_bytes=\"10M\"" >> ${DEST_FILE}
 echo "         stable_interval=\"30000\"" >> ${DEST_FILE}
-echo "         xmit_interval=\"1000\"" >> ${DEST_FILE}
 echo "         />" >> ${DEST_FILE}
 else
 echo "   <UNICAST" >> ${DEST_FILE}
