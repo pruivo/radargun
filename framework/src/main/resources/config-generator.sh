@@ -18,6 +18,7 @@ UPPER_BOUND_OPERATIONS="10"
 COORDINATION_EXEC_TX="true"
 CACHE_CONFIG_FILE="ispn.xml"
 GET_KEYS=""
+PASSIVE_REPLICATION="false"
 
 help_and_exit(){
 echo "usage: ${0} <options>"

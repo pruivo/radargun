@@ -190,16 +190,14 @@ public class InfinispanWrapper implements CacheWrapper {
 
    @Override
    public boolean canExecuteReadOnlyTransactions() {
-      /*Configuration config = cache.getConfiguration();
-      return !config.isPassiveReplication() || (transport != null && !transport.isCoordinator());*/
-      return true;
+      Configuration config = cache.getConfiguration();
+      return !config.isPassiveReplication() || (transport != null && !transport.isCoordinator());
    }
 
    @Override
    public boolean canExecuteWriteTransactions() {
-      /*Configuration config = cache.getConfiguration();
-      return !config.isPassiveReplication() || (transport != null && transport.isCoordinator());*/
-      return true;
+      Configuration config = cache.getConfiguration();
+      return !config.isPassiveReplication() || (transport != null && transport.isCoordinator());
    }
 
    @Override
