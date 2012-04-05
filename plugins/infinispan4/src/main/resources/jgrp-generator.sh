@@ -34,7 +34,7 @@ case $1 in
   -sequencer) SEQUENCER="true"; shift 1;;
   -toa) TOA="true"; shift 1;;
   -no-ipmcast) IP_MCAST="false"; shift 1;;
-  -initial-host) INITIAL_HOST=$2; shift 2;;
+  -gossip-host) INITIAL_HOST=$2; shift 2;;
   -tcp) TCP="true"; shift 1;;
   -*) echo "WARNING: unknown option '$1'. It will be ignored" >&2; shift 1;;
   *) echo "WARNING: unknown argument '$1'. It will be ignored" >&2; shift 1;;
