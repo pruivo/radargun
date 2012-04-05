@@ -24,6 +24,7 @@ import javax.transaction.TransactionManager;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -200,14 +201,12 @@ public class InfinispanWrapper implements CacheWrapper {
 
    @Override
    public boolean canExecuteReadOnlyTransactions() {
-      Configuration config = cache.getConfiguration();
-      return !config.isPassiveReplication() || (transport != null && !transport.isCoordinator());
+      return !isPassiveReplication() || (transport != null && !transport.isCoordinator());
    }
 
    @Override
    public boolean canExecuteWriteTransactions() {
-      Configuration config = cache.getConfiguration();
-      return !config.isPassiveReplication() || (transport != null && transport.isCoordinator());
+      return !isPassiveReplication() || (transport != null && transport.isCoordinator());
    }
 
    @Override
@@ -236,6 +235,16 @@ public class InfinispanWrapper implements CacheWrapper {
          log.info("Not collecting additional stats. Infinspan MBeans not found");
       }
       return results;
+   }
+
+   private boolean isPassiveReplication() {
+      try {
+         Method method = Configuration.class.getMethod("isPassiveReplication");
+         return (Boolean) method.invoke(cache.getConfiguration());
+      } catch (Exception e) {
+         log.debug("isPassiveReplication method not found or can't be invoked. Assuming passive replication in use");
+      }
+      return false;
    }
 
    //================================================= JMX STATS ====================================================

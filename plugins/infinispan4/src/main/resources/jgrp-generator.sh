@@ -19,7 +19,7 @@ echo "    -toa                      puts the TOA in protocol stack (Total Order 
 echo ""
 echo "    -no-ipmcast               sets the protocol stack for the case where IP Multicast does not exists"
 echo ""
-echo "    -initial-host <address>   sets the initial host (used when you have -no-ipmcast)"
+echo "    -gossip-host <address>    sets the initial host (used when you have -no-ipmcast)"
 echo "                              Default: ${INITIAL_HOST}"
 echo ""
 echo "    -tpc                      sets the transport protocol as TCP"
@@ -34,7 +34,7 @@ case $1 in
   -sequencer) SEQUENCER="true"; shift 1;;
   -toa) TOA="true"; shift 1;;
   -no-ipmcast) IP_MCAST="false"; shift 1;;
-  -initial-host) INITIAL_HOST=$2; shift 2;;
+  -gossip-host) INITIAL_HOST=$2; shift 2;;
   -tcp) TCP="true"; shift 1;;
   -*) echo "WARNING: unknown option '$1'. It will be ignored" >&2; shift 1;;
   *) echo "WARNING: unknown argument '$1'. It will be ignored" >&2; shift 1;;
@@ -100,33 +100,29 @@ echo "         oob_thread_pool.queue_max_size=\"10000\"" >> ${DEST_FILE}
 echo "         oob_thread_pool.rejection_policy=\"discard\"" >> ${DEST_FILE}
 echo "         />" >> ${DEST_FILE}
 
-if [ "${TCP}" == "true" ]; then
 if [ "${IP_MCAST}" == "true" ]; then
-    echo "   <MPING" >> ${DEST_FILE}
-    echo "         mcast_addr=\"\${jgroups.udp.mcast_addr:228.6.7.8}\"" >> ${DEST_FILE}
-    echo "         mcast_port=\"\${jgroups.udp.mcast_port:46655}\"" >> ${DEST_FILE}
-    echo "         ip_ttl=\"\${jgroups.udp.ip_ttl:8}\"" >> ${DEST_FILE}
-    echo "         num_initial_members=\"3\"" >> ${DEST_FILE}
-    echo "         />" >> ${DEST_FILE}
-    else
-    echo "   <TCPPING" >> ${DEST_FILE}
-    echo "         initial_hosts=\"${INITIAL_HOST}[7800]\"" >> ${DEST_FILE}
-    echo "         />" >> ${DEST_FILE}
+   if [ "${TCP}" == "true" ]; then
+#TPC discover
+echo "   <MPING" >> ${DEST_FILE}
+echo "         mcast_addr=\"\${jgroups.udp.mcast_addr:228.6.7.8}\"" >> ${DEST_FILE}
+echo "         mcast_port=\"\${jgroups.udp.mcast_port:46655}\"" >> ${DEST_FILE}
+echo "         ip_ttl=\"\${jgroups.udp.ip_ttl:8}\"" >> ${DEST_FILE}
+else
+#UDP discover
+echo "   <PING" >> ${DEST_FILE}
 fi
 else
-#UDP discover protocol
-#only if we have IP Multicast
-if [ "${IP_MCAST}" == "true" ]; then
-    echo "   <PING" >> ${DEST_FILE}
-    echo "         timeout=\"5000\"" >> ${DEST_FILE}
-    echo "         num_initial_members=\"10\"" >> ${DEST_FILE}
-    echo "         />" >> ${DEST_FILE}
-    else
-    echo "   <TCPGOSSIP" >> ${DEST_FILE}
-    echo "         initial_hosts=\"\${jgroups.gossip_host:${INITIAL_HOST}}[12001]\"" >> ${DEST_FILE}
-    echo "         />" >> ${DEST_FILE}
+#we don't have IP Multicast
+echo "   <TCPGOSSIP" >> ${DEST_FILE}
+echo "         initial_hosts=\"\${jgroups.gossip_host:${INITIAL_HOST}}[12001]\"" >> ${DEST_FILE}
 fi
-fi
+#Discover commom properties
+echo "         num_initial_members=\"5\"" >> ${DEST_FILE}
+echo "         break_on_coord_rsp=\"true\"" >> ${DEST_FILE}
+echo "         return_entire_cache=\"true\"" >> ${DEST_FILE}
+echo "         stagger_timeout=\"5000\"" >> ${DEST_FILE}
+echo "         timeout=\"120000\"" >> ${DEST_FILE}
+echo "         />" >> ${DEST_FILE}
 
 echo "   <MERGE2" >> ${DEST_FILE}
 echo "         max_interval=\"30000\"" >> ${DEST_FILE}
@@ -137,23 +133,35 @@ echo "   <BARRIER/>" >> ${DEST_FILE}
 echo "   <pbcast.NAKACK" >> ${DEST_FILE}
 echo "         exponential_backoff=\"500\"" >> ${DEST_FILE}
 echo "         use_mcast_xmit=\"${IP_MCAST}\"" >> ${DEST_FILE}
-echo "         xmit_stagger_timeout=\"500\"" >> ${DEST_FILE}
+echo "         use_mcast_xmit_req=\"${IP_MCAST}\"" >> ${DEST_FILE}
+echo "         xmit_stagger_timeout=\"5000\"" >> ${DEST_FILE}
 echo "         discard_delivered_msgs=\"true\"" >> ${DEST_FILE}
 echo "         />" >> ${DEST_FILE}
 
 #TCP uses unicast2 and UDP uses unicast
 if [ "${TCP}" == "true" ]; then
 echo "   <UNICAST2" >> ${DEST_FILE}
+echo "         exponential_backoff=\"500\"" >> ${DEST_FILE}
+echo "         max_stable_msgs=\"100\"" >> ${DEST_FILE}
+echo "         xmit_interval=\"1000\"" >> ${DEST_FILE}
 echo "         conn_expiry_timeout=\"0\"" >> ${DEST_FILE}
 echo "         max_bytes=\"10M\"" >> ${DEST_FILE}
-echo "         stable_interval=\"30000\"" >> ${DEST_FILE}
+echo "         stable_interval=\"10000\"" >> ${DEST_FILE}
 echo "         />" >> ${DEST_FILE}
 else
 echo "   <UNICAST" >> ${DEST_FILE}
+echo "         max_retransmit_time=\"0\"" >> ${DEST_FILE}
 echo "         conn_expiry_timeout=\"0\"" >> ${DEST_FILE}
 echo "         xmit_interval=\"1000\"" >> ${DEST_FILE}
 echo "         />" >> ${DEST_FILE}
 fi
+
+echo "   <RSVP" >> ${DEST_FILE}
+echo "         ack_on_delivery=\"false\"" >> ${DEST_FILE}
+echo "         resend_interval=\"1000\"" >> ${DEST_FILE}
+echo "         throw_exception_on_timeout=\"false\"" >> ${DEST_FILE}
+echo "         timeout=\"60000\"" >> ${DEST_FILE}
+echo "         />" >> ${DEST_FILE}
 
 echo "   <pbcast.STABLE" >> ${DEST_FILE}
 echo "         stability_delay=\"2000\"" >> ${DEST_FILE}
