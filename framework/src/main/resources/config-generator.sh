@@ -137,6 +137,7 @@ echo "            partialReplication=\"${PARTIAL_REPLICATION}\"/>" >> ${DEST_FIL
 echo "      <ClearCluster />" >> ${DEST_FILE}
 
 echo "      <TpccPopulation" >> ${DEST_FILE}
+echo "            passiveReplication=\"${PASSIVE_REPLICATION}\"" >> ${DEST_FILE}
 echo "            numWarehouses=\"${NUMBER_OF_WAREHOUSES}\"" >> ${DEST_FILE}
 echo "            cLastMask=\"${C_LAST_MASK}\"" >> ${DEST_FILE}
 echo "            olIdMask=\"${OL_ID_MASK}\"" >> ${DEST_FILE}

@@ -4,6 +4,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.radargun.CacheWrapper;
 import org.radargun.stages.TpccPopulationStage;
+import org.radargun.tpcc.PassiveReplicationTpccPopulation;
 import org.radargun.tpcc.ThreadParallelTpccPopulation;
 import org.radargun.tpcc.TpccPopulation;
 import org.radargun.tpcc.TpccTools;
@@ -40,6 +41,11 @@ public class TpccPopulationStressor extends AbstractCacheWrapperStressor {
 
    private int batchLevel = 100;
 
+   /**
+    * set the population to be aware if passive replication is in use (only the primary/master can do the population)
+    */
+   private boolean isPassiveReplication = false;
+
    public Map<String, String> stress(CacheWrapper wrapper) {
       if (wrapper == null) {
          throw new IllegalStateException("Null wrapper not allowed");
@@ -56,7 +62,14 @@ public class TpccPopulationStressor extends AbstractCacheWrapperStressor {
    public void performPopulationOperations(CacheWrapper wrapper) throws Exception {
 
       TpccPopulation tpccPopulation;
-      if(this.threadParallelLoad){
+
+      if (isPassiveReplication) {
+         log.info("Performing passive-replication aware population...");
+         tpccPopulation = new PassiveReplicationTpccPopulation(wrapper, numWarehouses, slaveIndex,
+                                                               numSlaves, cLastMask, olIdMask,
+                                                               cIdMask, (threadParallelLoad ? numLoadersThread : 1),
+                                                               batchLevel);
+      } else if(this.threadParallelLoad){
          log.info("Performing thread-parallel population...");
          tpccPopulation = new ThreadParallelTpccPopulation(wrapper, this.numWarehouses, this.slaveIndex,
                                                            this.numSlaves, this.cLastMask, this.olIdMask,
@@ -83,38 +96,33 @@ public class TpccPopulationStressor extends AbstractCacheWrapperStressor {
             ", threadParallelLoad=" + threadParallelLoad +
             ", numLoadersThread=" + numLoadersThread +
             ", batchLevel=" + batchLevel +
+            ", isPassiveReplication=" + isPassiveReplication +
             "}";
    }
 
 
    public void destroy() throws Exception {
-
       //Don't destroy data in cache!
    }
 
    public void setNumWarehouses(int numWarehouses) {
-
       this.numWarehouses = numWarehouses;
    }
 
    public void setSlaveIndex(int slaveIndex) {
-
       this.slaveIndex = slaveIndex;
    }
 
    public void setNumSlaves(int numSlaves) {
-
       this.numSlaves = numSlaves;
    }
 
    public void setCLastMask(long cLastMask) {
       this.cLastMask = cLastMask;
-
    }
 
    public void setOlIdMask(long olIdMask) {
       this.olIdMask = olIdMask;
-
    }
 
    public void setCIdMask(long cIdMask) {
@@ -132,4 +140,8 @@ public class TpccPopulationStressor extends AbstractCacheWrapperStressor {
    public void setBatchLevel(int b){
       this.batchLevel = b;
    }
-}   
+
+   public void setPassiveReplication(boolean passiveReplication) {
+      isPassiveReplication = passiveReplication;
+   }
+}

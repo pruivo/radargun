@@ -185,23 +185,12 @@ public class TpccPopulation {
 
          Item newItem = new Item(i, TpccTools.aleaNumber(1, 10000), TpccTools.aleaChainec(14, 24),
                                  TpccTools.aleaFloat(1, 100, 2), TpccTools.sData());
-
-         boolean successful = false;
-         while (!successful) {
-            try {
-               newItem.store(wrapper);
-               successful = true;
-            } catch (Throwable e) {
-               log.warn(e);
-            }
-         }
-
-
+         stubbornPut(newItem);
       }
       printMemoryInfo();
    }
 
-   private void populateWarehouses() {
+   protected void populateWarehouses() {
       log.trace("Populate warehouses");
       if (this.numWarehouses > 0) {
          for (int i = 1; i <= this.numWarehouses; i++) {
@@ -214,17 +203,7 @@ public class TpccPopulation {
                                                       TpccTools.aleaChainen(4, 4) + TpccTools.CHAINE_5_1,
                                                       TpccTools.aleaFloat(Float.valueOf("0.0000"), Float.valueOf("0.2000"), 4),
                                                       TpccTools.WAREHOUSE_YTD);
-
-
-               boolean successful = false;
-               while (!successful) {
-                  try {
-                     newWarehouse.store(wrapper);
-                     successful = true;
-                  } catch (Throwable e) {
-                     log.warn(e);
-                  }
-               }
+               stubbornPut(newWarehouse);
             }
             populateStock(i);
 
@@ -277,21 +256,11 @@ public class TpccPopulation {
                                     0,
                                     0,
                                     TpccTools.sData());
-
-
-         boolean successful = false;
-         while (!successful) {
-            try {
-               newStock.store(wrapper);
-               successful = true;
-            } catch (Throwable e) {
-               log.warn(e);
-            }
-         }
+         stubbornPut(newStock);
       }
    }
 
-   private void populateDistricts(int id_warehouse) {
+   protected void populateDistricts(int id_warehouse) {
       if (id_warehouse < 0) {
          log.warn("Trying to populate Districts for a negative warehouse ID. skipping...");
          return;
@@ -314,7 +283,7 @@ public class TpccPopulation {
             num_of_districts += 1;
          }
       }
-      log.debug("Populate Districts from " + init_id_district + " to " + (init_id_district - 1 + num_of_districts));
+      logDistrictPopulation(id_warehouse, init_id_district, init_id_district - 1 + num_of_districts);
       for (int id_district = init_id_district; id_district <= (init_id_district - 1 + num_of_districts); id_district++) {
          District newDistrict = new District(id_warehouse,
                                              id_district,
@@ -327,17 +296,7 @@ public class TpccPopulation {
                                              TpccTools.aleaFloat(Float.valueOf("0.0000"), Float.valueOf("0.2000"), 4),
                                              TpccTools.WAREHOUSE_YTD,
                                              3001);
-
-
-         boolean successful = false;
-         while (!successful) {
-            try {
-               newDistrict.store(wrapper);
-               successful = true;
-            } catch (Throwable e) {
-               log.warn(e);
-            }
-         }
+         stubbornPut(newDistrict);
 
          populateCustomers(id_warehouse, id_district);
 
@@ -377,42 +336,15 @@ public class TpccPopulation {
                                              1,
                                              0,
                                              TpccTools.aleaChainec(300, 500));
-
-         boolean successful = false;
-         while (!successful) {
-            try {
-               newCustomer.store(wrapper);
-               successful = true;
-            } catch (Throwable e) {
-               log.warn(e);
-            }
-         }
+         stubbornPut(newCustomer);
 
          CustomerLookup customerLookup = new CustomerLookup(c_last, id_warehouse, id_district);
 
-         successful=false;
-
-         while (!successful){
-            try {
-               customerLookup.load(wrapper);
-               successful=true;
-            } catch (Throwable e) {
-               log.warn(e);
-            }
-         }
+         stubbornLoad(customerLookup);
 
          customerLookup.addId(i);
 
-         successful=false;
-
-         while (!successful){
-            try {
-               customerLookup.store(wrapper);
-               successful=true;
-            } catch (Throwable e) {
-               log.warn(e);
-            }
-         }
+         stubbornPut(customerLookup);
 
          populateHistory(i, id_warehouse, id_district);
       }
@@ -428,18 +360,9 @@ public class TpccPopulation {
                       id_customer);
 
 
-      History newHistory = new History(id_customer, id_district, id_warehouse, id_district, id_warehouse, 
+      History newHistory = new History(id_customer, id_district, id_warehouse, id_district, id_warehouse,
                                        new Date(System.currentTimeMillis()), 10, TpccTools.aleaChainec(12, 24));
-
-      boolean successful = false;
-      while (!successful) {
-         try {
-            newHistory.store(wrapper, this.slaveIndex);
-            successful = true;
-         } catch (Throwable e) {
-            log.warn(e);
-         }
-      }
+      stubbornPut(newHistory);
    }
 
 
@@ -466,15 +389,7 @@ public class TpccPopulation {
                                     1);
 
 
-         boolean successful = false;
-         while (!successful) {
-            try {
-               newOrder.store(wrapper);
-               successful = true;
-            } catch (Throwable e) {
-               log.warn(e);
-            }
-         }
+         stubbornPut(newOrder);
 
          populateOrderLines(id_warehouse, id_district, id_order, o_ol_cnt, aDate);
 
@@ -515,16 +430,7 @@ public class TpccPopulation {
                                                 5,
                                                 amount,
                                                 TpccTools.aleaChainel(12, 24));
-
-         boolean successful = false;
-         while (!successful) {
-            try {
-               newOrderLine.store(wrapper);
-               successful = true;
-            } catch (Throwable e) {
-               log.warn(e);
-            }
-         }
+         stubbornPut(newOrderLine);
       }
    }
 
@@ -539,17 +445,34 @@ public class TpccPopulation {
 
       NewOrder newNewOrder = new NewOrder(id_order, id_district, id_warehouse);
 
-      boolean successful = false;
-      while (!successful) {
-         try {
-            newNewOrder.store(wrapper);
-            successful = true;
-         } catch (Throwable e) {
-            log.warn(e);
-         }
-      }
+      stubbornPut(newNewOrder);
    }
 
+   @SuppressWarnings("ConstantConditions")
+   protected void stubbornPut(DomainObject domainObject){
+      boolean successful=false;
+      do {
+         try {
+            domainObject.store(wrapper);
+            successful=true;
+         } catch (Throwable e) {
+            logErrorWhilePut(domainObject, e);
+         }
+      } while (!successful);
+   }
+
+   @SuppressWarnings("ConstantConditions")
+   protected void stubbornLoad(DomainObject domainObject){
+      boolean successful=false;
+      do {
+         try {
+            domainObject.load(wrapper);
+            successful=true;
+         } catch (Throwable e) {
+            logErrorWhileGet(domainObject, e);
+         }
+      } while(!successful);
+   }
 
    protected int generateSeqAlea(int deb, int fin) {
       if (!this._new_order) {
@@ -583,6 +506,20 @@ public class TpccPopulation {
 
    protected void logItemsPopulation(long initID, long finishID) {
       log.debug("Populate Items from " + initID + " to " + finishID);
+   }
+
+   protected void logDistrictPopulation(int warehouse, long initId, long finishID) {
+      log.debug("Populate Districts for Warehouse " + warehouse + ". Districts from " + initId + " to " + finishID);
+   }
+
+   private void logErrorWhilePut(Object object, Throwable throwable) {
+      log.error("Error while trying to perform a put operation. Object is " + object +
+                      ". Error is " + throwable.getLocalizedMessage() + ". Retrying...", throwable);
+   }
+
+   private void logErrorWhileGet(Object object, Throwable throwable) {
+      log.error("Error while trying to perform a Get operation. Object is " + object +
+                      ". Error is " + throwable.getLocalizedMessage() + ". Retrying...", throwable);
    }
 }
 

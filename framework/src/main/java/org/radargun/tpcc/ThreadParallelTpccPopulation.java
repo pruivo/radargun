@@ -132,7 +132,7 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
       }
    }
 
-   private void populateCustomerLookup(ConcurrentHashMap<CustomerLookupQuadruple,Integer> map){
+   protected void populateCustomerLookup(ConcurrentHashMap<CustomerLookupQuadruple, Integer> map){
       log.trace("Populating customer lookup ");
 
       final Vector<CustomerLookupQuadruple> vec_map = new Vector<CustomerLookupQuadruple>(map.keySet());
@@ -170,7 +170,7 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
     * ######################################### POPULATING THREADS ################################
     */
 
-   private class PopulateOrderThread extends Thread{
+   protected class PopulateOrderThread extends Thread{
       private long lowerBound;
       private long upperBound;
       private int id_warehouse;
@@ -261,7 +261,7 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
       }
    }
 
-   private class PopulateCustomerThread extends Thread{
+   protected class PopulateCustomerThread extends Thread{
       private long lowerBound;
       private long upperBound;
       private int id_warehouse;
@@ -361,7 +361,7 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
       }
    }
 
-   private class PopulateItemThread extends Thread{
+   protected class PopulateItemThread extends Thread{
 
       private long lowerBound;
       private long upperBound;
@@ -418,7 +418,7 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
       }
    }
 
-   private class PopulateStockThread extends Thread{
+   protected class PopulateStockThread extends Thread{
       private long lowerBound;
       private long upperBound;
       private int id_warehouse;
@@ -490,7 +490,7 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
       }
    }
 
-   private class PopulateCustomerLookupThread extends Thread{
+   protected class PopulateCustomerLookupThread extends Thread{
       private Vector<CustomerLookupQuadruple> vector;
       private long lowerBound;
       private long upperBound;
@@ -546,7 +546,7 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
       }
    }
 
-   private class CustomerLookupQuadruple {
+   protected class CustomerLookupQuadruple {
       private String c_last;
       private int id_warehouse;
       private int id_district;
@@ -595,33 +595,7 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
       }
    }
 
-   @SuppressWarnings("ConstantConditions")
-   private void stubbornPut(DomainObject domainObject){
-      boolean successful=false;
-      do {
-         try {
-            domainObject.store(wrapper);
-            successful=true;
-         } catch (Throwable e) {
-            logErrorWhilePut(domainObject, e);
-         }
-      } while (!successful);
-   }
-
-   @SuppressWarnings("ConstantConditions")
-   private void stubbornLoad(DomainObject domainObject){
-      boolean successful=false;
-      do {
-         try {
-            domainObject.load(wrapper);
-            successful=true;
-         } catch (Throwable e) {
-            logErrorWhileGet(domainObject, e);
-         }
-      } while(!successful);
-   }
-
-   private boolean isBatchingEnabled(){
+   protected boolean isBatchingEnabled(){
       return this.elementsPerBlock != 1;
    }
 
@@ -705,17 +679,7 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
       log.debug(thread + " is populating the " + batch + " batch out of " + numberOfBatches);
    }
 
-   private void logErrorWhilePut(Object object, Throwable throwable) {
-      log.error("Error while trying to perform a put operation. Object is " + object +
-                      ". Error is " + throwable.getLocalizedMessage() + ". Retrying...", throwable);
-   }
-
-   private void logErrorWhileGet(Object object, Throwable throwable) {
-      log.error("Error while trying to perform a Get operation. Object is " + object +
-                      ". Error is " + throwable.getLocalizedMessage() + ". Retrying...", throwable);
-   }
-
-   private void performMultiThreadPopulation(long initValue, long numberOfItems, ThreadCreator threadCreator) {
+   protected void performMultiThreadPopulation(long initValue, long numberOfItems, ThreadCreator threadCreator) {
       Thread[] threads = new Thread[parallelThreads];
 
       //compute the number of item per thread
@@ -747,7 +711,7 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
       }
    }
 
-   private interface ThreadCreator {
+   protected interface ThreadCreator {
       Thread createThread(long lowerBound, long upperBound);
    }
 }

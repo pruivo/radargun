@@ -64,6 +64,11 @@ public class TpccPopulationStage extends AbstractDistStage{
     */
    private int batchLevel = 100;
 
+   /**
+    * true if the cache wrapper uses passive replication (only the primary/master can perform the population)
+    */
+   private boolean isPassiveReplication = false;
+
    public DistStageAck executeOnSlave() {
       DefaultDistStageAck ack = newDefaultStageAck();
       CacheWrapper wrapper = slaveState.getCacheWrapper();
@@ -90,6 +95,7 @@ public class TpccPopulationStage extends AbstractDistStage{
       populationStressor.setThreadParallelLoad(threadParallelLoad);
       populationStressor.setNumLoadersThread(numLoaderThreads);
       populationStressor.setBatchLevel(batchLevel);
+      populationStressor.setPassiveReplication(isPassiveReplication);
       populationStressor.stress(wrapper);
    }
 
@@ -132,6 +138,10 @@ public class TpccPopulationStage extends AbstractDistStage{
       this.batchLevel = batchLevel;
    }
 
+   public void setPassiveReplication(boolean passiveReplication) {
+      isPassiveReplication = passiveReplication;
+   }
+
    @Override
    public String toString() {
       return "TpccPopulationStage {" +
@@ -142,6 +152,7 @@ public class TpccPopulationStage extends AbstractDistStage{
             ", threadParallelLoad=" + threadParallelLoad +
             ", numLoaderThreads=" + numLoaderThreads +
             ", batchLevel=" + batchLevel +
+            ", isPassiveReplication=" + isPassiveReplication +
             ", " + super.toString();
    }
 }
