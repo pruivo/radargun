@@ -207,13 +207,9 @@ fi
 
 #replicated mode or invalidation
 if [ "${CLUSTERING_MODE}" == "r" -o "${CLUSTERING_MODE}" == "i" ]; then
-echo "            <stateRetrieval" >> ${DEST_FILE}
-echo "                    alwaysProvideInMemoryState=\"false\"" >> ${DEST_FILE}
+echo "            <stateTransfer" >> ${DEST_FILE}
 echo "                    fetchInMemoryState=\"false\"" >> ${DEST_FILE}
-echo "                    numRetries=\"5\"" >> ${DEST_FILE}
-echo "                    retryWaitTimeIncreaseFactor=\"2\"" >> ${DEST_FILE}
-echo "                    initialRetryWaitTime=\"500\"" >> ${DEST_FILE}
-echo "                    logFlushTimeout=\"60000\"" >> ${DEST_FILE}
+echo "                    chunkSize=\"100\"" >> ${DEST_FILE}
 echo "                    timeout=\"240000\"/>" >> ${DEST_FILE}
 fi
 

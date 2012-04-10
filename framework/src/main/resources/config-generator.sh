@@ -123,10 +123,13 @@ echo "            partialReplication=\"${PARTIAL_REPLICATION}\"/>" >> ${DEST_FIL
 echo "      <ClearCluster />" >> ${DEST_FILE}
 
 echo "      <WebSessionWarmup" >> ${DEST_FILE}
+echo "            passiveReplication=\"${PASSIVE_REPLICATION}\"" >> ${DEST_FILE}
 echo "            noContentionEnabled=\"${NO_CONTENTION}\"" >> ${DEST_FILE}
 echo "            numberOfKeys=\"${NUMBER_OF_KEYS}\"" >> ${DEST_FILE}
 echo "            sizeOfValue=\"${SIZE_OF_VALUE}\"" >> ${DEST_FILE}
 echo "            numOfThreads=\"${NUMBER_OF_THREADS}\"/>" >> ${DEST_FILE}
+
+echo "      <ResetStats />" >> ${DEST_FILE}
 
 echo "      <WebSessionBenchmark" >> ${DEST_FILE}
 echo "            perThreadSimulTime=\"${SIMULATION_TIME}\"" >> ${DEST_FILE}

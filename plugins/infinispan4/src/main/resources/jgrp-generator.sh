@@ -77,7 +77,7 @@ fi
 echo "         loopback=\"false\"" >> ${DEST_FILE}
 echo "         discard_incompatible_packets=\"true\"" >> ${DEST_FILE}
 echo "         max_bundle_size=\"64K\"" >> ${DEST_FILE}
-echo "         max_bundle_timeout=\"2\"" >> ${DEST_FILE}
+echo "         max_bundle_timeout=\"30\"" >> ${DEST_FILE}
 echo "         enable_bundling=\"true\"" >> ${DEST_FILE}
 echo "         enable_unicast_bundling=\"true\"" >> ${DEST_FILE}
 echo "         enable_diagnostics=\"true\"" >> ${DEST_FILE}
@@ -119,7 +119,7 @@ fi
 #Discover commom properties
 echo "         num_initial_members=\"5\"" >> ${DEST_FILE}
 echo "         break_on_coord_rsp=\"true\"" >> ${DEST_FILE}
-echo "         return_entire_cache=\"true\"" >> ${DEST_FILE}
+#echo "         return_entire_cache=\"true\"" >> ${DEST_FILE}
 echo "         stagger_timeout=\"5000\"" >> ${DEST_FILE}
 echo "         timeout=\"120000\"" >> ${DEST_FILE}
 echo "         />" >> ${DEST_FILE}

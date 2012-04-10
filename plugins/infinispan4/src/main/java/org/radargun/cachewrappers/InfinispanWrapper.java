@@ -42,6 +42,7 @@ public class InfinispanWrapper implements CacheWrapper {
    boolean started = false;
    String config;
    Transport transport;
+   Method isPassiveReplicationMethod = null;
 
    private BucketsKeysTreeSet keys;
 
@@ -60,7 +61,12 @@ public class InfinispanWrapper implements CacheWrapper {
          cache = cacheManager.getCache("x");
          tm=cache.getAdvancedCache().getTransactionManager();
          transport = cacheManager.getTransport();
-
+         try {
+            isPassiveReplicationMethod = Configuration.class.getMethod("isPassiveReplication");
+         } catch (Exception e) {
+            //just ignore
+            isPassiveReplicationMethod = null;
+         }
          started = true;
       }
 
@@ -220,17 +226,16 @@ public class InfinispanWrapper implements CacheWrapper {
          saveStatsFromStreamLibStatistics(cacheComponentString, mBeanServer);
          getStatsFromTotalOrderValidator(cacheComponentString, mBeanServer, results);
       } else {
-         log.info("Not collecting additional stats. Infinspan MBeans not found");
+         log.info("Not collecting additional stats. Infinispan MBeans not found");
       }
       return results;
    }
 
    private boolean isPassiveReplication() {
       try {
-         Method method = Configuration.class.getMethod("isPassiveReplication");
-         return (Boolean) method.invoke(cache.getConfiguration());
+         return isPassiveReplicationMethod != null && (Boolean) isPassiveReplicationMethod.invoke(cache.getConfiguration());
       } catch (Exception e) {
-         log.debug("isPassiveReplication method not found or can't be invoked. Assuming passive replication in use");
+         log.debug("isPassiveReplication method not found or can't be invoked. Assuming *no* passive replication in use");
       }
       return false;
    }
@@ -241,6 +246,7 @@ public class InfinispanWrapper implements CacheWrapper {
       Object[] emptyArgs = new Object[0];
       String[] emptySig = new String[0];
       try {
+         log.trace("Try to reset stats in " + component);
          mBeanServer.invoke(component, "resetStatistics", emptyArgs, emptySig);
          return;
       } catch (Exception e) {

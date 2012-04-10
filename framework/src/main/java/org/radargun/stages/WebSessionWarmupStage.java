@@ -29,6 +29,11 @@ public class WebSessionWarmupStage extends AbstractDistStage {
 
    private String bucketPrefix = null;
 
+   /**
+    * true if the cache wrapper uses passive replication
+    */
+   private boolean isPassiveReplication = false;
+
    @Override
    public DistStageAck executeOnSlave() {
       DefaultDistStageAck ack = newDefaultStageAck();
@@ -44,6 +49,7 @@ public class WebSessionWarmupStage extends AbstractDistStage {
       putGetWarmupStressor.setSizeOfValue(sizeOfValue);
       putGetWarmupStressor.setNumOfThreads(numOfThreads);
       putGetWarmupStressor.setBucketPrefix(bucketPrefix);
+      putGetWarmupStressor.setPassiveReplication(isPassiveReplication);
 
       long startTime = System.currentTimeMillis();
       putGetWarmupStressor.stress(wrapper);
@@ -93,5 +99,9 @@ public class WebSessionWarmupStage extends AbstractDistStage {
 
    public void setBucketPrefix(String bucketPrefix) {
       this.bucketPrefix = bucketPrefix;
+   }
+
+   public void setPassiveReplication(boolean passiveReplication) {
+      isPassiveReplication = passiveReplication;
    }
 }

@@ -37,6 +37,11 @@ public class PutGetWarmupStressor implements CacheWrapperStressor {
 
    private String bucketPrefix = null;
 
+   /**
+    * true if the cache wrapper uses passive replication
+    */
+   private boolean isPassiveReplication = false;
+
 
    @Override
    public Map<String, String> stress(CacheWrapper wrapper) {
@@ -46,8 +51,8 @@ public class PutGetWarmupStressor implements CacheWrapperStressor {
 
       if (noContentionEnabled) {
          noContentionWarmup(wrapper);
-      } else if (slaveIdx == 0) {
-         KeyGenerator keyGenerator = new KeyGenerator(slaveIdx, 0, false, bucketPrefix);
+      } else if (slaveIdx == 0 || isPassiveReplication) {
+         KeyGenerator keyGenerator = new KeyGenerator(0, 0, false, bucketPrefix);
          warmup(wrapper, keyGenerator);
       }
       return null;
@@ -108,5 +113,9 @@ public class PutGetWarmupStressor implements CacheWrapperStressor {
 
    public void setBucketPrefix(String bucketPrefix) {
       this.bucketPrefix = bucketPrefix;
+   }
+
+   public void setPassiveReplication(boolean passiveReplication) {
+      isPassiveReplication = passiveReplication;
    }
 }
