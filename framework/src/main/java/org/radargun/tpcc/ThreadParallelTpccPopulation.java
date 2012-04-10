@@ -243,7 +243,9 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
                                             o_ol_cnt,
                                             1);
 
-                  stubbornPut(newOrder);
+                  if (!txAwarePut(newOrder)) {
+                     break; // rollback tx
+                  }
                   populateOrderLines(id_warehouse, id_district, (int)id_order, o_ol_cnt, aDate);
 
                   if (id_order >= TpccTools.LIMIT_ORDER){
@@ -336,9 +338,9 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
                                            1,
                                            0,
                                            TpccTools.aleaChainec(300, 500));
-
-
-                  stubbornPut(newCustomer);
+                  if (!txAwarePut(newCustomer)) {
+                     break; // rollback tx
+                  }
 
                   if(isBatchingEnabled()){
                      CustomerLookupQuadruple clt = new CustomerLookupQuadruple(c_last,id_warehouse,id_district, i);
@@ -347,9 +349,14 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
                      }
                   } else{
                      CustomerLookup customerLookup = new CustomerLookup(c_last, id_warehouse, id_district);
-                     stubbornLoad(customerLookup);
+                     if (!txAwareLoad(customerLookup)) {
+                        break; // rollback tx
+                     }
                      customerLookup.addId(i);
-                     stubbornPut(customerLookup);
+
+                     if (!txAwarePut(customerLookup)) {
+                        break; // rollback tx
+                     }
                   }
 
                   populateHistory((int)i, id_warehouse, id_district);
@@ -409,7 +416,9 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
                                           TpccTools.aleaChainec(14, 24),
                                           TpccTools.aleaFloat(1, 100, 2),
                                           TpccTools.sData());
-                  stubbornPut(newItem);
+                  if (!txAwarePut(newItem)) {
+                     break; //rollback tx;
+                  }
                }
             } while (!endTransactionIfNeeded());
             base+=(toAdd);
@@ -480,7 +489,9 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
                                            0,
                                            0,
                                            TpccTools.sData());
-                  stubbornPut(newStock);
+                  if (!txAwarePut(newStock)) {
+                     break;
+                  }
                }
             } while (!endTransactionIfNeeded());
             base+=(toAdd);
@@ -535,9 +546,16 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
 
                   CustomerLookupQuadruple clq = this.vector.get((int)i);
                   CustomerLookup customerLookup = new CustomerLookup(clq.c_last, clq.id_warehouse, clq.id_district);
-                  stubbornLoad(customerLookup);
+
+                  if (!txAwareLoad(customerLookup)) {
+                     break; //rollback tx
+                  }
+
                   customerLookup.addId(clq.id_customer);
-                  stubbornPut(customerLookup);
+
+                  if (!txAwarePut(customerLookup)) {
+                     break; //rollback tx
+                  }
                }
             } while (!endTransactionIfNeeded());
             base+=toAdd;
@@ -593,6 +611,32 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
                ", id_customer=" + id_customer +
                '}';
       }
+   }
+
+   private boolean txAwarePut(DomainObject domainObject) {
+      if (isBatchingEnabled()) {
+         try {
+            domainObject.store(wrapper);
+         } catch (Throwable throwable) {
+            return false;
+         }
+      } else {
+         super.stubbornPut(domainObject);
+      }
+      return true;
+   }
+
+   private boolean txAwareLoad(DomainObject domainObject) {
+      if (isBatchingEnabled()) {
+         try {
+            domainObject.load(wrapper);
+         } catch (Throwable throwable) {
+            return false;
+         }
+      } else {
+         super.stubbornLoad(domainObject);
+      }
+      return true;
    }
 
    protected boolean isBatchingEnabled(){

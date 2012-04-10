@@ -7,7 +7,7 @@ import org.radargun.tpcc.domain.District;
 import org.radargun.tpcc.domain.Warehouse;
 
 /**
- * // TODO: Document this
+ * This population is used when passive replication is enabled. Only the primary can perform the population.
  *
  * @author Pedro Ruivo
  * @since 1.1
@@ -29,8 +29,55 @@ public class PassiveReplicationTpccPopulation extends ThreadParallelTpccPopulati
          log.info("I am the primary and I am going to perform the population");
          super.performPopulation();
       } else {
+         initInAllNodes();
          log.info("I am not allowed to perform the population.");
       }
+   }
+
+   private void initInAllNodes() {
+      TpccTools.NB_WAREHOUSES = this.numWarehouses;
+      TpccTools.A_C_LAST = this.cLastMask;
+      TpccTools.A_OL_I_ID = this.olIdMask;
+      TpccTools.A_C_ID = this.cIdMask;
+   }
+
+   @Override
+   protected void initializeToolsParameters() {
+      initInAllNodes();
+
+      long c_c_last = TpccTools.randomNumber(0, TpccTools.A_C_LAST);
+      long c_c_id = TpccTools.randomNumber(0, TpccTools.A_C_ID);
+      long c_ol_i_id = TpccTools.randomNumber(0, TpccTools.A_OL_I_ID);
+
+      boolean successful = false;
+      do {
+         try {
+            wrapper.put(null, "C_C_LAST", c_c_last);
+            successful = true;
+         } catch (Throwable e) {
+            log.warn(e);
+         }
+      } while (!successful);
+
+      successful = false;
+      do {
+         try {
+            wrapper.put(null, "C_C_ID", c_c_id);
+            successful = true;
+         } catch (Throwable e) {
+            log.warn(e);
+         }
+      } while (!successful);
+
+      successful = false;
+      do {
+         try {
+            wrapper.put(null, "C_OL_ID", c_ol_i_id);
+            successful = true;
+         } catch (Throwable e) {
+            log.warn(e);
+         }
+      } while (!successful);
    }
 
    @Override
@@ -55,7 +102,6 @@ public class PassiveReplicationTpccPopulation extends ThreadParallelTpccPopulati
 
          printMemoryInfo();
       }
-
    }
 
    @Override

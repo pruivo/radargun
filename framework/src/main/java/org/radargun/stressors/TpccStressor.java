@@ -86,6 +86,10 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
 
 
    public Map<String, String> stress(CacheWrapper wrapper) {
+      if (wrapper == null) {
+         throw new IllegalStateException("Null wrapper not allowed");
+      }
+
       this.cacheWrapper = wrapper;
 
       initializeToolsParameters();
@@ -376,6 +380,8 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
 
       List<Integer> listLocalWarehouses;
       if (accessSameWarehouse) {
+         log.debug("Find the local warehouses. Number of Warehouses=" + TpccTools.NB_WAREHOUSES + ", number of slaves=" +
+                         numSlaves + ", node index=" + nodeIndex);
          listLocalWarehouses = TpccTools.selectLocalWarehouse(numSlaves, nodeIndex);
          log.debug("Local warehouses are " + listLocalWarehouses);
       } else {

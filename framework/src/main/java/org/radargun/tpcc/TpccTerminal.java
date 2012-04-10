@@ -1,5 +1,7 @@
 package org.radargun.tpcc;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.radargun.tpcc.transaction.NewOrderTransaction;
 import org.radargun.tpcc.transaction.OrderStatusTransaction;
 import org.radargun.tpcc.transaction.PaymentTransaction;
@@ -11,6 +13,8 @@ import org.radargun.tpcc.transaction.TpccTransaction;
  * @author Pedro Ruivo
  */
 public class TpccTerminal {
+
+   private static Log log = LogFactory.getLog(TpccTerminal.class);
 
    public final static int NEW_ORDER = 1, PAYMENT = 2, ORDER_STATUS = 3, DELIVERY = 4, STOCK_LEVEL = 5;
 
@@ -33,23 +37,28 @@ public class TpccTerminal {
       this.localWarehouseID = localWarehouseID;
    }
 
-   public TpccTransaction choiceTransaction(boolean canExecuteReadOnly, boolean canExecuteWrite) {
+   public TpccTransaction choiceTransaction(boolean canExecuteReadOnlyTx, boolean canExecuteWriteTx) {
 
-      if (!canExecuteWrite && !canExecuteReadOnly) {
+      if (!canExecuteWriteTx && !canExecuteReadOnlyTx) {
          throw new IllegalArgumentException("This cache wrapper must be able to execute read-only or write transaction");
       }
 
-      double transactionType = TpccTools.doubleRandomNumber(0, 100);
+      double transactionType = Math.min(TpccTools.doubleRandomNumber(1, 100), 100.0);
 
       double realPaymentWeight = paymentWeight, realOrderStatusWeight = orderStatusWeight;
 
-      if (canExecuteWrite && !canExecuteReadOnly) {
+      if (canExecuteWriteTx && !canExecuteReadOnlyTx) {
          realPaymentWeight = paymentWeight + (orderStatusWeight / 2);
          realOrderStatusWeight = 0;
-      } else if (!canExecuteWrite && canExecuteReadOnly) {
+      } else if (!canExecuteWriteTx && canExecuteReadOnlyTx) {
          realPaymentWeight = 0;
          realOrderStatusWeight = 100;
       }
+
+      log.debug("Choose transaction " + transactionType +
+                      ". Payment Weight=" + realPaymentWeight + "(" + paymentWeight + ")" +
+                      ", Order Status Weight=" + realOrderStatusWeight + "(" + orderStatusWeight + ")" +
+                      ", can execute: read only tx? " + canExecuteReadOnlyTx + ", write tx?" + canExecuteWriteTx);
 
       if (transactionType <= realPaymentWeight) {
          return new PaymentTransaction(this.indexNode, localWarehouseID);

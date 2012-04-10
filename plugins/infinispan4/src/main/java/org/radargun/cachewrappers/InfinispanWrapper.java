@@ -40,6 +40,7 @@ public class InfinispanWrapper implements CacheWrapper {
       // Set up transactional stores for JBoss TS
       arjPropertyManager.getCoordinatorEnvironmentBean().setCommunicationStore(VolatileStore.class.getName());
       arjPropertyManager.getObjectStoreEnvironmentBean().setObjectStoreType(VolatileStore.class.getName());
+      arjPropertyManager.getCoordinatorEnvironmentBean().setDefaultTimeout(300); //300 seconds == 5 min
    }
 
    private static Log log = LogFactory.getLog(InfinispanWrapper.class);
@@ -50,6 +51,7 @@ public class InfinispanWrapper implements CacheWrapper {
    String config;
    private volatile boolean enlistExtraXAResource;
    Transport transport;
+   Method isPassiveReplicationMethod = null;
 
    public void setUp(String config, boolean isLocal, int nodeIndex, TypedProperties confAttributes) throws Exception {
       this.config = config;
@@ -69,6 +71,12 @@ public class InfinispanWrapper implements CacheWrapper {
          tm = cache.getAdvancedCache().getTransactionManager();
          log.info("Using transaction manager: " + tm);
          transport = cacheManager.getTransport();
+         try {
+            isPassiveReplicationMethod = Configuration.class.getMethod("isPassiveReplication");
+         } catch (Exception e) {
+            //just ignore
+            isPassiveReplicationMethod = null;
+         }
       }
       log.debug("Loading JGroups from: " + org.jgroups.Version.class.getProtectionDomain().getCodeSource().getLocation());
       log.info("JGroups version: " + org.jgroups.Version.printDescription());
@@ -182,10 +190,6 @@ public class InfinispanWrapper implements CacheWrapper {
       }
    }
 
-   public Cache<Object, Object> getCache() {
-      return cache;
-   }
-
    private void assertTm() {
       if (tm == null) throw new RuntimeException("No configured TM!");
    }
@@ -232,17 +236,16 @@ public class InfinispanWrapper implements CacheWrapper {
          getStatsFromStatistic(cacheComponentString, mBeanServer, results);
          getStatsFromTotalOrderValidator(cacheComponentString, mBeanServer, results);
       } else {
-         log.info("Not collecting additional stats. Infinspan MBeans not found");
+         log.info("Not collecting additional stats. Infinispan MBeans not found");
       }
       return results;
    }
 
    private boolean isPassiveReplication() {
       try {
-         Method method = Configuration.class.getMethod("isPassiveReplication");
-         return (Boolean) method.invoke(cache.getConfiguration());
+         return isPassiveReplicationMethod != null && (Boolean) isPassiveReplicationMethod.invoke(cache.getConfiguration());
       } catch (Exception e) {
-         log.debug("isPassiveReplication method not found or can't be invoked. Assuming passive replication in use");
+         log.debug("isPassiveReplication method not found or can't be invoked. Assuming *no* passive replication in use");
       }
       return false;
    }
@@ -253,6 +256,7 @@ public class InfinispanWrapper implements CacheWrapper {
       Object[] emptyArgs = new Object[0];
       String[] emptySig = new String[0];
       try {
+         log.trace("Try to reset stats in " + component);
          mBeanServer.invoke(component, "resetStatistics", emptyArgs, emptySig);
          return;
       } catch (Exception e) {

@@ -160,8 +160,8 @@ public class TpccBenchmarkStage extends AbstractDistStage {
 
    @Override
    public String toString() {
-      return "WebSessionBenchmarkStage {" +
-            ", numOfThreads=" + numOfThreads +
+      return "TpccBenchmarkStage {" +
+            "numOfThreads=" + numOfThreads +
             ", perThreadSimulTime=" + perThreadSimulTime +
             ", arrivalRate=" + arrivalRate +
             ", paymentWeight=" + paymentWeight +

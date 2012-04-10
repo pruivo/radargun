@@ -41,11 +41,11 @@ public class TpccPopulation {
 
    protected int numSlaves;
 
-   private long cLastMask;
+   protected long cLastMask;
 
-   private long olIdMask;
+   protected long olIdMask;
 
-   private long cIdMask;
+   protected long cIdMask;
 
 
    public TpccPopulation(CacheWrapper wrapper, int numWarehouses, int slaveIndex, int numSlaves, long cLastMask,
@@ -82,7 +82,7 @@ public class TpccPopulation {
    }
 
 
-   public void initializeToolsParameters() {
+   protected void initializeToolsParameters() {
 
 
       TpccTools.NB_WAREHOUSES = this.numWarehouses;
@@ -501,7 +501,7 @@ public class TpccPopulation {
    }
 
    protected void logStockPopulation(int warehouseID, long initID, long finishID) {
-      log.debug("Populating Stock for Warehouse " + warehouseID + ", Items from " + initID + "to " + finishID);
+      log.debug("Populating Stock for Warehouse " + warehouseID + ", Items from " + initID + " to " + finishID);
    }
 
    protected void logItemsPopulation(long initID, long finishID) {
