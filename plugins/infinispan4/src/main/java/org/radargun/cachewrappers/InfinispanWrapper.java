@@ -297,7 +297,7 @@ public class InfinispanWrapper implements CacheWrapper {
             return;
          }
 
-         String filePath = "top-keys-" + cache.getAdvancedCache().getRpcManager().getAddress();
+         String filePath = "top-keys-" + transport.getAddress();
 
          log.info("Collecting statistics from Stream Lib component [" + streamLibStats + "] and save them in " +
                         filePath);
@@ -316,6 +316,18 @@ public class InfinispanWrapper implements CacheWrapper {
                .toString());
          bufferedWriter.newLine();
          bufferedWriter.write("LocalTopPuts=" + getMapAttribute(mBeanServer, streamLibStats,"LocalTopPuts")
+               .toString());
+         bufferedWriter.newLine();
+         bufferedWriter.write("TopLockedKeys=" + getMapAttribute(mBeanServer, streamLibStats,"TopLockedKeys")
+               .toString());
+         bufferedWriter.newLine();
+         bufferedWriter.write("TopContendedKeys=" + getMapAttribute(mBeanServer, streamLibStats,"TopContendedKeys")
+               .toString());
+         bufferedWriter.newLine();
+         bufferedWriter.write("TopLockFailedKeys=" + getMapAttribute(mBeanServer, streamLibStats,"TopLockFailedKeys")
+               .toString());
+         bufferedWriter.newLine();
+         bufferedWriter.write("TopWriteSkewFailedKeys=" + getMapAttribute(mBeanServer, streamLibStats,"TopWriteSkewFailedKeys")
                .toString());
          bufferedWriter.newLine();
          bufferedWriter.flush();
