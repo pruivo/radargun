@@ -156,8 +156,8 @@ public class PutGetStressor implements CacheWrapperStressor {
 
       results.put("DURATION(msec)", str(convertNanosToMillis(totalDuration) / numOfThreads));
       results.put("TX_PER_SEC", str(calculateTxPerSec(numberOfReadOnlyTx + numberOfWriteTx,convertNanosToMillis(totalDuration))));
-      results.put("RO_TX_PER_SEC", str(calculateTxPerSec(numberOfReadOnlyTx, convertNanosToMillis(readOnlyTxDuration))));
-      results.put("WRT_TX_SEC", str(calculateTxPerSec(numberOfWriteTx, convertNanosToMillis(writeTxDuration))));
+      results.put("RO_TX_PER_SEC", str(calculateTxPerSec(numberOfReadOnlyTx, convertNanosToMillis(totalDuration))));
+      results.put("WRT_TX_SEC", str(calculateTxPerSec(numberOfWriteTx, convertNanosToMillis(totalDuration))));
 
       results.put("WRT_TX_DUR(msec)", str(convertNanosToMillis(writeTxDuration / numOfThreads)));
       results.put("RO_TX_DUR(msec)", str(convertNanosToMillis(readOnlyTxDuration / numOfThreads)));
@@ -211,9 +211,9 @@ public class PutGetStressor implements CacheWrapperStressor {
       }
 
       if(numberOfExecFailedReadOnlyTx != 0) {
-         results.put("AVG_ERR_RO_COMMIT_DUR(msec)",str(convertNanosToMillis(readOnlyTxRollbackDuration / numOfThreads) / numberOfExecFailedReadOnlyTx));
+         results.put("AVG_RO_ROLLBACK_DUR(msec)",str(convertNanosToMillis(readOnlyTxRollbackDuration / numOfThreads) / numberOfExecFailedReadOnlyTx));
       } else {
-         results.put("AVG_ERR_RO_COMMIT_DUR(msec)",str(0));
+         results.put("AVG_RO_ROLLBACK_DUR(msec)",str(0));
       }
 
       if(numberOfWriteTx != 0) {
@@ -229,9 +229,9 @@ public class PutGetStressor implements CacheWrapperStressor {
       }
 
       if(numberOfExecFailedWriteTx != 0) {
-         results.put("AVG_ERR_WRT_COMMIT_DUR(msec)",str(convertNanosToMillis(writeTxRollbackDuration / numOfThreads) / numberOfExecFailedWriteTx));
+         results.put("AVG_WRT_ROLLBACK_DUR(msec)",str(convertNanosToMillis(writeTxRollbackDuration / numOfThreads) / numberOfExecFailedWriteTx));
       } else {
-         results.put("AVG_ERR_WRT_COMMIT_DUR(msec)",str(0));
+         results.put("AVG_WRT_ROLLBACK_DUR(msec)",str(0));
       }
 
       results.put("RO_TX_COUNT", str(numberOfReadOnlyTx));
