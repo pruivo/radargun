@@ -120,8 +120,8 @@ fi
 echo "         num_initial_members=\"5\"" >> ${DEST_FILE}
 echo "         break_on_coord_rsp=\"true\"" >> ${DEST_FILE}
 echo "         return_entire_cache=\"true\"" >> ${DEST_FILE}
-echo "         stagger_timeout=\"5000\"" >> ${DEST_FILE}
-echo "         timeout=\"120000\"" >> ${DEST_FILE}
+echo "         stagger_timeout=\"3000\"" >> ${DEST_FILE}
+echo "         timeout=\"5000\"" >> ${DEST_FILE}
 echo "         />" >> ${DEST_FILE}
 
 echo "   <MERGE2" >> ${DEST_FILE}
