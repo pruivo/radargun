@@ -16,6 +16,10 @@ import java.util.Map;
  * @since 4.0
  */
 public class OrderKeysUpdate {
+   private static final int KEY_IDX = 5;
+   private static final int VALUE_IDX = 10;
+   private static final int VERSION_IDX = 11;
+
    public static void main(String[] args) {
       if (args.length == 0) {
          System.err.println("Error. file expected");
@@ -28,13 +32,13 @@ public class OrderKeysUpdate {
          BufferedReader br = new BufferedReader(new FileReader(args[0]));
 
          String line;
-
+         //11:08:56,034 TRACE [ReadCommittedEntry] Updating entry (key=KEY_0 removed=false valid=true changed=true created=true value=<value> newVersion=null]
          while ((line = br.readLine()) != null) {
-            String[] split = line.split("[|]");
+            String[] split = line.split(" ");
 
-            String key = split[0];
-            String value = split[1];
-            String version = split[2];
+            String key = getKey(split[KEY_IDX]);
+            String value = getValue(split[VALUE_IDX]);
+            String version = getVersion(split[VERSION_IDX]);
 
             if (value.length() > 10) {
                value = value.substring(0, 10);
@@ -64,5 +68,17 @@ public class OrderKeysUpdate {
          }
          System.out.println();
       }
+   }
+
+   private static String getKey(String key) {
+      return key.split("=")[1];
+   }
+
+   private static String getValue(String value) {
+      return value.split("=")[1];
+   }
+
+   private static String getVersion(String version) {
+      return version.split("=")[1];
    }
 }
