@@ -3,6 +3,7 @@ package org.radargun;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.radargun.tpcc.ThreadParallelTpccPopulation;
+import org.radargun.tpcc.TpccPopulation;
 import org.radargun.utils.TypedProperties;
 import org.radargun.utils.Utils;
 
@@ -71,8 +72,8 @@ public class PopulateOnly {
       }
 
 
-      ThreadParallelTpccPopulation population = new ThreadParallelTpccPopulation(cacheWrapper, numWarehouses, 0, 1,
-                                                                                 cLastMask, olIdMask, cIdMask, 1, 1000);
+      TpccPopulation population = new ThreadParallelTpccPopulation(cacheWrapper, numWarehouses, 0, 1,
+  cLastMask, olIdMask, cIdMask, 1, 10000);
 
       log.info("Starting the population of " + cacheWrapper + " with " + numWarehouses + " warehouses. C_Last_Mask=" +
                      cLastMask + ", Ol_ID_Mask=" + olIdMask + ", C_ID_Mask=" + cIdMask);
@@ -85,7 +86,7 @@ public class PopulateOnly {
 
       DateFormat df = new SimpleDateFormat("HH:mm.ss");
       df.setTimeZone(TimeZone.getTimeZone("GMT"));
-      log.info("Population took " + df.format(new Date(duration)) + " and it have put " + cacheSize + " keys/entries");
+      log.info("Population took " + df.format(new Date(duration)) + " and it has put " + cacheSize + " keys/entries");
       try {
          cacheWrapper.tearDown();
       } catch (Exception e) {
