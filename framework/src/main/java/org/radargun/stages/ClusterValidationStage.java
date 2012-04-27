@@ -125,7 +125,7 @@ public class ClusterValidationStage extends AbstractDistStage {
       int tryCount = 0;
       while (tryCount < 5) {
          try {
-            if (wrapper.canExecuteWriteTransactions()) {
+            if (!wrapper.isPassiveReplication() || wrapper.isTheMaster()) {
                wrapper.put(nodeBucket(getSlaveIndex()), key(getSlaveIndex()), "true");
             }
             return;

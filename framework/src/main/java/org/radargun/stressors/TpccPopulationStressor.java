@@ -68,7 +68,7 @@ public class TpccPopulationStressor extends AbstractCacheWrapperStressor {
 
       TpccPopulation tpccPopulation;
 
-      if (isPassiveReplication) {
+      if (wrapper.isPassiveReplication()) {
          log.info("Performing passive-replication aware population...");
          tpccPopulation = new PassiveReplicationTpccPopulation(wrapper, numWarehouses, slaveIndex,
                                                                numSlaves, cLastMask, olIdMask,

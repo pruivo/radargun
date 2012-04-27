@@ -17,7 +17,7 @@ public class ClearClusterStage extends AbstractDistStage {
       for (int i = 0; i < 5; i++) {
          try {
             log.info(Utils.printMemoryFootprint(true));
-            if (cacheWrapper.canExecuteWriteTransactions()) {
+            if (!cacheWrapper.isPassiveReplication() || cacheWrapper.isTheMaster()) {
                cacheWrapper.empty();
             }
             return defaultDistStageAck;

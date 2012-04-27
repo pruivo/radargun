@@ -3,11 +3,12 @@ package org.radargun.stressors;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.radargun.CacheWrapper;
+import org.radargun.producer.GroupProducerRateFactory;
+import org.radargun.producer.ProducerRate;
 import org.radargun.tpcc.ElementNotFoundException;
 import org.radargun.tpcc.TpccTerminal;
 import org.radargun.tpcc.TpccTools;
 import org.radargun.tpcc.transaction.NewOrderTransaction;
-import org.radargun.tpcc.transaction.OrderStatusTransaction;
 import org.radargun.tpcc.transaction.PaymentTransaction;
 import org.radargun.tpcc.transaction.TpccTransaction;
 import org.radargun.utils.Utils;
@@ -17,7 +18,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -99,10 +99,23 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
       if (this.arrivalRate != 0.0) {     //Open system
          queue = new ArrayBlockingQueue<RequestType>(7000);
          countJobs = new AtomicLong(0L);
-         producers = new Producer[3];
-         producers[0] = new Producer(TpccTerminal.NEW_ORDER, 100.0 - (this.paymentWeight + this.orderStatusWeight));
-         producers[1] = new Producer(TpccTerminal.PAYMENT, this.paymentWeight);
-         producers[2] = new Producer(TpccTerminal.ORDER_STATUS, this.orderStatusWeight);
+
+         ProducerRate[] producerRates;
+         if (cacheWrapper.isPassiveReplication()) {
+            if (cacheWrapper.isTheMaster()) {
+               producerRates = new GroupProducerRateFactory(arrivalRate, 1, nodeIndex, 10).create();
+            } else {
+               producerRates = new GroupProducerRateFactory(arrivalRate, numSlaves - 1, nodeIndex - 1, 10).create();
+            }
+         } else {
+            producerRates = new GroupProducerRateFactory(arrivalRate, numSlaves, nodeIndex, 10).create();
+         }
+
+         producers = new Producer[producerRates.length];
+
+         for (int i = 0; i < producerRates.length; ++i) {
+            producers[i] = new Producer(producerRates[i], i);
+         }
       }
 
       startTime = System.currentTimeMillis();
@@ -481,21 +494,19 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
          TpccTerminal terminal = new TpccTerminal(this.paymentWeight, this.orderStatusWeight, this.nodeIndex, localWarehouseID);
 
          long delta = 0L;
-         long end = 0L;
+         long end;
          long initTime = System.nanoTime();
 
          long commit_start = 0L;
-         long endInQueueTime = 0L;
+         long endInQueueTime;
 
 
          TpccTransaction transaction;
 
-         boolean isReadOnly = false;
-         boolean successful = true;
+         boolean isReadOnly;
+         boolean successful;
 
          while (delta < (this.simulTime * 1000000000L)) {
-
-            isReadOnly = false;
             successful = true;
             transaction = null;
 
@@ -511,37 +522,26 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
                      numNewOrderDequeued++;
                      writeInQueueTime += endInQueueTime - request.timestamp;
                      newOrderInQueueTime += endInQueueTime - request.timestamp;
-
-                     transaction = new NewOrderTransaction(localWarehouseID);
                   } else if (request.transactionType == TpccTerminal.PAYMENT) {
                      numWriteDequeued++;
                      numPaymentDequeued++;
                      writeInQueueTime += endInQueueTime - request.timestamp;
                      paymentInQueueTime += endInQueueTime - request.timestamp;
-
-                     transaction = new PaymentTransaction(nodeIndex, localWarehouseID);
-
                   } else if (request.transactionType == TpccTerminal.ORDER_STATUS) {
                      numReadDequeued++;
                      readInQueueTime += endInQueueTime - request.timestamp;
-
-                     transaction = new OrderStatusTransaction(localWarehouseID);
-
                   }
 
-
+                  transaction = terminal.createTransaction(request.transactionType);
                } catch (InterruptedException ir) {
                   log.error("»»»»»»»THREAD INTERRUPTED WHILE TRYING GETTING AN OBJECT FROM THE QUEUE«««««««");
                }
             } else {
-
-               transaction = terminal.choiceTransaction(cacheWrapper.canExecuteReadOnlyTransactions(),
-                                                        cacheWrapper.canExecuteWriteTransactions());
+               transaction = terminal.choiceTransaction(cacheWrapper.isPassiveReplication(), cacheWrapper.isTheMaster());
             }
             isReadOnly = transaction.isReadOnly();
 
             long startService = System.nanoTime();
-
 
             cacheWrapper.startTransaction();
 
@@ -660,7 +660,6 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
 
       }
 
-
       public long totalDuration() {
          return readDuration + writeDuration;
       }
@@ -669,56 +668,43 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
    }
 
    private class Producer extends Thread {
-      private double transaction_weight;    //an integer in [0,100]
-      private int transaction_type;
-      private double producerRate;
-      private Random random;
-      private boolean isProducingReadOnlyTx;
+      private final ProducerRate rate;
+      private final TpccTerminal terminal;
+      private boolean run = true;
 
-      public Producer(int transaction_type, double transaction_weight) {
-
-         this.transaction_weight = transaction_weight;
-         this.transaction_type = transaction_type;
-         this.producerRate = ((arrivalRate / 1000.0) * (this.transaction_weight / 100.0)) / numSlaves;
-         this.random = new Random(System.currentTimeMillis());
-         this.isProducingReadOnlyTx = transaction_type == TpccTerminal.ORDER_STATUS;
-
+      public Producer(ProducerRate rate, int id) {
+         super("Producer-" + id);
+         setDaemon(true);
+         this.rate = rate;
+         this.terminal = new TpccTerminal(paymentWeight, orderStatusWeight, nodeIndex, 0);
       }
 
       public void run() {
-
-         long time;
-         boolean skipTxProduction;
-
-         while (completedThread.get() != numOfThreads) {
-
+         log.debug("Starting " + getName() + " with rate of " + rate.getLambda());
+         while (completedThread.get() != numOfThreads && run) {
             try {
-               skipTxProduction = (isProducingReadOnlyTx && !cacheWrapper.canExecuteReadOnlyTransactions()) ||
-                     (!isProducingReadOnlyTx && !cacheWrapper.canExecuteWriteTransactions());
-
-               if (skipTxProduction) {
-                  queue.add(new RequestType(System.nanoTime(), this.transaction_type));
-                  countJobs.incrementAndGet();
-               }
-
-               time = (long) (exp(this.producerRate));
-
-               Thread.sleep(time);
-            } catch (InterruptedException i) {
-               log.error("»»»»»»INTERRUPTED_EXCEPTION«««««««", i);
+               queue.add(new RequestType(System.nanoTime(),
+                                         terminal.chooseTransactionType(cacheWrapper.isPassiveReplication(),
+                                                                        cacheWrapper.isTheMaster())));
+               countJobs.incrementAndGet();
+               rate.sleep();
             } catch (IllegalStateException il) {
                log.error("»»»»»»»IllegalStateException«««««««««", il);
-
             }
          }
-
       }
 
-      private double exp(double rate) {
-         return -Math.log(1.0 - random.nextDouble()) / rate;
+      @Override
+      public synchronized void start() {
+         run = true;
+         super.start();
       }
 
-
+      @Override
+      public void interrupt() {
+         run = false;
+         super.interrupt();
+      }
    }
 
    private class RequestType {

@@ -204,16 +204,6 @@ public class InfinispanWrapper implements CacheWrapper {
    }
 
    @Override
-   public boolean canExecuteReadOnlyTransactions() {
-      return !isPassiveReplication() || (transport != null && !transport.isCoordinator());
-   }
-
-   @Override
-   public boolean canExecuteWriteTransactions() {
-      return !isPassiveReplication() || (transport != null && transport.isCoordinator());
-   }
-
-   @Override
    public void resetAdditionalStats() {
       MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
       String domain = cacheManager.getGlobalConfiguration().getJmxDomain();
@@ -241,13 +231,19 @@ public class InfinispanWrapper implements CacheWrapper {
       return results;
    }
 
-   private boolean isPassiveReplication() {
+   @Override
+   public boolean isPassiveReplication() {
       try {
          return isPassiveReplicationMethod != null && (Boolean) isPassiveReplicationMethod.invoke(cache.getConfiguration());
       } catch (Exception e) {
          log.debug("isPassiveReplication method not found or can't be invoked. Assuming *no* passive replication in use");
       }
       return false;
+   }
+
+   @Override
+   public boolean isTheMaster() {
+      return !isPassiveReplication() || transport.isCoordinator();
    }
 
    //================================================= JMX STATS ====================================================

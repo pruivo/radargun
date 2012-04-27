@@ -99,16 +99,16 @@ public interface CacheWrapper
    int getCacheSize();
 
    /**
-    * check if this cache can execute read-only transactions
-    * @return true if the cache can execute read-only transactions
+    * return true if the replication protocol is passive replication (single master protocol!)
+    * @return  true if is passive replication, false otherwise
     */
-   boolean canExecuteReadOnlyTransactions();
+   boolean isPassiveReplication();
 
    /**
-    * check if this cache can execute write transactions
-    * @return true if the cache can execute write transactions
+    * returns true if this cache wrapper is *the* master in passive replication
+    * @return true if this cache wrapper is *the* master, false otherwise
     */
-   boolean canExecuteWriteTransactions();
+   boolean isTheMaster();
 
    /**
     * it resets the additional stats

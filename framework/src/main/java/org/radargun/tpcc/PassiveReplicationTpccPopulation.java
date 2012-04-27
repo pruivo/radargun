@@ -25,7 +25,7 @@ public class PassiveReplicationTpccPopulation extends ThreadParallelTpccPopulati
 
    @Override
    public void performPopulation() {
-      if (wrapper.canExecuteWriteTransactions()) {
+      if (wrapper.isTheMaster()) {
          log.info("I am the primary and I am going to perform the population");
          super.performPopulation();
       } else {
