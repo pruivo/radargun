@@ -29,21 +29,14 @@ public class PassiveReplicationTpccPopulation extends ThreadParallelTpccPopulati
          log.info("I am the primary and I am going to perform the population");
          super.performPopulation();
       } else {
-         initInAllNodes();
+         initTpccTools();
          log.info("I am not allowed to perform the population.");
       }
    }
 
-   private void initInAllNodes() {
-      TpccTools.NB_WAREHOUSES = this.numWarehouses;
-      TpccTools.A_C_LAST = this.cLastMask;
-      TpccTools.A_OL_I_ID = this.olIdMask;
-      TpccTools.A_C_ID = this.cIdMask;
-   }
-
    @Override
    protected void initializeToolsParameters() {
-      initInAllNodes();
+      initTpccTools();
 
       long c_c_last = TpccTools.randomNumber(0, TpccTools.A_C_LAST);
       long c_c_id = TpccTools.randomNumber(0, TpccTools.A_C_ID);

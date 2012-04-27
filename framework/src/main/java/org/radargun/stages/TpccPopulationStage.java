@@ -69,6 +69,11 @@ public class TpccPopulationStage extends AbstractDistStage{
     */
    private boolean isPassiveReplication = false;
 
+   /**
+    * if true, it means that the cache was already preloaded from a DataBase. So no population is needed
+    */
+   private boolean preloadedFromDB = false;
+
    public DistStageAck executeOnSlave() {
       DefaultDistStageAck ack = newDefaultStageAck();
       CacheWrapper wrapper = slaveState.getCacheWrapper();
@@ -96,6 +101,7 @@ public class TpccPopulationStage extends AbstractDistStage{
       populationStressor.setNumLoadersThread(numLoaderThreads);
       populationStressor.setBatchLevel(batchLevel);
       populationStressor.setPassiveReplication(isPassiveReplication);
+      populationStressor.setPreloadedFromDB(preloadedFromDB);
       populationStressor.stress(wrapper);
    }
 
@@ -142,6 +148,10 @@ public class TpccPopulationStage extends AbstractDistStage{
       isPassiveReplication = passiveReplication;
    }
 
+   public void setPreloadedFromDB(boolean preloadedFromDB) {
+      this.preloadedFromDB = preloadedFromDB;
+   }
+
    @Override
    public String toString() {
       return "TpccPopulationStage {" +
@@ -153,6 +163,7 @@ public class TpccPopulationStage extends AbstractDistStage{
             ", numLoaderThreads=" + numLoaderThreads +
             ", batchLevel=" + batchLevel +
             ", isPassiveReplication=" + isPassiveReplication +
+            ", preloadedFromDB=" + preloadedFromDB +
             ", " + super.toString();
    }
 }

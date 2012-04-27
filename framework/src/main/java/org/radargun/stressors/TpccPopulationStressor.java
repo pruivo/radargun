@@ -42,6 +42,11 @@ public class TpccPopulationStressor extends AbstractCacheWrapperStressor {
    private int batchLevel = 100;
 
    /**
+    * if true, means that the cache was already preload from a database. So, no population is needed.
+    */
+   private boolean preloadedFromDB = false;
+
+   /**
     * set the population to be aware if passive replication is in use (only the primary/master can do the population)
     */
    private boolean isPassiveReplication = false;
@@ -80,8 +85,13 @@ public class TpccPopulationStressor extends AbstractCacheWrapperStressor {
          tpccPopulation = new TpccPopulation(wrapper, this.numWarehouses, this.slaveIndex, this.numSlaves,
                                              this.cLastMask, this.olIdMask, this.cIdMask);
       }
-      tpccPopulation.performPopulation();
-      log.info("Population ended with " + wrapper.getCacheSize()+" elements!");
+      if (preloadedFromDB) {
+         log.info("Skipping the population phase. The data was already preloaded from a DataBase");
+         tpccPopulation.initTpccTools();
+      } else {
+         tpccPopulation.performPopulation();
+      }
+      log.info("Population ended with " + wrapper.getCacheSize() + " elements!");
    }
 
    @Override
@@ -97,6 +107,7 @@ public class TpccPopulationStressor extends AbstractCacheWrapperStressor {
             ", numLoadersThread=" + numLoadersThread +
             ", batchLevel=" + batchLevel +
             ", isPassiveReplication=" + isPassiveReplication +
+            ", preloadedFromDB=" + preloadedFromDB +
             "}";
    }
 
@@ -143,5 +154,9 @@ public class TpccPopulationStressor extends AbstractCacheWrapperStressor {
 
    public void setPassiveReplication(boolean passiveReplication) {
       isPassiveReplication = passiveReplication;
+   }
+
+   public void setPreloadedFromDB(boolean preloadedFromDB) {
+      this.preloadedFromDB = preloadedFromDB;
    }
 }

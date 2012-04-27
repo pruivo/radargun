@@ -21,6 +21,7 @@ POPULATION_THREADS="2"
 POPULATION_BATCH_LEVEL="100"
 SAME_WAREHOUSE="false"
 PASSIVE_REPLICATION="false"
+PRELOAD="false"
 
 help_and_exit(){
 echo "usage: ${0} <options>"
@@ -68,6 +69,10 @@ echo ""
 echo "  -config <value>                  the path for the configuration of the cache"
 echo "                                   default: ${CACHE_CONFIG_FILE}"
 echo ""
+echo "  -preload-from-db                 it means that the cache is already populated. This will skip the population phase"
+echo "                                   default: population is performed."
+echo "                                   NOTE: don't remote the population phase from configuration. Only set it to already populated"
+echo ""
 echo "  -no-parallel-population          disables the parallel population (the fastest)"
 echo "                                   default: is enabled"
 echo ""
@@ -104,6 +109,7 @@ case $1 in
   -distributed) PARTIAL_REPLICATION="true"; shift 1;;
   -passive-replication) PASSIVE_REPLICATION="true"; shift 1;;
   -same-warehouse-access) SAME_WAREHOUSE="true"; shift 1;;
+  -preload-from-db) PRELOAD="true"; shift 1;;
   -*) echo "WARNING: unknown option '$1'. It will be ignored" >&2; shift 1;;
   *) echo "WARNING: unknown parameter '$1'. It will be ignored"; shift 1;;
 esac
@@ -134,9 +140,8 @@ echo "      <ClusterValidation" >> ${DEST_FILE}
 echo "            passiveReplication=\"${PASSIVE_REPLICATION}\"" >> ${DEST_FILE}
 echo "            partialReplication=\"${PARTIAL_REPLICATION}\"/>" >> ${DEST_FILE}
 
-echo "      <ClearCluster />" >> ${DEST_FILE}
-
 echo "      <TpccPopulation" >> ${DEST_FILE}
+echo "            preloadedFromDB=\"${PRELOAD}\"" >> ${DEST_FILE}
 echo "            passiveReplication=\"${PASSIVE_REPLICATION}\"" >> ${DEST_FILE}
 echo "            numWarehouses=\"${NUMBER_OF_WAREHOUSES}\"" >> ${DEST_FILE}
 echo "            cLastMask=\"${C_LAST_MASK}\"" >> ${DEST_FILE}

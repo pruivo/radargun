@@ -57,6 +57,9 @@ echo ""
 echo "    -num-owner <value>            number of owners in distributed mode"
 echo "                                  default: ${DIST_NUM_OWNERS}"
 echo ""
+echo "    -preload-from-db <location>   preload the cache with the data present in the DataBase."
+echo "                                  It uses the Berkeley DB and it is located in <location>"
+echo ""
 echo "    -versioned                    enables the versioned cache"
 echo ""
 echo "    -write-skew                   enables the write skew check if the isolation level is REPEATABLE_READ"
@@ -97,6 +100,7 @@ case $1 in
   -stats) STATS="true"; shift 1;;
   -to-queue-size) TO_QUEUE_SIZE=$2; shift 2;;
   -to-1pc) TO_1PC="true"; shift 1;;
+  -preload-from-db) PRELOAD_LOCATION=$2; shift 2;;
   -*) echo "WARNING: unknown option '$1'. It will be ignored" >&2; shift 1;;
   *) echo "WARNING: unknown argument '$1'. It will be ignored" >&2; shift 1;;
   esac
@@ -236,6 +240,26 @@ if [ "${VERSIONS}" == "true" ]; then
 echo "        <versioning" >> ${DEST_FILE}
 echo "                enabled=\"${VERSIONS}\"" >> ${DEST_FILE}
 echo "                versioningScheme=\"${VERSION_SCHEME}\" />" >> ${DEST_FILE}
+fi
+
+#preload the data from the database
+if [ -n "${PRELOAD_LOCATION}" ]; then
+echo "        <loaders" >> ${DEST_FILE}
+echo "                passivation=\"false\"" >> ${DEST_FILE}
+echo "                shared=\"false\"" >> ${DEST_FILE}
+echo "                preload=\"true\">" >> ${DEST_FILE}
+echo "            <loader" >> ${DEST_FILE}
+echo "                    class=\"org.infinispan.loaders.bdbje.BdbjeCacheStore\"" >> ${DEST_FILE}
+echo "                    fetchPersistentState=\"false\"" >> ${DEST_FILE}
+echo "                    ignoreModifications=\"true\"" >> ${DEST_FILE}
+echo "                    purgeOnStartup=\"false\">" >> ${DEST_FILE}
+echo "                <properties>" >> ${DEST_FILE}
+echo "                    <property" >> ${DEST_FILE}
+echo "                            name=\"location\"" >> ${DEST_FILE}
+echo "                            value=\"${PRELOAD_LOCATION}\"/>" >> ${DEST_FILE}
+echo "                </properties>" >> ${DEST_FILE}
+echo "            </loader>" >> ${DEST_FILE}
+echo "        </loaders>" >> ${DEST_FILE}
 fi
 
 echo "    </default>" >> ${DEST_FILE}

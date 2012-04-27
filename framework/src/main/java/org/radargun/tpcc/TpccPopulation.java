@@ -71,6 +71,13 @@ public class TpccPopulation {
 
    }
 
+   public final void initTpccTools() {
+      TpccTools.NB_WAREHOUSES = this.numWarehouses;
+      TpccTools.A_C_LAST = this.cLastMask;
+      TpccTools.A_OL_I_ID = this.olIdMask;
+      TpccTools.A_C_ID = this.cIdMask;
+   }
+
    public void performPopulation(){
       initializeToolsParameters();
 
@@ -83,12 +90,7 @@ public class TpccPopulation {
 
 
    protected void initializeToolsParameters() {
-
-
-      TpccTools.NB_WAREHOUSES = this.numWarehouses;
-      TpccTools.A_C_LAST = this.cLastMask;
-      TpccTools.A_OL_I_ID = this.olIdMask;
-      TpccTools.A_C_ID = this.cIdMask;
+      initTpccTools();
 
       if (this.slaveIndex == 0) {//Only one slave
          long c_c_last = TpccTools.randomNumber(0, TpccTools.A_C_LAST);
