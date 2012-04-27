@@ -1,5 +1,11 @@
 #!/bin/bash
 
+##############
+# Script to perform the population
+#
+# Author: Pedro Ruivo
+#############
+
 ## Load includes
 if [ "x$RADARGUN_HOME" = "x" ]; then DIRNAME=`dirname $0`; RADARGUN_HOME=`cd $DIRNAME/..; pwd` ; fi; export RADARGUN_HOME
 . ${RADARGUN_HOME}/bin/includes.sh
@@ -8,7 +14,7 @@ CONFIG=./conf/tpcc-gen.properties
 
 help_and_exit() {
   echo "Usage: "
-  echo '  $ local.sh [config]'
+  echo '  $ populate.sh [config]'
   echo ""
   echo "   [config]        Path to the framework configuration properties file. Optional - if not supplied benchmark will load ${CONFIG}"
   echo ""
