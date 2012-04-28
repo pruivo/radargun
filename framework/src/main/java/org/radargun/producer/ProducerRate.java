@@ -38,6 +38,7 @@ public class ProducerRate {
    /**
     * NOTE: the public visibility is only for testing purpose!
     * @param random  random generator number
+    * @param lambda  the lambda in milliseconds
     * @return        the sleeping time in milliseconds
     */
    public final double exp(Random random, double lambda) {

@@ -34,6 +34,9 @@ import java.util.concurrent.atomic.AtomicLong;
 public class TpccStressor extends AbstractCacheWrapperStressor {
 
    private static Log log = LogFactory.getLog(TpccStressor.class);
+   
+   //in milliseconds, each producer sleeps for this time in average
+   private static final int AVERAGE_PRODUCER_SLEEP_TIME = 10;
 
    /**
     * the number of threads that will work on this cache wrapper.
@@ -89,6 +92,7 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
       if (wrapper == null) {
          throw new IllegalStateException("Null wrapper not allowed");
       }
+      validateTransactionsWeight();
 
       this.cacheWrapper = wrapper;
 
@@ -145,6 +149,14 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
    public void destroy() throws Exception {
       cacheWrapper.empty();
       cacheWrapper = null;
+   }
+   
+   private void validateTransactionsWeight() {
+      int sum = orderStatusWeight + paymentWeight;
+      if (sum < 0 || sum > 100) {
+         throw new IllegalArgumentException("The sum of the transactions weights must be higher or equals than zero " +
+                                                  "and less or equals than one hundred");
+      }
    }
 
    private void initializeToolsParameters() {

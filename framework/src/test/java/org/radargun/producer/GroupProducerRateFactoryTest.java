@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 /**
- * // TODO: Document this
+ * Tests the Group Producer Rate Factory component
  *
  * @author Pedro Ruivo
  * @since 1.1

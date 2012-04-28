@@ -8,7 +8,7 @@ package org.radargun.producer;
  * @since 1.1
  */
 public class GroupProducerRateFactory {
-   private final double originalLambda; //tx/msec
+   private final double originalLambda; //tx/sec
    private final int numberOfNodes;
    private final int nodeIndex;
    private final int avgSleepTime;
@@ -18,6 +18,7 @@ public class GroupProducerRateFactory {
     * @param globalLambda     the global system lambda (a.k.a arrival rate) in transactions per seconds
     * @param numberOfNodes    the number of nodes in the system (>= 1)
     * @param nodeIndex        the node index [0..numberOfNodes - 1]
+    * @param avgSleepTime     The average sleeping time desire for a producer
     */
    public GroupProducerRateFactory(double globalLambda, int numberOfNodes, int nodeIndex, int avgSleepTime) {
       if (numberOfNodes < 1) {
