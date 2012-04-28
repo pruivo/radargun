@@ -6,7 +6,7 @@ DEST_FILE=${WORKING_DIR}/conf/ispn.xml
 
 STATS="false"
 JGR_CONFIG="jgroups.xml"
-ISOLATION_LEVEL="READ_COMMITTED"
+ISOLATION_LEVEL="REPEATABLE_READ"
 CONCURRENCY_LEVEL="32"
 WRITE_SKEW="false"
 LOCK_TIMEOUT="10000"
@@ -70,7 +70,7 @@ echo "    -pb-protocol                  change the commit protocol to Passive Re
 echo ""
 echo "    -deadlock-detector            enable the deadlock detection mechanism"
 echo ""
-echo "    -sync                         enable synchronous communication"
+echo "    -async                        enable asynchronous communication"
 echo ""
 echo "    -stats                        enable stats collection"
 echo ""
@@ -96,7 +96,7 @@ case $1 in
   -to-protocol) TX_PROTOCOL="TOTAL_ORDER"; shift 1;;
   -pb-protocol) TX_PROTOCOL="PASSIVE_REPLICATION"; shift 1;;
   -deadlock-detector) DEADLOCK_DETECTION="true"; shift 1;;
-  -sync) SYNC=1; shift 1;;
+  -async) ASYNC=1; shift 1;;
   -stats) STATS="true"; shift 1;;
   -to-queue-size) TO_QUEUE_SIZE=$2; shift 2;;
   -to-1pc) TO_1PC="true"; shift 1;;
@@ -186,7 +186,6 @@ fi
 if [ "${TX_PROTOCOL}" == "PASSIVE_REPLICATION" ]; then
 echo "                transactionProtocol=\"${TX_PROTOCOL}\"" >> ${DEST_FILE}
 fi
-
 echo "                />" >> ${DEST_FILE}
 
 echo "        <jmxStatistics" >> ${DEST_FILE}
@@ -197,16 +196,16 @@ echo "                enabled=\"${DEADLOCK_DETECTION}\"/>" >> ${DEST_FILE}
 
 echo "        <clustering mode=\"${CLUSTERING_MODE}\">" >> ${DEST_FILE}
 
-if [ -n "${SYNC}" ]; then
-echo "            <sync" >> ${DEST_FILE}
-echo "                    replTimeout=\"150000\" />" >> ${DEST_FILE}
-else
+if [ -n "${ASYNC}" ]; then
 echo "            <async" >> ${DEST_FILE}
 echo "                    replQueueMaxElements=\"1000\"" >> ${DEST_FILE}
 echo "                    replQueueClass=\"org.infinispan.remoting.ReplicationQueueImpl\"" >> ${DEST_FILE}
 echo "                    useReplQueue=\"false\"" >> ${DEST_FILE}
 echo "                    replQueueInterval=\"5000\"" >> ${DEST_FILE}
 echo "                    asyncMarshalling=\"false\" />" >> ${DEST_FILE}
+else
+echo "            <sync" >> ${DEST_FILE}
+echo "                    replTimeout=\"150000\" />" >> ${DEST_FILE}
 fi
 
 #replicated mode or invalidation

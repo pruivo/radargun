@@ -13,9 +13,9 @@ NUMBER_OF_WAREHOUSES="1"
 C_LAST_MASK="0"
 OL_ID_MASK="0"
 C_ID_MASK="0"
-ARRIVAL_RATE="0.0"
-PAYMENT_WEIGHT="45.0"
-ORDER_STATUS_WEIGHT="5.0"
+ARRIVAL_RATE="0"
+PAYMENT_WEIGHT="45"
+ORDER_STATUS_WEIGHT="5"
 PARALLEL_POPULATION="true"
 POPULATION_THREADS="2"
 POPULATION_BATCH_LEVEL="100"
@@ -142,7 +142,6 @@ echo "            partialReplication=\"${PARTIAL_REPLICATION}\"/>" >> ${DEST_FIL
 
 echo "      <TpccPopulation" >> ${DEST_FILE}
 echo "            preloadedFromDB=\"${PRELOAD}\"" >> ${DEST_FILE}
-echo "            passiveReplication=\"${PASSIVE_REPLICATION}\"" >> ${DEST_FILE}
 echo "            numWarehouses=\"${NUMBER_OF_WAREHOUSES}\"" >> ${DEST_FILE}
 echo "            cLastMask=\"${C_LAST_MASK}\"" >> ${DEST_FILE}
 echo "            olIdMask=\"${OL_ID_MASK}\"" >> ${DEST_FILE}

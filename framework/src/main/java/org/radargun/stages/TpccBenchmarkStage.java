@@ -45,17 +45,17 @@ public class TpccBenchmarkStage extends AbstractDistStage {
    /**
     * average arrival rate of the transactions to the system
     */
-   private double arrivalRate = 0.0D;
+   private int arrivalRate = 0;
    
    /**
     * percentage of Payment transactions
     */
-   private double paymentWeight = 45.0D;
+   private int paymentWeight = 45;
    
    /**
     * percentage of Order Status transactions
     */
-   private double orderStatusWeight = 5.0D;
+   private int orderStatusWeight = 5;
 
    /**
     * if true, each node will pick a warehouse and all transactions will work over that warehouse. The warehouses are
@@ -142,15 +142,15 @@ public class TpccBenchmarkStage extends AbstractDistStage {
       this.perThreadSimulTime = perThreadSimulTime;
    }
 
-   public void setArrivalRate(double arrivalRate) {
+   public void setArrivalRate(int arrivalRate) {
       this.arrivalRate = arrivalRate;
    }
 
-   public void setPaymentWeight(double paymentWeight) {
+   public void setPaymentWeight(int paymentWeight) {
       this.paymentWeight = paymentWeight;
    }
 
-   public void setOrderStatusWeight(double orderStatusWeight) {
+   public void setOrderStatusWeight(int orderStatusWeight) {
       this.orderStatusWeight = orderStatusWeight;
    }
 

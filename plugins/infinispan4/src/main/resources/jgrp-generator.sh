@@ -22,7 +22,7 @@ echo ""
 echo "    -gossip-host <address>    sets the initial host (used when you have -no-ipmcast)"
 echo "                              Default: ${INITIAL_HOST}"
 echo ""
-echo "    -tpc                      sets the transport protocol as TCP"
+echo "    -tcp                      sets the transport protocol as TCP"
 echo "                              Default: uses UDP"
 echo ""
 echo "    -h                        show this message"
@@ -116,7 +116,7 @@ else
 echo "   <TCPGOSSIP" >> ${DEST_FILE}
 echo "         initial_hosts=\"\${jgroups.gossip_host:${INITIAL_HOST}}[12001]\"" >> ${DEST_FILE}
 fi
-#Discover commom properties
+#Discover common properties
 echo "         num_initial_members=\"5\"" >> ${DEST_FILE}
 echo "         break_on_coord_rsp=\"true\"" >> ${DEST_FILE}
 echo "         return_entire_cache=\"true\"" >> ${DEST_FILE}

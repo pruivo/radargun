@@ -65,11 +65,6 @@ public class TpccPopulationStage extends AbstractDistStage{
    private int batchLevel = 100;
 
    /**
-    * true if the cache wrapper uses passive replication (only the primary/master can perform the population)
-    */
-   private boolean isPassiveReplication = false;
-
-   /**
     * if true, it means that the cache was already preloaded from a DataBase. So no population is needed
     */
    private boolean preloadedFromDB = false;
@@ -100,7 +95,6 @@ public class TpccPopulationStage extends AbstractDistStage{
       populationStressor.setThreadParallelLoad(threadParallelLoad);
       populationStressor.setNumLoadersThread(numLoaderThreads);
       populationStressor.setBatchLevel(batchLevel);
-      populationStressor.setPassiveReplication(isPassiveReplication);
       populationStressor.setPreloadedFromDB(preloadedFromDB);
       populationStressor.stress(wrapper);
    }
@@ -115,7 +109,7 @@ public class TpccPopulationStage extends AbstractDistStage{
       }
       return true;
    }
-      
+
    public void setNumWarehouses(int numWarehouses) {
       this.numWarehouses = numWarehouses;
    }
@@ -144,10 +138,6 @@ public class TpccPopulationStage extends AbstractDistStage{
       this.batchLevel = batchLevel;
    }
 
-   public void setPassiveReplication(boolean passiveReplication) {
-      isPassiveReplication = passiveReplication;
-   }
-
    public void setPreloadedFromDB(boolean preloadedFromDB) {
       this.preloadedFromDB = preloadedFromDB;
    }
@@ -162,7 +152,6 @@ public class TpccPopulationStage extends AbstractDistStage{
             ", threadParallelLoad=" + threadParallelLoad +
             ", numLoaderThreads=" + numLoaderThreads +
             ", batchLevel=" + batchLevel +
-            ", isPassiveReplication=" + isPassiveReplication +
             ", preloadedFromDB=" + preloadedFromDB +
             ", " + super.toString();
    }

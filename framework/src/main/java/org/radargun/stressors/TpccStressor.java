@@ -56,19 +56,19 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
    private long perThreadSimulTime = 30L;
 
    /**
-    * average arrival rate of the transactions to the system
+    * average arrival rate of the transactions to the system (transactions per second)
     */
-   private double arrivalRate = 0.0D;
+   private int arrivalRate = 0;
 
    /**
     * percentage of Payment transactions
     */
-   private double paymentWeight = 45.0D;
+   private int paymentWeight = 45;
 
    /**
     * percentage of Order Status transactions
     */
-   private double orderStatusWeight = 5.0D;
+   private int orderStatusWeight = 5;
 
    /**
     * if true, each node will pick a warehouse and all transactions will work over that warehouse. The warehouses are
@@ -102,12 +102,18 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
 
          ProducerRate[] producerRates;
          if (cacheWrapper.isPassiveReplication()) {
+            double writeWeight = Math.max(100 - orderStatusWeight, paymentWeight) / 100D;
+            double readWeight = orderStatusWeight / 100D;
             if (cacheWrapper.isTheMaster()) {
-               producerRates = new GroupProducerRateFactory(arrivalRate, 1, nodeIndex, 10).create();
+               log.info("Creating producers groups for the master. Write transaction percentage is " + writeWeight);
+               producerRates = new GroupProducerRateFactory(arrivalRate * writeWeight, 1, nodeIndex, 10).create();
             } else {
-               producerRates = new GroupProducerRateFactory(arrivalRate, numSlaves - 1, nodeIndex - 1, 10).create();
+               log.info("Creating producers groups for the slave. Read-only transaction percentage is " + readWeight);
+               producerRates = new GroupProducerRateFactory(arrivalRate * readWeight, numSlaves - 1,
+                                                            nodeIndex == 0 ? nodeIndex : nodeIndex - 1 , 10).create();
             }
          } else {
+            log.info("Creating producers groups");
             producerRates = new GroupProducerRateFactory(arrivalRate, numSlaves, nodeIndex, 10).create();
          }
 
@@ -124,6 +130,7 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
       List<Stressor> stressors;
       try {
          if (this.arrivalRate != 0.0) { //Open system
+            log.info("Starting " + producers.length + " producers");
             for (Producer producer : producers) {
                producer.start();
             }
@@ -533,6 +540,11 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
                   }
 
                   transaction = terminal.createTransaction(request.transactionType);
+                  if (cacheWrapper.isPassiveReplication() &&
+                        ((cacheWrapper.isTheMaster() && transaction.isReadOnly()) ||
+                               (!cacheWrapper.isTheMaster() && !transaction.isReadOnly()))) {
+                     continue;
+                  }
                } catch (InterruptedException ir) {
                   log.error("»»»»»»»THREAD INTERRUPTED WHILE TRYING GETTING AN OBJECT FROM THE QUEUE«««««««");
                }
@@ -683,9 +695,9 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
          log.debug("Starting " + getName() + " with rate of " + rate.getLambda());
          while (completedThread.get() != numOfThreads && run) {
             try {
-               queue.add(new RequestType(System.nanoTime(),
-                                         terminal.chooseTransactionType(cacheWrapper.isPassiveReplication(),
-                                                                        cacheWrapper.isTheMaster())));
+               queue.add(new RequestType(System.nanoTime(), terminal.chooseTransactionType(
+                     cacheWrapper.isPassiveReplication(), cacheWrapper.isTheMaster()
+               )));
                countJobs.incrementAndGet();
                rate.sleep();
             } catch (IllegalStateException il) {
@@ -739,16 +751,16 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
       this.perThreadSimulTime = perThreadSimulTime;
    }
 
-   public void setArrivalRate(double arrivalRate) {
+   public void setArrivalRate(int arrivalRate) {
       this.arrivalRate = arrivalRate;
 
    }
 
-   public void setPaymentWeight(double paymentWeight) {
+   public void setPaymentWeight(int paymentWeight) {
       this.paymentWeight = paymentWeight;
    }
 
-   public void setOrderStatusWeight(double orderStatusWeight) {
+   public void setOrderStatusWeight(int orderStatusWeight) {
       this.orderStatusWeight = orderStatusWeight;
    }
 
