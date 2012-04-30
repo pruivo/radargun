@@ -47,7 +47,8 @@ public class NewOrderTransaction implements TpccTransaction {
       this.districtID = TpccTools.randomNumber(1, TpccTools.NB_MAX_DISTRICT);
       this.customerID = TpccTools.nonUniformRandom(TpccTools.C_C_ID, TpccTools.A_C_ID, 1, TpccTools.NB_MAX_CUSTOMER);
 
-      this.numItems = (int) TpccTools.randomNumber(5, 15); // o_ol_cnt
+      this.numItems = (int) TpccTools.randomNumber(TpccTools.NUMBER_OF_ITEMS_INTERVAL[0],
+                                                   TpccTools.NUMBER_OF_ITEMS_INTERVAL[1]); // o_ol_cnt
       this.itemIDs = new long[numItems];
       this.supplierWarehouseIDs = new long[numItems];
       this.orderQuantities = new long[numItems];

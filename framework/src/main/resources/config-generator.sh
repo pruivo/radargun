@@ -66,6 +66,10 @@ echo ""
 echo "  -population-batch-level <value>  the size of a transaction in population (the number of items per transaction)"  
 echo "                                   default: ${POPULATION_BATCH_LEVEL}"
 echo ""
+echo "  -nr-items-inter <value>          the interval of the possible number of items, in the format min,max. This will"
+echo "                                   be used to chooses the number of items in the New Order transaction types"
+echo "                                   default: 5,15"
+echo ""
 echo "  -config <value>                  the path for the configuration of the cache"
 echo "                                   default: ${CACHE_CONFIG_FILE}"
 echo ""
@@ -110,6 +114,7 @@ case $1 in
   -passive-replication) PASSIVE_REPLICATION="true"; shift 1;;
   -same-warehouse-access) SAME_WAREHOUSE="true"; shift 1;;
   -preload-from-db) PRELOAD="true"; shift 1;;
+  -nr-items-inter) NR_ITEMS_INTERVAL=$2; shift 2;;
   -*) echo "WARNING: unknown option '$1'. It will be ignored" >&2; shift 1;;
   *) echo "WARNING: unknown parameter '$1'. It will be ignored"; shift 1;;
 esac
@@ -154,6 +159,11 @@ echo "      <CacheSize" >> ${DEST_FILE}
 echo "            statName=\"CACHE_SIZE_BEFORE_BENCH\" />" >> ${DEST_FILE}
 
 echo "      <TpccBenchmark" >> ${DEST_FILE}
+
+if [ -n "${NR_ITEMS_INTERVAL}" ]; then
+echo "            numberOfItemsInterval=\"${NR_ITEMS_INTERVAL}\"" >> ${DEST_FILE}
+fi
+
 echo "            numOfThreads=\"${NUMBER_OF_THREADS}\"" >> ${DEST_FILE}
 echo "            perThreadSimulTime=\"${SIMULATION_TIME}\"" >> ${DEST_FILE}
 echo "            arrivalRate=\"${ARRIVAL_RATE}\"" >> ${DEST_FILE}

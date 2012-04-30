@@ -63,6 +63,12 @@ public class TpccBenchmarkStage extends AbstractDistStage {
     */
    private boolean accessSameWarehouse = false;
 
+   /**
+    * specify the min and the max number of items created by a New Order Transaction.
+    * format: min,max
+    */
+   private String numberOfItemsInterval = null;
+
    private CacheWrapper cacheWrapper;
 
    public DistStageAck executeOnSlave() {
@@ -84,6 +90,7 @@ public class TpccBenchmarkStage extends AbstractDistStage {
       tpccStressor.setPaymentWeight(this.paymentWeight);
       tpccStressor.setOrderStatusWeight(this.orderStatusWeight);
       tpccStressor.setAccessSameWarehouse(accessSameWarehouse);
+      tpccStressor.setNumberOfItemsInterval(numberOfItemsInterval);
 
       try {
          Map<String, String> results = tpccStressor.stress(cacheWrapper);
@@ -158,6 +165,10 @@ public class TpccBenchmarkStage extends AbstractDistStage {
       this.accessSameWarehouse = accessSameWarehouse;
    }
 
+   public void setNumberOfItemsInterval(String numberOfItemsInterval) {
+      this.numberOfItemsInterval = numberOfItemsInterval;
+   }
+
    @Override
    public String toString() {
       return "TpccBenchmarkStage {" +
@@ -167,6 +178,7 @@ public class TpccBenchmarkStage extends AbstractDistStage {
             ", paymentWeight=" + paymentWeight +
             ", orderStatusWeight=" + orderStatusWeight +
             ", accessSameWarehouse=" + accessSameWarehouse +
+            ", numberOfItemsInterval=" + numberOfItemsInterval +
             ", cacheWrapper=" + cacheWrapper +
             ", " + super.toString();
    }
