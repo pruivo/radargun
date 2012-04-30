@@ -32,7 +32,7 @@
                 use1PcForAutoCommitTransactions="false"
                 autoCommit="true"/>
         <loaders
-                passivation="true"
+                passivation="false"
                 shared="false"
                 preload="false">
             <loader
