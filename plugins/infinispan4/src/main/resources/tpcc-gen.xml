@@ -47,6 +47,9 @@
                 </properties>
             </loader>
         </loaders>
+        <eviction
+                maxEntries="1000000"
+                strategy="UNORDERED"/>
     </default>
     <namedCache
             name="x" />
