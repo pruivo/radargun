@@ -133,7 +133,6 @@ echo "   <BARRIER/>" >> ${DEST_FILE}
 echo "   <pbcast.NAKACK" >> ${DEST_FILE}
 echo "         exponential_backoff=\"500\"" >> ${DEST_FILE}
 echo "         use_mcast_xmit=\"${IP_MCAST}\"" >> ${DEST_FILE}
-echo "         use_mcast_xmit_req=\"${IP_MCAST}\"" >> ${DEST_FILE}
 echo "         xmit_stagger_timeout=\"5000\"" >> ${DEST_FILE}
 echo "         discard_delivered_msgs=\"true\"" >> ${DEST_FILE}
 echo "         />" >> ${DEST_FILE}
