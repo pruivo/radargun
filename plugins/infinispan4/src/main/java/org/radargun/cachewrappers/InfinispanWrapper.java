@@ -15,6 +15,8 @@ import org.radargun.CacheWrapper;
 import org.radargun.utils.BucketsKeysTreeSet;
 import org.radargun.utils.Utils;
 
+import javax.management.Attribute;
+import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.transaction.TransactionManager;
@@ -224,6 +226,7 @@ public class InfinispanWrapper implements CacheWrapper {
 
       if(cacheComponentString != null) {
          saveStatsFromStreamLibStatistics(cacheComponentString, mBeanServer);
+         saveExtendedStatistics(cacheComponentString, mBeanServer);
          getStatsFromTotalOrderValidator(cacheComponentString, mBeanServer, results);
       } else {
          log.info("Not collecting additional stats. Infinispan MBeans not found");
@@ -366,6 +369,39 @@ public class InfinispanWrapper implements CacheWrapper {
       }
    }
 
+   private void saveExtendedStatistics(String baseName, MBeanServer mBeanServer) {
+      try {
+         ObjectName extendedStats = new ObjectName(baseName + "ExtendedStatistics");
+
+         if (!mBeanServer.isRegistered(extendedStats)) {
+            log.info("Not collecting statistics from Extended Statistics component. It is no registered");
+            return;
+         }
+
+         String filePath = "extended-statistics-" + transport.getAddress();
+
+         log.info("Collecting statistics from Extended Statistics component [" + extendedStats + "] and save them in " +
+                        filePath);
+
+         MBeanAttributeInfo[] attributeInfos = mBeanServer.getMBeanInfo(extendedStats).getAttributes();
+
+         log.debug("Attributes available are " +
+                         mBeanAttributes2String(attributeInfos));
+
+         BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(filePath));
+
+         for (MBeanAttributeInfo attributeInfo : attributeInfos) {
+                  String name = attributeInfo.getName();
+            bufferedWriter.write(name.toLowerCase() + "=" + getObjectAttribute(mBeanServer, extendedStats, name));
+            bufferedWriter.newLine();
+         }
+         bufferedWriter.flush();
+         bufferedWriter.close();
+      } catch (Exception e) {
+         log.warn("Unable to collect stats from Stream Lib Statistic component");
+      }
+   }
+
 
    private Long getLongAttribute(MBeanServer mBeanServer, ObjectName component, String attr) {
       try {
@@ -385,6 +421,7 @@ public class InfinispanWrapper implements CacheWrapper {
       return -1D;
    }
 
+   @SuppressWarnings("unchecked")
    private Map<Object, Object> getMapAttribute(MBeanServer mBeanServer, ObjectName component, String attr) {
       try {
          return (Map<Object, Object>)mBeanServer.getAttribute(component, attr);
@@ -392,5 +429,14 @@ public class InfinispanWrapper implements CacheWrapper {
          log.debug(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
       }
       return Collections.emptyMap();
+   }
+
+   private Object getObjectAttribute(MBeanServer mBeanServer, ObjectName component, String attr) {
+      try {
+         return mBeanServer.getAttribute(component, attr);
+      } catch (Exception e) {
+         log.debug(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
+      }
+      return "Not Available";
    }
 }
