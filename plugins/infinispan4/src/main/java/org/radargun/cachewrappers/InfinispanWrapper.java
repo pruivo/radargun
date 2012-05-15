@@ -392,7 +392,7 @@ public class InfinispanWrapper implements CacheWrapper {
 
          for (MBeanAttributeInfo attributeInfo : attributeInfos) {
                   String name = attributeInfo.getName();
-            bufferedWriter.write(name.toLowerCase() + "=" + getObjectAttribute(mBeanServer, extendedStats, name));
+            bufferedWriter.write(name + "=" + getObjectAttribute(mBeanServer, extendedStats, name));
             bufferedWriter.newLine();
          }
          bufferedWriter.flush();
