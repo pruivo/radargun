@@ -59,7 +59,7 @@ public class InfinispanWrapper implements CacheWrapper {
 //             configuration.setTransportNodeName(String.valueOf(nodeIndex));
 //          }
          // use a named cache, based on the 'default'
-         cacheManager.defineConfiguration("x", new Configuration());
+         //cacheManager.defineConfiguration("x", new Configuration());
          cache = cacheManager.getCache("x");
          tm=cache.getAdvancedCache().getTransactionManager();
          transport = cacheManager.getTransport();
@@ -407,7 +407,7 @@ public class InfinispanWrapper implements CacheWrapper {
       try {
          return (Long)mBeanServer.getAttribute(component, attr);
       } catch (Exception e) {
-         log.debug(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
+         log.warn(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
       }
       return -1L;
    }
@@ -416,7 +416,7 @@ public class InfinispanWrapper implements CacheWrapper {
       try {
          return (Double)mBeanServer.getAttribute(component, attr);
       } catch (Exception e) {
-         log.debug(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
+         log.warn(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
       }
       return -1D;
    }
@@ -426,7 +426,7 @@ public class InfinispanWrapper implements CacheWrapper {
       try {
          return (Map<Object, Object>)mBeanServer.getAttribute(component, attr);
       } catch (Exception e) {
-         log.debug(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
+         log.warn(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
       }
       return Collections.emptyMap();
    }
@@ -435,7 +435,7 @@ public class InfinispanWrapper implements CacheWrapper {
       try {
          return mBeanServer.getAttribute(component, attr);
       } catch (Exception e) {
-         log.debug(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
+         log.warn(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
       }
       return "Not Available";
    }
