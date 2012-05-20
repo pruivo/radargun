@@ -15,12 +15,15 @@ import org.radargun.CacheWrapper;
 import org.radargun.utils.BucketsKeysTreeSet;
 import org.radargun.utils.Utils;
 
-import javax.management.Attribute;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.transaction.TransactionManager;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
@@ -61,7 +64,7 @@ public class InfinispanWrapper implements CacheWrapper {
          // use a named cache, based on the 'default'
          //cacheManager.defineConfiguration("x", new Configuration());
          cache = cacheManager.getCache("x");
-         tm=cache.getAdvancedCache().getTransactionManager();
+         tm = cache.getAdvancedCache().getTransactionManager();
          transport = cacheManager.getTransport();
          try {
             isPassiveReplicationMethod = Configuration.class.getMethod("isPassiveReplication");
@@ -146,8 +149,8 @@ public class InfinispanWrapper implements CacheWrapper {
    }
 
 
-   public void endTransaction(boolean successful)throws RuntimeException{
-      if (tm == null){
+   public void endTransaction(boolean successful) throws RuntimeException {
+      if (tm == null) {
          return;
       }
 
@@ -162,7 +165,7 @@ public class InfinispanWrapper implements CacheWrapper {
    }
 
    @Override
-   public boolean isCoordinator(){
+   public boolean isCoordinator() {
       return this.cacheManager.isCoordinator();
    }
 
@@ -211,8 +214,8 @@ public class InfinispanWrapper implements CacheWrapper {
    public void resetAdditionalStats() {
       MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
       String domain = cacheManager.getGlobalConfiguration().getJmxDomain();
-      for(ObjectName name : mBeanServer.queryNames(null, null)) {
-         if(name.getDomain().equals(domain)) {
+      for (ObjectName name : mBeanServer.queryNames(null, null)) {
+         if (name.getDomain().equals(domain)) {
             tryResetStats(name, mBeanServer);
          }
       }
@@ -224,10 +227,11 @@ public class InfinispanWrapper implements CacheWrapper {
       MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
       String cacheComponentString = getCacheComponentBaseString(mBeanServer);
 
-      if(cacheComponentString != null) {
+      if (cacheComponentString != null) {
          saveStatsFromStreamLibStatistics(cacheComponentString, mBeanServer);
          saveExtendedStatistics(cacheComponentString, mBeanServer);
          getStatsFromTotalOrderValidator(cacheComponentString, mBeanServer, results);
+         getValidationStats(cacheComponentString, mBeanServer, results);
       } else {
          log.info("Not collecting additional stats. Infinispan MBeans not found");
       }
@@ -272,10 +276,10 @@ public class InfinispanWrapper implements CacheWrapper {
 
    private String getCacheComponentBaseString(MBeanServer mBeanServer) {
       String domain = cacheManager.getGlobalConfiguration().getJmxDomain();
-      for(ObjectName name : mBeanServer.queryNames(null, null)) {
-         if(name.getDomain().equals(domain)) {
+      for (ObjectName name : mBeanServer.queryNames(null, null)) {
+         if (name.getDomain().equals(domain)) {
 
-            if("Cache".equals(name.getKeyProperty("type"))) {
+            if ("Cache".equals(name.getKeyProperty("type"))) {
                String cacheName = name.getKeyProperty("name");
                String cacheManagerName = name.getKeyProperty("manager");
                return new StringBuilder(domain)
@@ -391,7 +395,7 @@ public class InfinispanWrapper implements CacheWrapper {
          BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(filePath));
 
          for (MBeanAttributeInfo attributeInfo : attributeInfos) {
-                  String name = attributeInfo.getName();
+            String name = attributeInfo.getName();
             bufferedWriter.write(name + "=" + getObjectAttribute(mBeanServer, extendedStats, name));
             bufferedWriter.newLine();
          }
@@ -402,10 +406,71 @@ public class InfinispanWrapper implements CacheWrapper {
       }
    }
 
+   private void getValidationStats(String prefix,MBeanServer mBeanServer, Map<String, String> result) {
+
+      String statsFile = "plugins/infinispan4/conf/stats.xml", toCollect, name, attribute, type,toPut;
+
+      ObjectName component;
+
+      File f = new File(statsFile);
+
+      try {
+         BufferedReader br = new BufferedReader(new FileReader(f));
+         while ((toCollect = br.readLine()) != null) {
+            if(isCommented(toCollect))
+               continue;
+            name = this.parseAttributeName(toCollect);
+            attribute = this.parseAttributeMethod(toCollect);
+            type = this.parseAttributeType(toCollect);
+
+            component = new ObjectName(prefix + this.parseAttributeComponent(toCollect));
+            if (type.equalsIgnoreCase("long")) {
+               toPut = getLongAttribute(mBeanServer, component, attribute).toString();
+            } else {
+               toPut = getDoubleAttribute(mBeanServer, component, attribute).toString();
+            }
+
+            result.put(name, toPut);
+
+         }
+      } catch (FileNotFoundException ff) {
+         log.error("Not performing model validation statistics dump: stats file not found");
+      }
+      catch (Exception e){
+         log.error(e.toString());
+         e.printStackTrace();
+      }
+
+   }
+
+   private boolean isCommented(String s){
+      return s.charAt(0)=='#';
+   }
+
+   private String parseAttributeName(String s) {
+      String[] parse = s.split(";");
+      return parse[0];
+   }
+
+   private String parseAttributeMethod(String s) {
+      String parse[] = s.split(";");
+      return parse[1];
+   }
+
+   private String parseAttributeType(String s) {
+      String parse[] = s.split(";");
+      return parse[2];
+   }
+
+   private String parseAttributeComponent(String s) {
+      String parse[] = s.split(";");
+      return parse[3];
+   }
+
 
    private Long getLongAttribute(MBeanServer mBeanServer, ObjectName component, String attr) {
       try {
-         return (Long)mBeanServer.getAttribute(component, attr);
+         return (Long) mBeanServer.getAttribute(component, attr);
       } catch (Exception e) {
          log.warn(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
       }
@@ -414,7 +479,7 @@ public class InfinispanWrapper implements CacheWrapper {
 
    private Double getDoubleAttribute(MBeanServer mBeanServer, ObjectName component, String attr) {
       try {
-         return (Double)mBeanServer.getAttribute(component, attr);
+         return (Double) mBeanServer.getAttribute(component, attr);
       } catch (Exception e) {
          log.warn(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
       }
@@ -424,9 +489,9 @@ public class InfinispanWrapper implements CacheWrapper {
    @SuppressWarnings("unchecked")
    private Map<Object, Object> getMapAttribute(MBeanServer mBeanServer, ObjectName component, String attr) {
       try {
-         return (Map<Object, Object>)mBeanServer.getAttribute(component, attr);
+         return (Map<Object, Object>) mBeanServer.getAttribute(component, attr);
       } catch (Exception e) {
-         log.warn(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
+         log.debug(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
       }
       return Collections.emptyMap();
    }

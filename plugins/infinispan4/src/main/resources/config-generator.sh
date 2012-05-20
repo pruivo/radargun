@@ -22,6 +22,7 @@ CLUSTERING_MODE="r"
 DIST_NUM_OWNERS="2"
 VERSIONS="false"
 VERSION_SCHEME="SIMPLE"
+CUSTOM_INTERCEPTOR_CHAIN="false"
 
 help() {
 echo "usage: $0 <options>"
@@ -97,6 +98,7 @@ case $1 in
   -stats) STATS="true"; shift 1;;
   -to-queue-size) TO_QUEUE_SIZE=$2; shift 2;;
   -to-1pc) TO_1PC="true"; shift 1;;
+  -custom-interceptors) CUSTOM_INTERCEPTOR_CHAIN="true"; shift 1;;  
   -*) echo "WARNING: unknown option '$1'. It will be ignored" >&2; shift 1;;
   *) echo "WARNING: unknown argument '$1'. It will be ignored" >&2; shift 1;;
   esac
@@ -230,6 +232,14 @@ echo "                    invalidationThreshold=\"0\" />" >> ${DEST_FILE}
 fi
 
 echo "        </clustering>" >> ${DEST_FILE}
+
+#customInterceptors
+if [ "${CUSTOM_INTERCEPTOR_CHAIN}" == "true" ]; then
+echo "          <customInterceptors>" >> ${DEST_FILE}
+echo "              <interceptor index=\"0\" class=\"org.infinispan.distribution.wrappers.ReplCustomStatsInterceptor\"/>" >> ${DEST_FILE}
+echo "              <interceptor before=\"org.infinispan.interceptors.NotificationInterceptor\" class=\"org.infinispan.stats.topK.StreamLibInterceptor\"/>" >> ${DEST_FILE}
+echo "</customInterceptors>" >> ${DEST_FILE}
+fi
 
 #put versions if needed
 if [ "${VERSIONS}" == "true" ]; then

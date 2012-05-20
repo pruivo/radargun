@@ -5,8 +5,8 @@
          port="${2103:master.port}"/>
 
    <benchmark
-         initSize="${10:Islaves}"
-         maxSize="${10:slaves}"
+         initSize="${1:Islaves}"
+         maxSize="${1:slaves}"
          increment="1">
 
       <DestroyWrapper
@@ -36,7 +36,6 @@
             lowerBoundOp="10"
             upperBoundOp="10"
             coordinatorParticipation="true"
-            readOnlyTransactionsEnabled="false"
             noContentionEnabled="false"/>
 
       <CacheSize
