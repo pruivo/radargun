@@ -54,6 +54,8 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
    private int opsCountStatusLog = 5000;
    private boolean reportNanos = false;
 
+   private long statsSamplingInterval = 0;
+
 
    public DistStageAck executeOnSlave() {
       DefaultDistStageAck result = new DefaultDistStageAck(slaveIndex, slaveState.getLocalAddress());
@@ -79,6 +81,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
       stressor.setWriteTransactionPercentage(writeTransactionPercentage);
       stressor.setCoordinatorParticipation(coordinatorParticipation);
       stressor.setNoContentionEnabled(noContentionEnabled);
+      stressor.setStatsSamplingInterval(statsSamplingInterval);
 
 
       try {
@@ -188,5 +191,9 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
 
    public void setWriteTransactionPercentage(int writeTransactionPercentage) {
       this.writeTransactionPercentage = writeTransactionPercentage;
+   }
+
+   public void setStatsSamplingInterval(long interval){
+      this.statsSamplingInterval = interval;
    }
 }

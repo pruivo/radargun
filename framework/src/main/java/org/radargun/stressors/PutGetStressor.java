@@ -6,6 +6,7 @@ import org.radargun.CacheWrapper;
 import org.radargun.CacheWrapperStressor;
 import org.radargun.utils.BucketsKeysTreeSet;
 import org.radargun.utils.KeyGenerator;
+import org.radargun.utils.StatSampler;
 import org.radargun.utils.Utils;
 
 import java.util.ArrayList;
@@ -66,6 +67,9 @@ public class PutGetStressor implements CacheWrapperStressor {
    //allows execution without contention
    private boolean noContentionEnabled = false;
 
+   private StatSampler statSampler;
+   private long statSamplingInterval = 0;
+
    public PutGetStressor() {}
 
    public Map<String, String> stress(CacheWrapper wrapper) {
@@ -78,6 +82,7 @@ public class PutGetStressor implements CacheWrapperStressor {
       try {
          log.warn("Resetting statistics before the PutGetStressors start executing");
          wrapper.resetAdditionalStats();
+         this.statSampler = new StatSampler(this.statSamplingInterval);
          stressers = executeOperations();
       } catch (Exception e) {
          log.warn("exception when stressing the cache wrapper", e);
@@ -646,6 +651,10 @@ public class PutGetStressor implements CacheWrapperStressor {
 
    public void setWriteTransactionPercentage(int writeTransactionPercentage) {
       this.writeTransactionPercentage = writeTransactionPercentage;
+   }
+
+   public void setStatsSamplingInterval(long l){
+      this.statSamplingInterval = l;
    }
 }
 
