@@ -449,7 +449,7 @@ public class PutGetStressor implements CacheWrapperStressor {
                }
 
                this.delta = System.nanoTime() - startTime;
-               logProgress(i, lastReadValue);
+               //logProgress(i, lastReadValue);
             }
          } else {
             long sleepTime = simulationTime / 1000000; //nano to millis

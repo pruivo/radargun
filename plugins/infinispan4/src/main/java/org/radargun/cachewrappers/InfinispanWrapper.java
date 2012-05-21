@@ -283,12 +283,12 @@ public class InfinispanWrapper implements CacheWrapper {
                String cacheName = name.getKeyProperty("name");
                String cacheManagerName = name.getKeyProperty("manager");
                return new StringBuilder(domain)
-                     .append(":type=Cache,name=")
-                     .append(cacheName.startsWith("\"") ? cacheName :
-                                   ObjectName.quote(cacheName))
-                     .append(",manager=").append(cacheManagerName.startsWith("\"") ? cacheManagerName :
-                                                       ObjectName.quote(cacheManagerName))
-                     .append(",component=").toString();
+                       .append(":type=Cache,name=")
+                       .append(cacheName.startsWith("\"") ? cacheName :
+                               ObjectName.quote(cacheName))
+                       .append(",manager=").append(cacheManagerName.startsWith("\"") ? cacheManagerName :
+                               ObjectName.quote(cacheManagerName))
+                       .append(",component=").toString();
             }
          }
       }
@@ -307,35 +307,35 @@ public class InfinispanWrapper implements CacheWrapper {
          String filePath = "top-keys-" + transport.getAddress();
 
          log.info("Collecting statistics from Stream Lib component [" + streamLibStats + "] and save them in " +
-                        filePath);
+                 filePath);
          log.debug("Attributes available are " +
-                         mBeanAttributes2String(mBeanServer.getMBeanInfo(streamLibStats).getAttributes()));
+                 mBeanAttributes2String(mBeanServer.getMBeanInfo(streamLibStats).getAttributes()));
 
          BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(filePath));
 
-         bufferedWriter.write("RemoteTopGets=" + getMapAttribute(mBeanServer, streamLibStats,"RemoteTopGets")
-               .toString());
+         bufferedWriter.write("RemoteTopGets=" + getMapAttribute(mBeanServer, streamLibStats, "RemoteTopGets")
+                 .toString());
          bufferedWriter.newLine();
-         bufferedWriter.write("LocalTopGets=" + getMapAttribute(mBeanServer, streamLibStats,"LocalTopGets")
-               .toString());
+         bufferedWriter.write("LocalTopGets=" + getMapAttribute(mBeanServer, streamLibStats, "LocalTopGets")
+                 .toString());
          bufferedWriter.newLine();
-         bufferedWriter.write("RemoteTopPuts=" + getMapAttribute(mBeanServer, streamLibStats,"RemoteTopPuts")
-               .toString());
+         bufferedWriter.write("RemoteTopPuts=" + getMapAttribute(mBeanServer, streamLibStats, "RemoteTopPuts")
+                 .toString());
          bufferedWriter.newLine();
-         bufferedWriter.write("LocalTopPuts=" + getMapAttribute(mBeanServer, streamLibStats,"LocalTopPuts")
-               .toString());
+         bufferedWriter.write("LocalTopPuts=" + getMapAttribute(mBeanServer, streamLibStats, "LocalTopPuts")
+                 .toString());
          bufferedWriter.newLine();
-         bufferedWriter.write("TopLockedKeys=" + getMapAttribute(mBeanServer, streamLibStats,"TopLockedKeys")
-               .toString());
+         bufferedWriter.write("TopLockedKeys=" + getMapAttribute(mBeanServer, streamLibStats, "TopLockedKeys")
+                 .toString());
          bufferedWriter.newLine();
-         bufferedWriter.write("TopContendedKeys=" + getMapAttribute(mBeanServer, streamLibStats,"TopContendedKeys")
-               .toString());
+         bufferedWriter.write("TopContendedKeys=" + getMapAttribute(mBeanServer, streamLibStats, "TopContendedKeys")
+                 .toString());
          bufferedWriter.newLine();
-         bufferedWriter.write("TopLockFailedKeys=" + getMapAttribute(mBeanServer, streamLibStats,"TopLockFailedKeys")
-               .toString());
+         bufferedWriter.write("TopLockFailedKeys=" + getMapAttribute(mBeanServer, streamLibStats, "TopLockFailedKeys")
+                 .toString());
          bufferedWriter.newLine();
-         bufferedWriter.write("TopWriteSkewFailedKeys=" + getMapAttribute(mBeanServer, streamLibStats,"TopWriteSkewFailedKeys")
-               .toString());
+         bufferedWriter.write("TopWriteSkewFailedKeys=" + getMapAttribute(mBeanServer, streamLibStats, "TopWriteSkewFailedKeys")
+                 .toString());
          bufferedWriter.newLine();
          bufferedWriter.flush();
          bufferedWriter.close();
@@ -350,7 +350,7 @@ public class InfinispanWrapper implements CacheWrapper {
          ObjectName toValidator = new ObjectName(baseName + "TotalOrderValidator");
 
          if (!mBeanServer.isRegistered(toValidator)) {
-            toValidator  = new ObjectName(baseName + "TotalOrderManager");
+            toValidator = new ObjectName(baseName + "TotalOrderManager");
             if (!mBeanServer.isRegistered(toValidator)) {
                log.info("Not collecting statistics from Total Order component. It is not registered");
                return;
@@ -359,7 +359,7 @@ public class InfinispanWrapper implements CacheWrapper {
 
          log.info("Collecting statistics from Total Order component [" + toValidator + "]");
          log.debug("Attributes available are " +
-                         mBeanAttributes2String(mBeanServer.getMBeanInfo(toValidator).getAttributes()));
+                 mBeanAttributes2String(mBeanServer.getMBeanInfo(toValidator).getAttributes()));
 
          double avgWaitingQueue = getDoubleAttribute(mBeanServer, toValidator, "averageWaitingTimeInQueue");
          double avgValidationDur = getDoubleAttribute(mBeanServer, toValidator, "averageValidationDuration");
@@ -434,10 +434,9 @@ public class InfinispanWrapper implements CacheWrapper {
 
          }
       } catch (FileNotFoundException ff) {
-         log.error("Not performing model validation statistics dump: stats file not found");
+         log.warn("Not performing model validation statistics dump");
       }
       catch (Exception e){
-         log.error(e.toString());
          e.printStackTrace();
       }
 
