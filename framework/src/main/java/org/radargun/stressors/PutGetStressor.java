@@ -76,6 +76,8 @@ public class PutGetStressor implements CacheWrapperStressor {
 
       List<Stresser> stressers;
       try {
+         log.warn("Resetting statistics before the PutGetStressors start executing");
+         wrapper.resetAdditionalStats();
          stressers = executeOperations();
       } catch (Exception e) {
          log.warn("exception when stressing the cache wrapper", e);
