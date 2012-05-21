@@ -1,31 +1,58 @@
 <bench-config>
 
-   <master bindAddress="${127.0.0.1:master.address}" port="${2103:master.port}"/>
+   <master
+         bindAddress="${127.0.0.1:master.address}"
+         port="${2103:master.port}"/>
 
-   <benchmark initSize="1" maxSize="${1:slaves}" increment="1">
-      <DestroyWrapper runOnAllSlaves="true"/>
-      <StartCluster staggerSlaveStartup="true" delayAfterFirstSlaveStarts="5000" delayBetweenStartingSlaves = "500"/>
-      <ClusterValidation partialReplication="false"/>
-      <Warmup operationCount="10000" loadOnWarmup="yes" sizeOfAnAttribute="1000" isPartitioned="yes" numThreads="2"/>
-      <!--
-         This will average to 10000 requests per thread, although a work-stealing pattern is used so some threads may
-         do more work than others.
-       -->
-      <WebSessionBenchmark sizeOfAnAttribute="1000" numberOfAttributes="10000" numOfThreads="3" numReads="10" numWrites="1" perThreadSimulTime="60000000000" partitioned="yes"/>
+   <benchmark
+         initSize="${1:Islaves}"
+         maxSize="${1:slaves}"
+         increment="1">
+
+      <DestroyWrapper
+            runOnAllSlaves="true"/>
+
+      <StartCluster
+            staggerSlaveStartup="true"
+            delayAfterFirstSlaveStarts="5000"
+            delayBetweenStartingSlaves = "1000"/>
+
+      <ClusterValidation
+            partialReplication="false"/>
+
+      <WebSessionWarmup
+            noContentionEnabled="false"
+            numberOfKeys="1000"
+            sizeOfValue="1000"
+            numOfThreads="2"/>
+
+      <WebSessionBenchmark
+            perThreadSimulTime="30000000000"
+            opsCountStatusLog="5000"
+            numberOfKeys="1000"
+            sizeOfValue="1000"
+            numOfThreads="2"
+            writeOperationPercentage="50"
+            lowerBoundOp="10"
+            upperBoundOp="10"
+            coordinatorParticipation="true"
+            noContentionEnabled="false"/>
+
+      <CacheSize
+            statName="CACHE_SIZE" />
+
+      <GetKeys/>
       <CsvReportGeneration/>
    </benchmark>
 
    <products>
       <infinispan4>
-         <config name="provaPC.xml"/>
+         <config name="ispn.xml"/>
       </infinispan4>
    </products>
 
    <reports>
-      <report name="PCvsPR">
- 		<item product="infinispan4" config="provaPC.xml"/>
-	
-      </report>
+      <report name="Reports" />
    </reports>
 
 </bench-config>
