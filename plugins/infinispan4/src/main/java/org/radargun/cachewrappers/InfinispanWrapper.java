@@ -434,9 +434,10 @@ public class InfinispanWrapper implements CacheWrapper {
 
          }
       } catch (FileNotFoundException ff) {
-         log.warn("Not performing model validation statistics dump");
+         log.error("Not performing model validation statistics dump: stats file not found");
       }
       catch (Exception e){
+         log.error(e.toString());
          e.printStackTrace();
       }
 
