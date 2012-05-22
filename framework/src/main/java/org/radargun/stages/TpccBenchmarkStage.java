@@ -69,6 +69,11 @@ public class TpccBenchmarkStage extends AbstractDistStage {
     */
    private String numberOfItemsInterval = null;
 
+   /**
+    * specify the interval period (in milliseconds) of the memory and cpu usage is collected
+    */
+   private long statsSamplingInterval = 0;
+
    private CacheWrapper cacheWrapper;
 
    public DistStageAck executeOnSlave() {
@@ -91,6 +96,7 @@ public class TpccBenchmarkStage extends AbstractDistStage {
       tpccStressor.setOrderStatusWeight(this.orderStatusWeight);
       tpccStressor.setAccessSameWarehouse(accessSameWarehouse);
       tpccStressor.setNumberOfItemsInterval(numberOfItemsInterval);
+      tpccStressor.setStatsSamplingInterval(statsSamplingInterval);
 
       try {
          Map<String, String> results = tpccStressor.stress(cacheWrapper);
@@ -169,6 +175,10 @@ public class TpccBenchmarkStage extends AbstractDistStage {
       this.numberOfItemsInterval = numberOfItemsInterval;
    }
 
+   public void setStatsSamplingInterval(long statsSamplingInterval) {
+      this.statsSamplingInterval = statsSamplingInterval;
+   }
+
    @Override
    public String toString() {
       return "TpccBenchmarkStage {" +
@@ -179,6 +189,7 @@ public class TpccBenchmarkStage extends AbstractDistStage {
             ", orderStatusWeight=" + orderStatusWeight +
             ", accessSameWarehouse=" + accessSameWarehouse +
             ", numberOfItemsInterval=" + numberOfItemsInterval +
+            ", statsSamplingInterval=" + statsSamplingInterval +
             ", cacheWrapper=" + cacheWrapper +
             ", " + super.toString();
    }

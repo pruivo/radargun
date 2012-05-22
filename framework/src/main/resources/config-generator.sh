@@ -22,6 +22,7 @@ POPULATION_BATCH_LEVEL="100"
 SAME_WAREHOUSE="false"
 PASSIVE_REPLICATION="false"
 PRELOAD="false"
+STAT_SAMPLE_INTERVAL="0"
 
 help_and_exit(){
 echo "usage: ${0} <options>"
@@ -73,6 +74,10 @@ echo ""
 echo "  -config <value>                  the path for the configuration of the cache"
 echo "                                   default: ${CACHE_CONFIG_FILE}"
 echo ""
+echo "  -stat-sample-interval <value>    the period (in milliseconds) in which the CPU and memory usage is collected"
+echo "                                   A value less or equals than 0 disables the collection"
+echo "                                   default: ${STAT_SAMPLE_INTERVAL}"
+echo ""
 echo "  -preload-from-db                 it means that the cache is already populated. This will skip the population phase"
 echo "                                   default: population is performed."
 echo "                                   NOTE: don't remote the population phase from configuration. Only set it to already populated"
@@ -115,6 +120,7 @@ case $1 in
   -same-warehouse-access) SAME_WAREHOUSE="true"; shift 1;;
   -preload-from-db) PRELOAD="true"; shift 1;;
   -nr-items-inter) NR_ITEMS_INTERVAL=$2; shift 2;;
+  -stat-sample-interval) STAT_SAMPLE_INTERVAL=$2; shift 2;;
   -*) echo "WARNING: unknown option '$1'. It will be ignored" >&2; shift 1;;
   *) echo "WARNING: unknown parameter '$1'. It will be ignored"; shift 1;;
 esac
@@ -164,6 +170,7 @@ if [ -n "${NR_ITEMS_INTERVAL}" ]; then
 echo "            numberOfItemsInterval=\"${NR_ITEMS_INTERVAL}\"" >> ${DEST_FILE}
 fi
 
+echo "            statsSamplingInterval=\"${STAT_SAMPLE_INTERVAL}\"" >> ${DEST_FILE}
 echo "            numOfThreads=\"${NUMBER_OF_THREADS}\"" >> ${DEST_FILE}
 echo "            perThreadSimulTime=\"${SIMULATION_TIME}\"" >> ${DEST_FILE}
 echo "            arrivalRate=\"${ARRIVAL_RATE}\"" >> ${DEST_FILE}

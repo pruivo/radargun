@@ -11,8 +11,13 @@ import org.radargun.tpcc.TpccTools;
 import org.radargun.tpcc.transaction.NewOrderTransaction;
 import org.radargun.tpcc.transaction.PaymentTransaction;
 import org.radargun.tpcc.transaction.TpccTransaction;
+import org.radargun.utils.StatSampler;
 import org.radargun.utils.Utils;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -85,6 +90,11 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
     */
    private String numberOfItemsInterval = null;
 
+   /**
+    * specify the interval period (in milliseconds) of the memory and cpu usage is collected
+    */
+   private long statsSamplingInterval = 0;
+
    private CacheWrapper cacheWrapper;
    private long startTime;
    private volatile CountDownLatch startPoint;
@@ -92,6 +102,7 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
    private BlockingQueue<RequestType> queue;
    private AtomicLong countJobs;
    private Producer[] producers;
+   private StatSampler statSampler;
 
 
    public Map<String, String> stress(CacheWrapper wrapper) {
@@ -138,6 +149,10 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
          }
       }
 
+      if (statsSamplingInterval > 0) {
+         statSampler = new StatSampler(statsSamplingInterval);
+      }
+
       startTime = System.currentTimeMillis();
       log.info("Executing: " + this.toString());
 
@@ -149,9 +164,15 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
                producer.start();
             }
          }
+         if (statSampler != null) {
+            statSampler.start();
+         }
          stressors = executeOperations();
       } catch (Exception e) {
          throw new RuntimeException(e);
+      }
+      if (statSampler != null) {
+         statSampler.cancel();
       }
       return processResults(stressors);
    }
@@ -434,6 +455,7 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
          results.put("AVG_PAYMENT_INQUEUE_TIME (usec)", str(0));
 
       results.putAll(cacheWrapper.getAdditionalStats());
+      saveSamples();
 
       log.info("Finished generating report. Nr of failed operations on this node is: " + failures +
                      ". Test duration is: " + Utils.getMillisDurationString(System.currentTimeMillis() - startTime));
@@ -720,8 +742,31 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
       public long totalDuration() {
          return readDuration + writeDuration;
       }
+   }
 
+   private void saveSamples() {
+      if (statSampler == null) {
+         return;
+      }
+      log.info("Saving samples in the file sample-" + nodeIndex);
+      File f = new File("sample-" + nodeIndex);
+      try {
+         BufferedWriter bw = new BufferedWriter(new FileWriter(f));
+         List<Long> mem = statSampler.getMemoryUsageHistory();
+         List<Double> cpu = statSampler.getCpuUsageHistory();
 
+         int size = Math.min(mem.size(), cpu.size());
+         bw.write("#Time (milliseconds)\tCPU(%)\tMemory(bytes)");
+         bw.newLine();
+         for (int i = 0; i < size; ++i) {
+            bw.write((i * statsSamplingInterval) + "\t" + cpu.get(i) + "\t" + mem.get(i));
+            bw.newLine();
+         }
+         bw.flush();
+         bw.close();
+      } catch (IOException e) {
+         log.warn("IOException caught while saving sampling: " + e.getMessage());
+      }
    }
 
    private class Producer extends Thread {
@@ -817,6 +862,9 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
       this.numberOfItemsInterval = numberOfItemsInterval;
    }
 
+   public void setStatsSamplingInterval(long statsSamplingInterval) {
+      this.statsSamplingInterval = statsSamplingInterval;
+   }
 
    @Override
    public String toString() {
@@ -830,6 +878,7 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
             ", nodeIndex=" + nodeIndex +
             ", numOfThreads=" + numOfThreads +
             ", numberOfItemsInterval=" + numberOfItemsInterval +
+            ", statsSamplingInterval=" + statsSamplingInterval +
             '}';
    }
 
