@@ -68,7 +68,7 @@ public class PutGetStressor implements CacheWrapperStressor {
    private boolean noContentionEnabled = false;
 
    private StatSampler statSampler;
-   private long statSamplingInterval = 0;
+   private long statsSamplingInterval = 0;
 
    public PutGetStressor() {}
 
@@ -82,8 +82,8 @@ public class PutGetStressor implements CacheWrapperStressor {
       try {
          log.warn("Resetting statistics before the PutGetStressors start executing");
          wrapper.resetAdditionalStats();
-         if(this.statSamplingInterval!=0)
-            this.statSampler = new StatSampler(this.statSamplingInterval);
+         if(this.statsSamplingInterval !=0)
+            this.statSampler = new StatSampler(this.statsSamplingInterval);
          stressers = executeOperations();
       } catch (Exception e) {
          log.warn("exception when stressing the cache wrapper", e);
@@ -256,6 +256,12 @@ public class PutGetStressor implements CacheWrapperStressor {
 
       log.info("Finished generating report. Nr of failed transactions on this node is: " + totalFailedTx +
                      ". Test duration is: " + Utils.getDurationString(System.currentTimeMillis() - startTime));
+
+      if(this.statSampler!=null){
+         log.fatal(statSampler.getCpuUsageHistory());
+         log.fatal(statSampler.getMemoryUsageHistory());
+      }
+
       return results;
    }
 
@@ -655,7 +661,7 @@ public class PutGetStressor implements CacheWrapperStressor {
    }
 
    public void setStatsSamplingInterval(long l){
-      this.statSamplingInterval = l;
+      this.statsSamplingInterval = l;
    }
 }
 
