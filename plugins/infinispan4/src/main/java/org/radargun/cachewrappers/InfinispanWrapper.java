@@ -1,5 +1,7 @@
 package org.radargun.cachewrappers;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.infinispan.Cache;
 import org.infinispan.config.Configuration;
 import org.infinispan.context.Flag;
@@ -9,8 +11,6 @@ import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.remoting.rpc.RpcManager;
 import org.infinispan.remoting.transport.Address;
 import org.infinispan.remoting.transport.Transport;
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.radargun.CacheWrapper;
 import org.radargun.utils.BucketsKeysTreeSet;
 import org.radargun.utils.Utils;
@@ -40,7 +40,7 @@ import static org.radargun.utils.Utils.mBeanAttributes2String;
 public class InfinispanWrapper implements CacheWrapper {
    private static final String GET_ATTRIBUTE_ERROR = "Exception while obtaining the attribute [%s] from [%s]";
 
-   private static Log log = LogFactory.getLog(InfinispanWrapper.class);
+   private static final Log log = LogFactory.getLog(InfinispanWrapper.class);
    DefaultCacheManager cacheManager;
    Cache<Object, Object> cache;
    TransactionManager tm;
