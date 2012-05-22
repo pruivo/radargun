@@ -11,17 +11,17 @@ import java.lang.management.MemoryMXBean;
  */
 public class MemoryStat {
 
-   private MemoryMXBean memoryBean;
+   private final MemoryMXBean memoryBean;
 
    public MemoryStat(){
       this.memoryBean = ManagementFactory.getMemoryMXBean();
    }
 
-   public long getUsedMemory(){
+   public final long getUsedMemory(){
       return this.memoryBean.getHeapMemoryUsage().getUsed();
    }
 
-   public long getCommittedMemory(){
+   public final long getCommittedMemory(){
       return this.memoryBean.getHeapMemoryUsage().getCommitted();
    }
 

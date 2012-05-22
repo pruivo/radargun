@@ -9,6 +9,10 @@ import org.radargun.utils.KeyGenerator;
 import org.radargun.utils.StatSampler;
 import org.radargun.utils.Utils;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -82,8 +86,9 @@ public class PutGetStressor implements CacheWrapperStressor {
       try {
          log.warn("Resetting statistics before the PutGetStressors start executing");
          wrapper.resetAdditionalStats();
-         if(this.statsSamplingInterval !=0)
+         if(this.statsSamplingInterval > 0) {
             this.statSampler = new StatSampler(this.statsSamplingInterval);
+         }
          stressers = executeOperations();
       } catch (Exception e) {
          log.warn("exception when stressing the cache wrapper", e);
@@ -257,11 +262,6 @@ public class PutGetStressor implements CacheWrapperStressor {
       log.info("Finished generating report. Nr of failed transactions on this node is: " + totalFailedTx +
                      ". Test duration is: " + Utils.getDurationString(System.currentTimeMillis() - startTime));
 
-      if(this.statSampler!=null){
-         log.fatal(statSampler.getCpuUsageHistory());
-         log.fatal(statSampler.getMemoryUsageHistory());
-      }
-
       return results;
    }
 
@@ -281,6 +281,10 @@ public class PutGetStressor implements CacheWrapperStressor {
          stresserList.add(stresser);
 
          try{
+            if (statSampler != null) {
+               statSampler.reset();
+               statSampler.start();
+            }
             stresser.start();
          }
          catch (Throwable t){
@@ -295,6 +299,9 @@ public class PutGetStressor implements CacheWrapperStressor {
          log.info("stresser[" + stresser.getName() + "] finished");
       }
       log.info("All stressers have finished their execution");
+      if (statSampler != null) {
+         statSampler.cancel();
+      }
 
 
       BucketsKeysTreeSet bucketsKeysTreeSet = new BucketsKeysTreeSet();
@@ -302,8 +309,9 @@ public class PutGetStressor implements CacheWrapperStressor {
          bucketsKeysTreeSet.addKeySet(s.keyGenerator.getBucketPrefix(), s.keyGenerator.getAllKeys(numberOfKeys));
       }
       cacheWrapper.saveKeysStressed(bucketsKeysTreeSet);
-
       log.info("Keys stressed saved");
+
+      saveSamples();
 
       return stresserList;
    }
@@ -581,6 +589,31 @@ public class PutGetStressor implements CacheWrapperStressor {
       if(lower_bound == upper_bound)
          return lower_bound;
       return(ran.nextInt(upper_bound-lower_bound)+lower_bound);
+   }
+
+   private void saveSamples() {
+      if (statSampler == null) {
+         return;
+      }
+      log.info("Saving samples in the file sample-" + slaveIdx);
+      File f = new File("sample-" + slaveIdx);
+      try {
+         BufferedWriter bw = new BufferedWriter(new FileWriter(f));
+         List<Long> mem = statSampler.getMemoryUsageHistory();
+         List<Double> cpu = statSampler.getCpuUsageHistory();
+
+         int size = Math.min(mem.size(), cpu.size());
+         bw.write("#Time (milliseconds)\tCPU(%)\tMemory(bytes)");
+         bw.newLine();
+         for (int i = 0; i < size; ++i) {
+            bw.write((i * statsSamplingInterval) + "\t" + cpu.get(i) + "\t" + mem.get(i));
+            bw.newLine();
+         }
+         bw.flush();
+         bw.close();
+      } catch (IOException e) {
+         log.warn("IOException caught while saving sampling: " + e.getMessage());
+      }
    }
 
    @Override

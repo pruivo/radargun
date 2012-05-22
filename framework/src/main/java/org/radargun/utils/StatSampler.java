@@ -3,8 +3,9 @@ package org.radargun.utils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import java.io.IOException;
+import java.util.Collections;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -14,45 +15,75 @@ import java.util.TimerTask;
  * Websiste: www.cloudtm.eu
  * Date: 21/05/12
  */
-public class StatSampler extends TimerTask {
+public class StatSampler {
 
-   private CpuStat CpuStat;
-   private MemoryStat memoryStat;
-   private Timer timer;
+   private final CpuStat cpu;
+   private final MemoryStat memory;
+   private final Timer timer;
+   private long interval;
 
-   private LinkedList<Long> usedMemories = new LinkedList<Long>();
-   private LinkedList<Double> usedCpu = new LinkedList<Double>();
+   private final LinkedList<Long> usedMemories = new LinkedList<Long>();
+   private final LinkedList<Double> usedCpu = new LinkedList<Double>();
 
    private static final Log log = LogFactory.getLog(StatSampler.class);
 
-
-   public StatSampler() throws IOException{
-      init();
-      this.timer.schedule(this,5000L);
+   public StatSampler(long interval) {
+      this.interval = interval;
+      cpu = new ProcCpuStat();
+      memory = new MemoryStat();
+      timer = new Timer();
+      this.timer.schedule(new Collector(),interval,interval);
    }
 
-   public StatSampler(long interval) throws IOException{
-      init();
-      this.timer.schedule(this,interval,interval);
+   /**
+    * cancels the current timer task
+    */
+   public final void cancel() {
+      log.trace("Cancel timer task");
+      timer.cancel();
    }
 
-   private void init() throws IOException {
-
-      this.CpuStat = new ProcCpuStat();
-      this.memoryStat = new MemoryStat();
-      this.timer = new Timer();
+   /**
+    * start a timer task.
+    */
+   public final void start() {
+      log.trace("Start timer task");
+      timer.schedule(new Collector(), 0, interval);
    }
 
-   public void run(){
-      this.usedMemories.addLast(memoryStat.getUsedMemory());
-      this.usedCpu.addLast(CpuStat.getCpuUsageAndReset());
+   /**
+    * reset the samples
+    */
+   public final void reset() {
+      log.trace("Reset samples collected");
+      usedMemories.clear();
+      usedCpu.clear();
    }
 
-   public LinkedList<Long> getMemoryUsageHistory(){
-      return this.usedMemories;
+   public final List<Long> getMemoryUsageHistory(){
+      return Collections.unmodifiableList(usedMemories);
    }
-   public LinkedList<Double> getCpuUsageHistory(){
-      return this.usedCpu;
+   public final List<Double> getCpuUsageHistory(){
+      return Collections.unmodifiableList(usedCpu);
    }
 
+   @Override
+   public String toString() {
+      return "StatSampler{" +
+            "interval=" + interval +
+            ", usedMemories=" + usedMemories +
+            ", usedCpu=" + usedCpu +
+            '}';
+   }
+
+   private class Collector extends TimerTask {
+      @Override
+      public void run() {
+         double cpuValue = cpu.getCpuUsageAndReset();
+         long memValue = memory.getUsedMemory();
+         log.trace("Collecting memory and cpu usage. Memory usage is " + memValue + " and CPU usage is " + cpuValue);
+         usedMemories.addLast(memValue);
+         usedCpu.addLast(cpuValue);
+      }
+   }
 }
