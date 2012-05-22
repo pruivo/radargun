@@ -408,7 +408,7 @@ public class InfinispanWrapper implements CacheWrapper {
 
    private void getValidationStats(String prefix,MBeanServer mBeanServer, Map<String, String> result) {
 
-      String statsFile = "plugins/infinispan4/conf/stats.xml", toCollect, name, attribute, type,toPut;
+      String statsFile = "plugins/infinispan4/conf/stats.xml", toCollect, name, attribute;
 
       ObjectName component;
 
@@ -421,24 +421,21 @@ public class InfinispanWrapper implements CacheWrapper {
                continue;
             name = this.parseAttributeName(toCollect);
             attribute = this.parseAttributeMethod(toCollect);
-            type = this.parseAttributeType(toCollect);
 
             component = new ObjectName(prefix + this.parseAttributeComponent(toCollect));
-            if (type.equalsIgnoreCase("long")) {
-               toPut = getLongAttribute(mBeanServer, component, attribute).toString();
-            } else {
-               toPut = getDoubleAttribute(mBeanServer, component, attribute).toString();
+
+            if (!mBeanServer.isRegistered(component)) {
+               log.info("Not collecting attribute [" + name + "] from [" + component + "] component. It is no registered");
+               continue;
             }
 
-            result.put(name, toPut);
+            result.put(name, String.valueOf(getObjectAttribute(mBeanServer, component, attribute)));
 
          }
       } catch (FileNotFoundException ff) {
-         log.error("Not performing model validation statistics dump: stats file not found");
-      }
-      catch (Exception e){
-         log.error(e.toString());
-         e.printStackTrace();
+         log.warn("Not performing model validation statistics dump: stats file not found");
+      } catch (Exception e){
+         log.warn("Unable to collect stats from Stream Lib Statistic component");
       }
 
    }
