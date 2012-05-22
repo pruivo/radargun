@@ -19,6 +19,7 @@ COORDINATION_EXEC_TX="true"
 CACHE_CONFIG_FILE="ispn.xml"
 GET_KEYS=""
 PASSIVE_REPLICATION="false"
+STAT_SAMPLE_INTERVAL="0"
 
 help_and_exit(){
 echo "usage: ${0} <options>"
@@ -51,6 +52,10 @@ echo "                                   default: ${LOWER_BOUND_OPERATIONS}"
 echo ""
 echo "  -max-op <value>                  maximum number of operations to be executed per transaction"
 echo "                                   default: ${UPPER_BOUND_OPERATIONS}"
+echo ""
+echo "  -stat-sample-interval <value>    the period (in milliseconds) in which the CPU and memory usage is collected"
+echo "                                   A value less or equals than 0 disables the collection"
+echo "                                   default: ${STAT_SAMPLE_INTERVAL}"
 echo ""
 echo "  -no-coordinator-participation    the coordinator doesn't executes transactions"
 echo "                                   default: coordinator execute transactions"
@@ -88,6 +93,7 @@ case $1 in
   -distributed) PARTIAL_REPLICATION="true"; shift 1;;
   -passive-replication) PASSIVE_REPLICATION="true"; shift 1;;
   -get-keys) GET_KEYS=1; shift 1;;
+  -stat-sample-interval) STAT_SAMPLE_INTERVAL=$2; shift 2;;
   -*) echo "WARNING: unknown option '$1'. It will be ignored" >&2; shift 1;;
   *) break;;
 esac
@@ -136,6 +142,7 @@ echo "            perThreadSimulTime=\"${SIMULATION_TIME}\"" >> ${DEST_FILE}
 echo "            opsCountStatusLog=\"5000\"" >> ${DEST_FILE}
 echo "            numberOfKeys=\"${NUMBER_OF_KEYS}\"" >> ${DEST_FILE}
 echo "            sizeOfValue=\"${SIZE_OF_VALUE}\"" >> ${DEST_FILE}
+echo "            statsSamplingInterval=\"${STAT_SAMPLE_INTERVAL}\"" >> ${DEST_FILE}
 echo "            numOfThreads=\"${NUMBER_OF_THREADS}\"" >> ${DEST_FILE}
 echo "            writeOperationPercentage=\"${WRITE_OP_PERCENTAGE}\"" >> ${DEST_FILE}
 echo "            writeTransactionPercentage=\"${WRITE_TX_PERCENTAGE}\"" >> ${DEST_FILE}
