@@ -6,7 +6,7 @@ DEST_FILE=${WORKING_DIR}/conf/ispn.xml
 
 STATS="false"
 JGR_CONFIG="jgroups.xml"
-ISOLATION_LEVEL="READ_COMMITTED"
+ISOLATION_LEVEL="REPEATABLE_READ"
 CONCURRENCY_LEVEL="32"
 WRITE_SKEW="false"
 LOCK_TIMEOUT="10000"
@@ -68,11 +68,13 @@ echo "    -pb-protocol                  change the commit protocol to Passive Re
 echo ""
 echo "    -deadlock-detector            enable the deadlock detection mechanism"
 echo ""
-echo "    -sync                         enable synchronous communication"
+echo "    -async                        enable asynchronous communication"
 echo ""
 echo "    -stats                        enable stats collection"
 echo ""
 echo "    -to-1pc                       enable one phase commit in Total Order protocol (if write skew is enabled)"
+echo ""
+echo "    -extended-stats               enable the extended statistics reports and collection"
 echo ""
 echo "    -h                            show this message"
 }
@@ -94,11 +96,11 @@ case $1 in
   -to-protocol) TX_PROTOCOL="TOTAL_ORDER"; shift 1;;
   -pb-protocol) TX_PROTOCOL="PASSIVE_REPLICATION"; shift 1;;
   -deadlock-detector) DEADLOCK_DETECTION="true"; shift 1;;
-  -sync) SYNC=1; shift 1;;
+  -async) ASYNC=1; shift 1;;
   -stats) STATS="true"; shift 1;;
   -to-queue-size) TO_QUEUE_SIZE=$2; shift 2;;
   -to-1pc) TO_1PC="true"; shift 1;;
-  -custom-interceptors) CUSTOM_INTERCEPTOR_CHAIN="true"; shift 1;;  
+  -extended-stats) CUSTOM_INTERCEPTOR_CHAIN="true"; shift 1;;  
   -*) echo "WARNING: unknown option '$1'. It will be ignored" >&2; shift 1;;
   *) echo "WARNING: unknown argument '$1'. It will be ignored" >&2; shift 1;;
   esac
@@ -195,16 +197,16 @@ echo "                enabled=\"${DEADLOCK_DETECTION}\"/>" >> ${DEST_FILE}
 
 echo "        <clustering mode=\"${CLUSTERING_MODE}\">" >> ${DEST_FILE}
 
-if [ -n "${SYNC}" ]; then
-echo "            <sync" >> ${DEST_FILE}
-echo "                    replTimeout=\"150000\" />" >> ${DEST_FILE}
-else
+if [ -n "${ASYNC}" ]; then
 echo "            <async" >> ${DEST_FILE}
 echo "                    replQueueMaxElements=\"1000\"" >> ${DEST_FILE}
 echo "                    replQueueClass=\"org.infinispan.remoting.ReplicationQueueImpl\"" >> ${DEST_FILE}
 echo "                    useReplQueue=\"false\"" >> ${DEST_FILE}
 echo "                    replQueueInterval=\"5000\"" >> ${DEST_FILE}
 echo "                    asyncMarshalling=\"false\" />" >> ${DEST_FILE}
+else
+echo "            <sync" >> ${DEST_FILE}
+echo "                    replTimeout=\"150000\" />" >> ${DEST_FILE}
 fi
 
 #replicated mode or invalidation
@@ -235,10 +237,14 @@ echo "        </clustering>" >> ${DEST_FILE}
 
 #customInterceptors
 if [ "${CUSTOM_INTERCEPTOR_CHAIN}" == "true" ]; then
-echo "          <customInterceptors>" >> ${DEST_FILE}
-echo "              <interceptor index=\"0\" class=\"org.infinispan.distribution.wrappers.ReplCustomStatsInterceptor\"/>" >> ${DEST_FILE}
-echo "              <interceptor before=\"org.infinispan.interceptors.NotificationInterceptor\" class=\"org.infinispan.stats.topK.StreamLibInterceptor\"/>" >> ${DEST_FILE}
-echo "</customInterceptors>" >> ${DEST_FILE}
+echo "        <customInterceptors>" >> ${DEST_FILE}
+echo "            <interceptor" >> ${DEST_FILE} 
+echo "                    after=\"org.infinispan.interceptor.InvocationContextInterceptor\"" >> ${DEST_FILE} 
+echo "                    class=\"org.infinispan.distribution.wrappers.ReplCustomStatsInterceptor\"/>" >> ${DEST_FILE}
+echo "            <interceptor" >> ${DEST_FILE} 
+echo "                    before=\"org.infinispan.interceptors.NotificationInterceptor\"" >> ${DEST_FILE} 
+echo "                    class=\"org.infinispan.stats.topK.StreamLibInterceptor\"/>" >> ${DEST_FILE}
+echo "        </customInterceptors>" >> ${DEST_FILE}
 fi
 
 #put versions if needed
