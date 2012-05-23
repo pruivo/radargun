@@ -22,6 +22,7 @@ CLUSTERING_MODE="r"
 DIST_NUM_OWNERS="2"
 VERSIONS="false"
 VERSION_SCHEME="SIMPLE"
+CUSTOM_INTERCEPTOR_CHAIN="false"
 
 help() {
 echo "usage: $0 <options>"
@@ -76,6 +77,8 @@ echo "    -stats                        enable stats collection"
 echo ""
 echo "    -to-1pc                       enable one phase commit in Total Order protocol (if write skew is enabled)"
 echo ""
+echo "    -extended-stats               enable the extended statistics reports and collection"
+echo ""
 echo "    -h                            show this message"
 }
 
@@ -101,6 +104,7 @@ case $1 in
   -to-queue-size) TO_QUEUE_SIZE=$2; shift 2;;
   -to-1pc) TO_1PC="true"; shift 1;;
   -preload-from-db) PRELOAD_LOCATION=$2; shift 2;;
+  -extended-stats) CUSTOM_INTERCEPTOR_CHAIN="true"; shift 1;;
   -*) echo "WARNING: unknown option '$1'. It will be ignored" >&2; shift 1;;
   *) echo "WARNING: unknown argument '$1'. It will be ignored" >&2; shift 1;;
   esac
@@ -186,6 +190,7 @@ fi
 if [ "${TX_PROTOCOL}" == "PASSIVE_REPLICATION" ]; then
 echo "                transactionProtocol=\"${TX_PROTOCOL}\"" >> ${DEST_FILE}
 fi
+
 echo "                />" >> ${DEST_FILE}
 
 echo "        <jmxStatistics" >> ${DEST_FILE}
@@ -233,6 +238,30 @@ echo "                    invalidationThreshold=\"0\" />" >> ${DEST_FILE}
 fi
 
 echo "        </clustering>" >> ${DEST_FILE}
+
+#customInterceptors
+if [ "${CUSTOM_INTERCEPTOR_CHAIN}" == "true" ]; then
+if [ "${CLUSTERING_MODE}" == "r" ]; then
+echo "        <customInterceptors>" >> ${DEST_FILE}
+echo "            <interceptor" >> ${DEST_FILE}
+echo "                    after=\"org.infinispan.interceptors.InvocationContextInterceptor\"" >> ${DEST_FILE}
+echo "                    class=\"org.infinispan.distribution.wrappers.ReplCustomStatsInterceptor\"/>" >> ${DEST_FILE}
+echo "            <interceptor" >> ${DEST_FILE}
+echo "                    before=\"org.infinispan.interceptors.NotificationInterceptor\"" >> ${DEST_FILE}
+echo "                    class=\"org.infinispan.stats.topK.StreamLibInterceptor\"/>" >> ${DEST_FILE}
+echo "        </customInterceptors>" >> ${DEST_FILE}
+else if [ "${CLUSTERING_MODE}" == "d" ]; then
+echo "        <customInterceptors>" >> ${DEST_FILE}
+echo "            <interceptor" >> ${DEST_FILE}
+echo "                    after=\"org.infinispan.interceptors.InvocationContextInterceptor\"" >> ${DEST_FILE}
+echo "                    class=\"org.infinispan.distribution.wrappers.DistCustomStatsInterceptor\"/>" >> ${DEST_FILE}
+echo "            <interceptor" >> ${DEST_FILE}
+echo "                    before=\"org.infinispan.interceptors.NotificationInterceptor\"" >> ${DEST_FILE}
+echo "                    class=\"org.infinispan.stats.topK.DistributedStreamLibInterceptor\"/>" >> ${DEST_FILE}
+echo "        </customInterceptors>" >> ${DEST_FILE}
+fi
+fi
+fi
 
 #put versions if needed
 if [ "${VERSIONS}" == "true" ]; then

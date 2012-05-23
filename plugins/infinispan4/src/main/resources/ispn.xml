@@ -1,24 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <infinispan
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="urn:infinispan:config:5.0 http://www.infinispan.org/schemas/infinispan-config-5.0.xsd"
-        xmlns="urn:infinispan:config:5.0">
+        xsi:schemaLocation="urn:infinispan:config:5.1 http://www.infinispan.org/schemas/infinispan-config-5.1.xsd"
+        xmlns="urn:infinispan:config:5.1">
     <global>
         <globalJmxStatistics
                 enabled="true"
                 jmxDomain="org.infinispan"/>
         <transport
-                clusterName="li-cluster">
+                clusterName="infinispan-cluster">
             <properties>
                 <property
                         name="configurationFile"
-                        value="jgroups/jgroups-udp.xml" />
+                        value="jgroups/jgroups.xml" />
             </properties>
         </transport>
     </global>
     <default>
         <locking
-                isolationLevel="READ_COMMITTED"
+                isolationLevel="REPEATABLE_READ"
                 concurrencyLevel="32"
                 writeSkewCheck="false"
                 useLockStriping="false"
@@ -26,32 +26,36 @@
         <transaction
                 transactionManagerLookupClass="org.infinispan.transaction.lookup.GenericTransactionManagerLookup"
                 useEagerLocking="false"
+                transactionMode="TRANSACTIONAL"
                 syncRollbackPhase="false"
                 cacheStopTimeout="30000"
                 useSynchronization="false"
                 syncCommitPhase="false"
-                eagerLockSingleNode="false">
-        </transaction>
+                lockingMode="OPTIMISTIC"
+                eagerLockSingleNode="false"
+                use1PcForAutoCommitTransactions="false"
+                autoCommit="true"
+                />
         <jmxStatistics
-                enabled="true"
-                topKValue="1000"/>
-        <deadlockDetection
                 enabled="true"/>
-        <clustering mode="d">
+        <deadlockDetection
+                enabled="false"/>
+        <clustering mode="r">
             <sync
-                    replTimeout="15000"/>
-            <hash
-                    numVirtualNodes="1"
-                    numOwners="1"
-                    rehashEnabled="false"
-                    rehashRpcTimeout="600000"
-                    rehashWait="60000" />
-            <l1
-                    enabled="false"
-                    onRehash="false"
-                    lifespan="600000"
-                    invalidationThreshold="0" />
+                    replTimeout="150000" />
+            <stateTransfer
+                    fetchInMemoryState="false"
+                    chunkSize="100"
+                    timeout="240000"/>
         </clustering>
+        <customInterceptors>
+            <interceptor
+                    after="org.infinispan.interceptors.InvocationContextInterceptor"
+                    class="org.infinispan.distribution.wrappers.ReplCustomStatsInterceptor"/>
+            <interceptor
+                    before="org.infinispan.interceptors.NotificationInterceptor"
+                    class="org.infinispan.stats.topK.StreamLibInterceptor"/>
+        </customInterceptors>
     </default>
     <namedCache
             name="x" />

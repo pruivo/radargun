@@ -1,0 +1,50 @@
+<stats-collector>
+   <component name="TotalOrderManager">
+      <stat displayName="avgWaitingTimeQueue(msec)" attributeName="averageWaitingTimeInQueue"/>
+      <stat displayName="avgValidationDuration(msec)" attributeName="averageValidationDuration"/>
+      <stat displayName="avgInitDuration(msec)" attributeName="averageInitializationDuration"/>
+   </component>
+   <component name="ExtendedStatistics">
+      <stat displayName="ACF" attributeName="applicationContentionFactor"/>
+      <!-- Probabilities -->
+      <stat displayName="LockContention" attributeName="lockContentionProbability"/>
+      <stat displayName="LocalLockContention" attributeName="localContentionProbability"/>
+      <stat displayName="RemoteLockContention" attributeName="remoteContentionProbability"/>
+      <!-- HoldTimes -->
+      <stat displayName="HoldTime(usec)" attributeName="avgLockHoldTime"/>
+      <stat displayName="LocalHoldTime(usec)" attributeName="avgLocalLockHoldTime"/>
+      <stat displayName="RemoteHoldTime(usec)" attributeName="avgRemoteLockHoldTime"/>
+      <!--WaitingTimes-->
+      <stat displayName="AvgLockWaitingTime(usec)" attributeName="avgLockWaitingTime"/>
+      <!--Need for wait time from local/remote?-->
+      <!--Transport layer-->
+      <stat displayName="PrepareRtt(usec)" attributeName="avgPrepareRtt"/>
+      <stat displayName="CommitRtt(usec)" attributeName="avgCommitRtt"/>
+      <stat displayName="AvgPrepareRtt(usec)" attributeName="avgPrepareRtt"/>
+      <stat displayName="AvgCommitRtt(usec)" attributeName="avgCommitRtt"/>
+      <stat displayName="AvgRollbackRtt(usec)" attributeName="avgRollbackRtt"/>
+      <!--Local execution times-->
+      <stat displayName="ExecNoCont(usec)" attributeName="localExecutionTimeWithoutLock"/>
+      <stat displayName="AvgReadOnlyTxDuration(usec)" attributeName="avgReadOnlyTxDuration"/>
+      <stat displayName="AvgWriteTxDuration(usec)" attributeName="avgWriteTxDuration"/>
+      <stat displayName="AvgWriteTxLocalExecution(usec)" attributeName="avgWriteTxLocalExecution"/>
+      <!--Command execution-->
+      <stat displayName="AvgCompleteNotificationAsync(usec)" attributeName="avgCompleteNotificationAsync"/>
+      <stat displayName="AvgCommitTime(usec)" attributeName="avgCommitTime"/>
+      <stat displayName="AvgRollbackTime(usec)" attributeName="avgRollbackTime"/>
+      <stat displayName="AvgLocalPrepareTime(usec)" attributeName="avgLocalPrepareTime"/>
+      <stat displayName="AvgRemotePrepareTime(usec)" attributeName="avgRemotePrepareTime"/>
+      <stat displayName="AvgLocalCommitTime(usec)" attributeName="avgLocalCommitTime"/>
+      <stat displayName="AvgRemoteCommitTime(usec)" attributeName="avgRemoteCommitTime"/>
+      <stat displayName="AvgLocalRollbackTime(usec)" attributeName="avgLocalRollbackTime"/>
+      <stat displayName="AvgRemoteRollbackTime(usec)" attributeName="avgRemoteRollbackTime"/>
+      <!--Command size-->
+      <stat displayName="AvgPrepareCommandSize" attributeName="avgPrepareCommandSize"/>
+      <stat displayName="AvgCommitCommandSize" attributeName="avgCommitCommandSize"/>
+      <!--Workload carachterization-->
+      <stat displayName="WrPerTx" attributeName="avgNumPutsBySuccessfulLocalTx"/>
+      <stat displayName="PercentageWriteTransactions" attributeName="percentageWriteTransactions"/>
+      <stat displayName="PercentageSuccessWriteTransactions" attributeName="percentageSuccessWriteTransactions"/>
+      <stat displayName="AvgNumOfLockLocalTx" attributeName="avgNumOfLockLocalTx"/>
+   </component>
+</stats-collector>

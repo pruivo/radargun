@@ -2,6 +2,8 @@ package org.radargun.cachewrappers;
 
 import com.arjuna.ats.arjuna.common.arjPropertyManager;
 import com.arjuna.ats.internal.arjuna.objectstore.VolatileStore;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.infinispan.Cache;
 import org.infinispan.config.Configuration;
 import org.infinispan.context.Flag;
@@ -11,9 +13,9 @@ import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.remoting.rpc.RpcManager;
 import org.infinispan.remoting.transport.Address;
 import org.infinispan.remoting.transport.Transport;
-import org.jgroups.logging.Log;
-import org.jgroups.logging.LogFactory;
 import org.radargun.CacheWrapper;
+import org.radargun.cachewrappers.parser.StatisticComponent;
+import org.radargun.cachewrappers.parser.StatsParser;
 import org.radargun.utils.TypedProperties;
 import org.radargun.utils.Utils;
 
@@ -52,6 +54,8 @@ public class InfinispanWrapper implements CacheWrapper {
    private volatile boolean enlistExtraXAResource;
    Transport transport;
    Method isPassiveReplicationMethod = null;
+
+   private final List<StatisticComponent> statisticComponents = StatsParser.parse("all-stats.xml");
 
    public void setUp(String config, boolean isLocal, int nodeIndex, TypedProperties confAttributes) throws Exception {
       this.config = config;
@@ -221,10 +225,12 @@ public class InfinispanWrapper implements CacheWrapper {
       MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
       String cacheComponentString = getCacheComponentBaseString(mBeanServer);
 
-      if(cacheComponentString != null) {
+      if (cacheComponentString != null) {
          saveStatsFromStreamLibStatistics(cacheComponentString, mBeanServer);
-         getStatsFromStatistic(cacheComponentString, mBeanServer, results);
-         getStatsFromTotalOrderValidator(cacheComponentString, mBeanServer, results);
+
+         for (StatisticComponent statisticComponent : statisticComponents) {
+            getStatsFrom(cacheComponentString, mBeanServer, results, statisticComponent);
+         }
       } else {
          log.info("Not collecting additional stats. Infinispan MBeans not found");
       }
@@ -276,10 +282,10 @@ public class InfinispanWrapper implements CacheWrapper {
 
    private String getCacheComponentBaseString(MBeanServer mBeanServer) {
       String domain = cacheManager.getGlobalConfiguration().getJmxDomain();
-      for(ObjectName name : mBeanServer.queryNames(null, null)) {
-         if(name.getDomain().equals(domain)) {
+      for (ObjectName name : mBeanServer.queryNames(null, null)) {
+         if (name.getDomain().equals(domain)) {
 
-            if("Cache".equals(name.getKeyProperty("type"))) {
+            if ("Cache".equals(name.getKeyProperty("type"))) {
                String cacheName = name.getKeyProperty("name");
                String cacheManagerName = name.getKeyProperty("manager");
                return new StringBuilder(domain)
@@ -304,7 +310,7 @@ public class InfinispanWrapper implements CacheWrapper {
             return;
          }
 
-         String filePath = "top-keys-" + cache.getAdvancedCache().getRpcManager().getAddress();
+         String filePath = "top-keys-" + transport.getAddress();
 
          log.info("Collecting statistics from Stream Lib component [" + streamLibStats + "] and save them in " +
                         filePath);
@@ -313,16 +319,28 @@ public class InfinispanWrapper implements CacheWrapper {
 
          BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(filePath));
 
-         bufferedWriter.write("RemoteTopGets=" + getMapAttribute(mBeanServer, streamLibStats,"RemoteTopGets")
+         bufferedWriter.write("RemoteTopGets=" + getMapAttribute(mBeanServer, streamLibStats, "RemoteTopGets")
                .toString());
          bufferedWriter.newLine();
-         bufferedWriter.write("LocalTopGets=" + getMapAttribute(mBeanServer, streamLibStats,"LocalTopGets")
+         bufferedWriter.write("LocalTopGets=" + getMapAttribute(mBeanServer, streamLibStats, "LocalTopGets")
                .toString());
          bufferedWriter.newLine();
-         bufferedWriter.write("RemoteTopPuts=" + getMapAttribute(mBeanServer, streamLibStats,"RemoteTopPuts")
+         bufferedWriter.write("RemoteTopPuts=" + getMapAttribute(mBeanServer, streamLibStats, "RemoteTopPuts")
                .toString());
          bufferedWriter.newLine();
-         bufferedWriter.write("LocalTopPuts=" + getMapAttribute(mBeanServer, streamLibStats,"LocalTopPuts")
+         bufferedWriter.write("LocalTopPuts=" + getMapAttribute(mBeanServer, streamLibStats, "LocalTopPuts")
+               .toString());
+         bufferedWriter.newLine();
+         bufferedWriter.write("TopLockedKeys=" + getMapAttribute(mBeanServer, streamLibStats, "TopLockedKeys")
+               .toString());
+         bufferedWriter.newLine();
+         bufferedWriter.write("TopContendedKeys=" + getMapAttribute(mBeanServer, streamLibStats, "TopContendedKeys")
+               .toString());
+         bufferedWriter.newLine();
+         bufferedWriter.write("TopLockFailedKeys=" + getMapAttribute(mBeanServer, streamLibStats, "TopLockFailedKeys")
+               .toString());
+         bufferedWriter.newLine();
+         bufferedWriter.write("TopWriteSkewFailedKeys=" + getMapAttribute(mBeanServer, streamLibStats, "TopWriteSkewFailedKeys")
                .toString());
          bufferedWriter.newLine();
          bufferedWriter.flush();
@@ -333,83 +351,47 @@ public class InfinispanWrapper implements CacheWrapper {
       }
    }
 
-   private void getStatsFromTotalOrderValidator(String baseName, MBeanServer mBeanServer, Map<String, String> results) {
+   private void getStatsFrom(String baseName, MBeanServer mBeanServer, Map<String, String> results,
+                             StatisticComponent statisticComponent) {
       try {
-         ObjectName toValidator = new ObjectName(baseName + "TotalOrderValidator");
+         ObjectName objectName = new ObjectName(baseName + statisticComponent.getName());
 
-         if (!mBeanServer.isRegistered(toValidator)) {
-            log.info("Not collecting statistics from Total Order component. It is not registered");
+         if (!mBeanServer.isRegistered(objectName)) {
+            log.info("Not collecting statistics from [" + objectName + "]. It is not registered");
             return;
          }
 
-         log.info("Collecting statistics from Total Order component [" + toValidator + "]");
+         log.info("Collecting statistics from component [" + objectName + "]");
          log.debug("Attributes available are " +
-                         mBeanAttributes2String(mBeanServer.getMBeanInfo(toValidator).getAttributes()));
+                         mBeanAttributes2String(mBeanServer.getMBeanInfo(objectName).getAttributes()));
+         log.trace("Attributes to be reported are " + statisticComponent.getStats());
 
-         double avgWaitingQueue = getDoubleAttribute(mBeanServer, toValidator, "averageWaitingTimeInQueue");
-         double avgValidationDur = getDoubleAttribute(mBeanServer, toValidator, "averageValidationDuration");
-         double avgInitDur = getDoubleAttribute(mBeanServer, toValidator, "averageInitializationDuration");
-
-         results.put("AVG_WAITING_TIME_IN_QUEUE(msec)", String.valueOf(avgWaitingQueue));
-         results.put("AVG_VALIDATION_DURATION(msec)", String.valueOf(avgValidationDur));
-         results.put("AVG_INIT_DURATION(msec)", String.valueOf(avgInitDur));
+         for (Map.Entry<String, String> entry : statisticComponent.getStats()) {
+            results.put(entry.getKey(), getAsStringAttribute(mBeanServer, objectName, entry.getValue()));
+         }
       } catch (Exception e) {
          log.warn("Unable to collect stats from Total Order Validator component");
       }
    }
 
-   private void getStatsFromStatistic(String baseName, MBeanServer mBeanServer, Map<String, String> results) {
-      try {
-         ObjectName stats = new ObjectName(baseName + "TLStatistics");
-
-         if (!mBeanServer.isRegistered(stats)) {
-            log.info("Not collecting statistics from Statistic component. It is not registered");
-            return;
-         }
-
-         log.info("Collecting statistics from Statistic component [" + stats + "]");
-         log.debug("Attributes available are " +
-                         mBeanAttributes2String(mBeanServer.getMBeanInfo(stats).getAttributes()));
-
-         long totalRemoteGets = getLongAttribute(mBeanServer, stats, "GetsInRemoteKeys");
-         long totalLocalGets = getLongAttribute(mBeanServer, stats, "GetsInLocalKeys");
-         long totalRemotePuts = getLongAttribute(mBeanServer, stats, "PutsInRemoteKeys");
-         long totalLocalPuts = getLongAttribute(mBeanServer, stats, "PutsInLocalKeys");
-
-         results.put("TOTAL_REMOTE_GETS", String.valueOf(totalRemoteGets));
-         results.put("TOTAL_LOCAL_GETS", String.valueOf(totalLocalGets));
-         results.put("TOTAL_REMOTE_PUTS", String.valueOf(totalRemotePuts));
-         results.put("TOTAL_LOCAL_PUTS", String.valueOf(totalLocalPuts));
-      } catch (Exception e) {
-         log.warn("Unable to collect stats from Distribution Manager component");
-      }
-   }
-
-
-   private Long getLongAttribute(MBeanServer mBeanServer, ObjectName component, String attr) {
-      try {
-         return (Long)mBeanServer.getAttribute(component, attr);
-      } catch (Exception e) {
-         log.debug(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
-      }
-      return -1L;
-   }
-
-   private Double getDoubleAttribute(MBeanServer mBeanServer, ObjectName component, String attr) {
-      try {
-         return (Double)mBeanServer.getAttribute(component, attr);
-      } catch (Exception e) {
-         log.debug(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
-      }
-      return -1D;
-   }
-
+   @SuppressWarnings("unchecked")
    private Map<Object, Object> getMapAttribute(MBeanServer mBeanServer, ObjectName component, String attr) {
       try {
-         return (Map<Object, Object>)mBeanServer.getAttribute(component, attr);
+         return (Map<Object, Object>) mBeanServer.getAttribute(component, attr);
       } catch (Exception e) {
-         log.debug(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
+         log.warn(String.format(GET_ATTRIBUTE_ERROR, attr, component));
+         log.debug(e);
       }
       return Collections.emptyMap();
+   }
+
+   private String getAsStringAttribute(MBeanServer mBeanServer, ObjectName component, String attr) {
+      try {
+         return String.valueOf(mBeanServer.getAttribute(component, attr));
+      } catch (Exception e) {
+         log.warn(String.format(GET_ATTRIBUTE_ERROR, attr, component));
+         log.debug(e);
+      }
+      return "Not_Available";
    }
 }

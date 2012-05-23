@@ -132,7 +132,7 @@ echo "<bench-config>" > ${DEST_FILE}
 
 echo "   <master" >> ${DEST_FILE}
 echo "         bindAddress=\"\${127.0.0.1:master.address}\"" >> ${DEST_FILE}
-echo "         port=\"\${21031:master.port}\"/>" >> ${DEST_FILE}
+echo "         port=\"\${21032:master.port}\"/>" >> ${DEST_FILE}
 
 echo "   <benchmark" >> ${DEST_FILE}
 echo "         initSize=\"\${10:Islaves}\"" >> ${DEST_FILE}

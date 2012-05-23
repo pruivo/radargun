@@ -1,52 +1,49 @@
 <bench-config>
-
-    <master
-            bindAddress="${127.0.0.1:master.address}"
-            port="${42103:master.port}"/>
-
-    <benchmark
-            initSize="${10:Islaves}"
-            maxSize="${10:slaves}"
-            increment="1">
-
-        <DestroyWrapper
-                runOnAllSlaves="true"/>
-
-        <StartCluster
-                staggerSlaveStartup="true"
-                delayAfterFirstSlaveStarts="5000"
-                delayBetweenStartingSlaves = "500"/>
-
-        <ClusterValidation
-                partialReplication="true"/>
-
-        <TpccPopulation
-                numWarehouses="1"
-                cLastMask="0"
-                olIdMask="0"
-                cIdMask="0"/>
-
-
-        <TpccBenchmark
-                numOfThreads="2"
-                perThreadSimulTime="180"
-                arrivalRate="0.0"
-                paymentWeight="5.0"
-                orderStatusWeight="70.0"/>
-
-        <CsvReportGeneration/>
-    </benchmark>
-
-    <products>
-        <infinispan4>
-            <config name="ispn.xml"/>
-        </infinispan4>
-    </products>
-
-    <reports>
-        <report name="Results">
-            <item product="infinispan4" config="ispn.xml"/>
-        </report>
-    </reports>
-
+   <master
+         bindAddress="${127.0.0.1:master.address}"
+         port="${21032:master.port}"/>
+   <benchmark
+         initSize="${2:Islaves}"
+         maxSize="${2:slaves}"
+         increment="1">
+      <DestroyWrapper
+            runOnAllSlaves="true"/>
+      <StartCluster
+            staggerSlaveStartup="true"
+            delayAfterFirstSlaveStarts="5000"
+            delayBetweenStartingSlaves="1000"/>
+      <ClusterValidation
+            passiveReplication="false"
+            partialReplication="false"/>
+      <TpccPopulation
+            preloadedFromDB="false"
+            numWarehouses="1"
+            cLastMask="0"
+            olIdMask="0"
+            cIdMask="0"
+            threadParallelLoad="true"
+            batchLevel="100"
+            numLoaderThreads="2"/>
+      <CacheSize
+            statName="CACHE_SIZE_BEFORE_BENCH" />
+      <TpccBenchmark
+            statsSamplingInterval="5000"
+            numOfThreads="2"
+            perThreadSimulTime="30"
+            arrivalRate="0"
+            accessSameWarehouse="false"
+            paymentWeight="45"
+            orderStatusWeight="5"/>
+      <CacheSize
+            statName="CACHE_SIZE_AFTER_BENCH" />
+      <CsvReportGeneration/>
+   </benchmark>
+   <products>
+      <infinispan4>
+         <config name="ispn.xml"/>
+      </infinispan4>
+   </products>
+   <reports>
+      <report name="Reports" />
+   </reports>
 </bench-config>
