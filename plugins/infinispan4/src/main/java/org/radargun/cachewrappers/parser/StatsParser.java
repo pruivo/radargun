@@ -8,6 +8,8 @@ import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -33,10 +35,28 @@ public class StatsParser {
    public static List<StatisticComponent> parse(String file) {
       Document document;
       try {
+         InputStream is = null;
+
+         for (ClassLoader cl : getPossibleClassLoaders()) {
+            if (cl == null) {
+               continue;
+            }
+            is = cl.getResourceAsStream(file);
+            if (is != null) {
+               break;
+            }
+         }
+
+         if (is == null) {
+            is = new FileInputStream(file);
+         }
+
          DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-         document = builder.parse(file);
+         document = builder.parse(is);
+
       } catch (Exception e) {
          log.error("Cannot parse file " + file + ". No stats will be reported");
+         e.printStackTrace();
          return Collections.emptyList();
       }
 
@@ -76,6 +96,14 @@ public class StatsParser {
          result.add(newComponent);
       }
       return result;
+   }
+
+   private static ClassLoader[] getPossibleClassLoaders() {
+      return new ClassLoader[] {
+         Thread.currentThread().getContextClassLoader(),
+         StatsParser.class.getClassLoader(),
+         ClassLoader.getSystemClassLoader()
+      };
    }
 
 }

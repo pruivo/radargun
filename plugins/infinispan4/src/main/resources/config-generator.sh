@@ -237,14 +237,26 @@ echo "        </clustering>" >> ${DEST_FILE}
 
 #customInterceptors
 if [ "${CUSTOM_INTERCEPTOR_CHAIN}" == "true" ]; then
+if [ "${CLUSTERING_MODE}" == "r" ]; then
 echo "        <customInterceptors>" >> ${DEST_FILE}
 echo "            <interceptor" >> ${DEST_FILE} 
-echo "                    after=\"org.infinispan.interceptor.InvocationContextInterceptor\"" >> ${DEST_FILE} 
+echo "                    after=\"org.infinispan.interceptors.InvocationContextInterceptor\"" >> ${DEST_FILE}
 echo "                    class=\"org.infinispan.distribution.wrappers.ReplCustomStatsInterceptor\"/>" >> ${DEST_FILE}
 echo "            <interceptor" >> ${DEST_FILE} 
 echo "                    before=\"org.infinispan.interceptors.NotificationInterceptor\"" >> ${DEST_FILE} 
 echo "                    class=\"org.infinispan.stats.topK.StreamLibInterceptor\"/>" >> ${DEST_FILE}
 echo "        </customInterceptors>" >> ${DEST_FILE}
+else if [ "${CLUSTERING_MODE}" == "d" ]; then
+echo "        <customInterceptors>" >> ${DEST_FILE}
+echo "            <interceptor" >> ${DEST_FILE}
+echo "                    after=\"org.infinispan.interceptors.InvocationContextInterceptor\"" >> ${DEST_FILE}
+echo "                    class=\"org.infinispan.distribution.wrappers.DistCustomStatsInterceptor\"/>" >> ${DEST_FILE}
+echo "            <interceptor" >> ${DEST_FILE}
+echo "                    before=\"org.infinispan.interceptors.NotificationInterceptor\"" >> ${DEST_FILE}
+echo "                    class=\"org.infinispan.stats.topK.DistributedStreamLibInterceptor\"/>" >> ${DEST_FILE}
+echo "        </customInterceptors>" >> ${DEST_FILE}
+fi
+fi
 fi
 
 #put versions if needed

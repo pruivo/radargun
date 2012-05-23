@@ -16,9 +16,6 @@ import java.util.Map;
  * @since 4.0
  */
 public class OrderKeysUpdate {
-   private static final int KEY_IDX = 5;
-   private static final int VALUE_IDX = 10;
-   private static final int VERSION_IDX = 11;
 
    public static void main(String[] args) {
       if (args.length == 0) {
@@ -34,11 +31,13 @@ public class OrderKeysUpdate {
          String line;
          //11:08:56,034 TRACE [ReadCommittedEntry] Updating entry (key=KEY_0 removed=false valid=true changed=true created=true value=<value> newVersion=null]
          while ((line = br.readLine()) != null) {
-            String[] split = line.split(" ");
+            if (!line.contains("Updating entry")) {
+               continue;
+            }
 
-            String key = getKey(split[KEY_IDX]);
-            String value = getValue(split[VALUE_IDX]);
-            String version = getVersion(split[VERSION_IDX]);
+            String key = getKey(line);
+            String value = getValue(line);
+            String version = getVersion(line);
 
             if (value.length() > 10) {
                value = value.substring(0, 10);
@@ -71,14 +70,38 @@ public class OrderKeysUpdate {
    }
 
    private static String getKey(String key) {
-      return key.split("=")[1];
+      return getSubstringBetween("key=", " removed=", key);
    }
 
    private static String getValue(String value) {
-      return value.split("=")[1];
+      return getSubstringBetween("value=", " newVersion=", value);
    }
 
    private static String getVersion(String version) {
-      return version.split("=")[1];
+      String aux = getSubstringBetween("newVersion=", "]", version);
+      if (aux != null && aux.contains("version=")) {
+         return getSubstringBetween("version=", "}", aux);
+      }
+      return aux;
+   }
+
+   private static String getSubstringBetween(String begin, String end, String line) {
+      int beginIdx = begin != null ? line.indexOf(begin) : 0;
+      if (beginIdx == -1) {
+         return null;
+      }
+      beginIdx += begin != null ? begin.length() : 0;
+
+      int endIdx = end != null ? line.indexOf(end, beginIdx) : line.length();
+
+      if (endIdx == -1) {
+         return null;
+      }
+
+      if (beginIdx > endIdx || endIdx > line.length()) {
+         return null;
+      }
+
+      return line.substring(beginIdx, endIdx);
    }
 }

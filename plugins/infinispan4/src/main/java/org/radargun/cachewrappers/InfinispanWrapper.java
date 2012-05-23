@@ -373,7 +373,8 @@ public class InfinispanWrapper implements CacheWrapper {
       try {
          return (Map<Object, Object>) mBeanServer.getAttribute(component, attr);
       } catch (Exception e) {
-         log.debug(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
+         log.warn(String.format(GET_ATTRIBUTE_ERROR, attr, component));
+         log.debug(e);
       }
       return Collections.emptyMap();
    }
@@ -382,7 +383,8 @@ public class InfinispanWrapper implements CacheWrapper {
       try {
          return String.valueOf(mBeanServer.getAttribute(component, attr));
       } catch (Exception e) {
-         log.warn(String.format(GET_ATTRIBUTE_ERROR, attr, component), e);
+         log.warn(String.format(GET_ATTRIBUTE_ERROR, attr, component));
+         log.debug(e);
       }
       return "Not_Available";
    }

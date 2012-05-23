@@ -3,8 +3,10 @@ package org.radargun.utils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 
 /**
  * Author: Diego Didona
@@ -86,7 +88,7 @@ public class ProcCpuStat implements CpuStat{
       long[] ret = new long[4];
       try {
          Process p = rt.exec(COMMANDS);
-         java.io.BufferedReader stdInput = new java.io.BufferedReader(new java.io.InputStreamReader(p.getInputStream()));
+         BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
          String actual = stdInput.readLine();
 
          temp = actual.split(" ");

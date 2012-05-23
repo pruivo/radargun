@@ -5,7 +5,7 @@
       xmlns="urn:infinispan:config:5.1">
    <global>
       <globalJmxStatistics
-            enabled="false"
+            enabled="true"
             jmxDomain="org.infinispan"/>
       <transport
             clusterName="infinispan-cluster">
@@ -37,7 +37,7 @@
             autoCommit="true"
             />
       <jmxStatistics
-            enabled="false"/>
+            enabled="true"/>
       <deadlockDetection
             enabled="false"/>
       <clustering mode="r">
@@ -50,7 +50,7 @@
       </clustering>
       <!--<customInterceptors>
          <interceptor
-               after="org.infinispan.interceptor.InvocationContextInterceptor"
+               after="org.infinispan.interceptors.InvocationContextInterceptor"
                class="org.infinispan.distribution.wrappers.ReplCustomStatsInterceptor"/>
          <interceptor
                before="org.infinispan.interceptors.NotificationInterceptor"
