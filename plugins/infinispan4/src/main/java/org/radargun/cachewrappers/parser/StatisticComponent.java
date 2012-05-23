@@ -5,10 +5,11 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * // TODO: Document this
+ * Keeps information about the name of the component, the attributes names and display names in report of the stats
+ * to be collected
  *
- * @author pedro
- * @since 4.0
+ * @author Pedro Ruivo
+ * @since 1.1
  */
 public class StatisticComponent {
    private String name;
@@ -18,20 +19,33 @@ public class StatisticComponent {
       this.name = name;
    }
 
-   public void add(String displayName, String attributeName) {
+   /**
+    * adds a new display name and attribute name. If the display name already exists, it is replaced
+    * @param displayName   the display name (in report file)
+    * @param attributeName the attribute name (in exposed jmx)
+    */
+   public final void add(String displayName, String attributeName) {
       statsName.put(displayName, attributeName);
    }
 
-   public Set<Map.Entry<String, String>> getStats() {
+   /**
+    * returns a set of entries where the key is the display name and the value the attribute name
+    * @return  a set of entries where the key is the display name and the value the attribute name
+    */
+   public final Set<Map.Entry<String, String>> getStats() {
       return statsName.entrySet();
    }
 
-   public String getName() {
+   /**
+    * returns the name of the jmx component
+    * @return  the name of the jmx component
+    */
+   public final String getName() {
       return name;
    }
 
    @Override
-   public String toString() {
+   public final String toString() {
       return "StatisticComponent{" +
             "name='" + name + '\'' +
             ", statsName=" + statsName +

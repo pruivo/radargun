@@ -15,10 +15,10 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * // TODO: Document this
+ * A parser the collects which stats must be reported and where (in which component) they are exposed
  *
- * @author pedro
- * @since 4.0
+ * @author Pedro Ruivo
+ * @since 1.1
  */
 public class StatsParser {
    private static final Log log = LogFactory.getLog(StatsParser.class);
@@ -31,7 +31,11 @@ public class StatsParser {
    private static final String STAT_DISPLAY_NAME = "displayName";
    private static final String STAT_ATTRIBUTE_NAME = "attributeName";
 
-
+   /**
+    * it parses the xml file with the stats to be collected
+    * @param file the file path
+    * @return     a list of component and the stats to be collected
+    */
    public static List<StatisticComponent> parse(String file) {
       Document document;
       try {
@@ -98,11 +102,15 @@ public class StatsParser {
       return result;
    }
 
+   /**
+    * returns all the class loaders in which it will try to find the xml file for the parser
+    * @return  all the class loaders in which it will try to find the xml file for the parser
+    */
    private static ClassLoader[] getPossibleClassLoaders() {
       return new ClassLoader[] {
-         Thread.currentThread().getContextClassLoader(),
-         StatsParser.class.getClassLoader(),
-         ClassLoader.getSystemClassLoader()
+            Thread.currentThread().getContextClassLoader(),
+            StatsParser.class.getClassLoader(),
+            ClassLoader.getSystemClassLoader()
       };
    }
 
