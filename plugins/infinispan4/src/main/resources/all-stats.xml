@@ -18,8 +18,6 @@
       <stat displayName="AvgLockWaitingTime(usec)" attributeName="avgLockWaitingTime"/>
       <!--Need for wait time from local/remote?-->
       <!--Transport layer-->
-      <stat displayName="PrepareRtt(usec)" attributeName="avgPrepareRtt"/>
-      <stat displayName="CommitRtt(usec)" attributeName="avgCommitRtt"/>
       <stat displayName="AvgPrepareRtt(usec)" attributeName="avgPrepareRtt"/>
       <stat displayName="AvgCommitRtt(usec)" attributeName="avgCommitRtt"/>
       <stat displayName="AvgRollbackRtt(usec)" attributeName="avgRollbackRtt"/>
