@@ -154,7 +154,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
    }
 
    public void setPerThreadSimulTime(long l){
-      this.perThreadSimulTime=l;
+      this.perThreadSimulTime=l * 1000000000;
    }
 
    public void setNumberOfKeys(int numberOfKeys) {

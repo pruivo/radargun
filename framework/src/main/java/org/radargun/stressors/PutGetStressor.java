@@ -654,7 +654,7 @@ public class PutGetStressor implements CacheWrapperStressor {
    }
 
    public void setSimulationTime(long simulationTime) {
-      this.simulationTime = simulationTime;
+      this.simulationTime = simulationTime*;
    }
 
    public void setNoContentionEnabled(boolean noContentionEnabled) {
