@@ -20,6 +20,7 @@ CACHE_CONFIG_FILE="ispn.xml"
 GET_KEYS=""
 PASSIVE_REPLICATION="false"
 STAT_SAMPLE_INTERVAL="0"
+WARMUP_TX_SIZE="100"
 
 help_and_exit(){
 echo "usage: ${0} <options>"
@@ -56,6 +57,9 @@ echo ""
 echo "  -stat-sample-interval <value>    the period (in milliseconds) in which the CPU and memory usage is collected"
 echo "                                   A value less or equals than 0 disables the collection"
 echo "                                   default: ${STAT_SAMPLE_INTERVAL}"
+echo ""
+echo "  -warmup-tx-size <value>          the write set size of the transaction used in warmup phase"
+echo "                                   default: ${WARMUP_TX_SIZE}"
 echo ""
 echo "  -no-coordinator-participation    the coordinator doesn't executes transactions"
 echo "                                   default: coordinator execute transactions"
@@ -94,6 +98,7 @@ case $1 in
   -passive-replication) PASSIVE_REPLICATION="true"; shift 1;;
   -get-keys) GET_KEYS=1; shift 1;;
   -stat-sample-interval) STAT_SAMPLE_INTERVAL=$2; shift 2;;
+  -warmup-tx-size) WARMUP_TX_SIZE=$2; shift 2;;
   -*) echo "WARNING: unknown option '$1'. It will be ignored" >&2; shift 1;;
   *) break;;
 esac
@@ -129,6 +134,7 @@ echo "      <ClearCluster />" >> ${DEST_FILE}
 echo "      <WebSessionWarmup" >> ${DEST_FILE}
 echo "            passiveReplication=\"${PASSIVE_REPLICATION}\"" >> ${DEST_FILE}
 echo "            noContentionEnabled=\"${NO_CONTENTION}\"" >> ${DEST_FILE}
+echo "            transactionSize=\"${WARMUP_TX_SIZE}\"" >> ${DEST_FILE}
 echo "            numberOfKeys=\"${NUMBER_OF_KEYS}\"" >> ${DEST_FILE}
 echo "            sizeOfValue=\"${SIZE_OF_VALUE}\"" >> ${DEST_FILE}
 echo "            numOfThreads=\"${NUMBER_OF_THREADS}\"/>" >> ${DEST_FILE}

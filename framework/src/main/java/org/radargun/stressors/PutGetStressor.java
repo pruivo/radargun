@@ -4,8 +4,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.radargun.CacheWrapper;
 import org.radargun.CacheWrapperStressor;
+import org.radargun.keygenerator.KeyGenerator.KeyGeneratorFactory;
 import org.radargun.utils.BucketsKeysTreeSet;
-import org.radargun.utils.KeyGenerator;
 import org.radargun.utils.StatSampler;
 import org.radargun.utils.Utils;
 
@@ -39,7 +39,9 @@ public class PutGetStressor implements CacheWrapperStressor {
    private volatile CountDownLatch startPoint;
    private String bucketPrefix = null;
    private int opsCountStatusLog = 5000;
-   private int slaveIdx = 1;
+   private int slaveIdx = 0;
+   private int numberOfNodes = 1;
+   private KeyGeneratorFactory factory;
 
    //for each there will be created fixed number of keys. All the GETs and PUTs are performed on these keys only.
    private int numberOfKeys = 1000;
@@ -276,6 +278,14 @@ public class PutGetStressor implements CacheWrapperStressor {
       List<Stresser> stresserList = new ArrayList<Stresser>();
       startPoint = new CountDownLatch(1);
 
+      if (factory != null) {
+         factory.checkAndUpdate(numberOfNodes, numOfThreads, numberOfKeys, sizeOfValue, !noContentionEnabled,
+                                bucketPrefix);
+      } else {
+         factory = new KeyGeneratorFactory(numberOfNodes, numOfThreads, numberOfKeys, sizeOfValue, !noContentionEnabled,
+                                           bucketPrefix);
+      }
+
       for (int threadIndex = 0; threadIndex < numOfThreads; threadIndex++) {
          Stresser stresser = new Stresser(threadIndex);
          stresserList.add(stresser);
@@ -306,7 +316,7 @@ public class PutGetStressor implements CacheWrapperStressor {
 
       BucketsKeysTreeSet bucketsKeysTreeSet = new BucketsKeysTreeSet();
       for(Stresser s : stresserList) {
-         bucketsKeysTreeSet.addKeySet(s.keyGenerator.getBucketPrefix(), s.keyGenerator.getAllKeys(numberOfKeys));
+         bucketsKeysTreeSet.addKeySet(s.keyGenerator.getBucketPrefix(), s.keyGenerator.getAllKeys());
       }
       cacheWrapper.saveKeysStressed(bucketsKeysTreeSet);
       log.info("Keys stressed saved");
@@ -319,7 +329,7 @@ public class PutGetStressor implements CacheWrapperStressor {
    private class Stresser extends Thread {
 
       private int threadIndex;
-      private KeyGenerator keyGenerator;
+      private org.radargun.keygenerator.KeyGenerator keyGenerator;
       private Random privateRandomGenerator;
 
       private long delta = 0;
@@ -365,7 +375,7 @@ public class PutGetStressor implements CacheWrapperStressor {
          super("Stresser-" + threadIndex);
          this.threadIndex = threadIndex;
          this.privateRandomGenerator = new Random(System.nanoTime());
-         this.keyGenerator = new KeyGenerator(slaveIdx, threadIndex, noContentionEnabled, bucketPrefix);
+         this.keyGenerator = factory.constructForBenchmark(slaveIdx, threadIndex);
       }
 
       @Override
@@ -496,12 +506,10 @@ public class PutGetStressor implements CacheWrapperStressor {
       private Object executeWriteTransaction(int operationLeft, String bucketId)
             throws TransactionExecutionFailedException {
          Object lastReadValue = null;
-         int randomKeyInt;
          boolean alreadyWritten = false;
 
          while(operationLeft > 0){
-            randomKeyInt = privateRandomGenerator.nextInt(numberOfKeys);
-            String key = keyGenerator.getKey(randomKeyInt);
+            String key = keyGenerator.getRandomKey();
 
             if (isReadOperation(operationLeft, alreadyWritten)) {
                try {
@@ -513,7 +521,7 @@ public class PutGetStressor implements CacheWrapperStressor {
                   throw tefe;
                }
             } else {
-               String payload = generateRandomString(sizeOfValue);
+               String payload = keyGenerator.getRandomValue();
 
                try {
                   alreadyWritten = true;
@@ -534,11 +542,9 @@ public class PutGetStressor implements CacheWrapperStressor {
       private Object executeReadOnlyTransaction(int operationLeft, String bucketId)
             throws TransactionExecutionFailedException {
          Object lastReadValue = null;
-         int randomKeyInt;
 
          while(operationLeft > 0){
-            randomKeyInt = privateRandomGenerator.nextInt(numberOfKeys);
-            String key = keyGenerator.getKey(randomKeyInt);
+            String key = keyGenerator.getRandomKey();
 
             try {
                lastReadValue = cacheWrapper.get(bucketId, key);
@@ -571,13 +577,6 @@ public class PutGetStressor implements CacheWrapperStressor {
                            Utils.getDurationString((long) convertNanosToMillis(elapsedTime)) +
                            ". Last value read is " + result);
          }
-      }
-
-      private String generateRandomString(int size) {
-         // each char is 2 bytes
-         StringBuilder sb = new StringBuilder();
-         for (int i = 0; i < size / 2; i++) sb.append((char) (64 + privateRandomGenerator.nextInt(26)));
-         return sb.toString();
       }
    }
 
@@ -653,6 +652,10 @@ public class PutGetStressor implements CacheWrapperStressor {
       this.slaveIdx = slaveIdx;
    }
 
+   public void setNumberOfNodes(int numberOfNodes) {
+      this.numberOfNodes = numberOfNodes;
+   }
+
    //NOTE this time is in seconds!
    public void setSimulationTime(long simulationTime) {
       this.simulationTime = simulationTime * 1000000000;
@@ -696,6 +699,10 @@ public class PutGetStressor implements CacheWrapperStressor {
 
    public void setStatsSamplingInterval(long l){
       this.statsSamplingInterval = l;
+   }
+
+   public void setFactory(org.radargun.keygenerator.KeyGenerator.KeyGeneratorFactory factory) {
+      this.factory = factory;
    }
 }
 

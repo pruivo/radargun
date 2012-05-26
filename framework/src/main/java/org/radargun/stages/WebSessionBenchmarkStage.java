@@ -2,6 +2,7 @@ package org.radargun.stages;
 
 import org.radargun.CacheWrapper;
 import org.radargun.DistStageAck;
+import org.radargun.keygenerator.KeyGenerator.KeyGeneratorFactory;
 import org.radargun.state.MasterState;
 import org.radargun.stressors.PutGetStressor;
 
@@ -69,6 +70,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
 
       PutGetStressor stressor = new PutGetStressor();
       stressor.setSlaveIdx(getSlaveIndex());
+      stressor.setNumberOfNodes(getActiveSlaveCount());
       stressor.setLowerBoundOp(lowerBoundOp);
       stressor.setUpperBoundOp(upperBoundOp);
       stressor.setSimulationTime(perThreadSimulTime);
@@ -82,7 +84,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
       stressor.setCoordinatorParticipation(coordinatorParticipation);
       stressor.setNoContentionEnabled(noContentionEnabled);
       stressor.setStatsSamplingInterval(statsSamplingInterval);
-
+      stressor.setFactory((KeyGeneratorFactory) slaveState.get("key_gen_factory"));
 
       try {
          Map<String, String> results = stressor.stress(cacheWrapper);

@@ -4,13 +4,16 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.radargun.CacheWrapper;
 import org.radargun.CacheWrapperStressor;
-import org.radargun.utils.KeyGenerator;
+import org.radargun.keygenerator.WarmupIterator;
 
+import javax.transaction.RollbackException;
+import java.util.List;
 import java.util.Map;
-import java.util.Random;
+
+import static org.radargun.keygenerator.KeyGenerator.KeyGeneratorFactory;
 
 /**
- * // TODO: Document this
+ * The warmup that initialize the keys used by the benchmark
  *
  * @author pruivo
  * @since 4.0
@@ -19,8 +22,7 @@ public class PutGetWarmupStressor implements CacheWrapperStressor {
 
    private static Log log = LogFactory.getLog(PutGetWarmupStressor.class);
 
-   private Random r = new Random();
-
+   //the slave/node index
    private int slaveIdx = 0;
 
    //allows execution without contention
@@ -37,11 +39,16 @@ public class PutGetWarmupStressor implements CacheWrapperStressor {
 
    private String bucketPrefix = null;
 
-   /**
-    * true if the cache wrapper uses passive replication
-    */
+   //true if the cache wrapper uses passive replication    
    private boolean isPassiveReplication = false;
 
+   //the size of the transaction. if size is less or equals 1, than it will be disable
+   private int transactionSize = 100;
+
+   //the number of nodes
+   private int numberOfNodes = 1;
+
+   private KeyGeneratorFactory factory;
 
    @Override
    public Map<String, String> stress(CacheWrapper wrapper) {
@@ -49,46 +56,94 @@ public class PutGetWarmupStressor implements CacheWrapperStressor {
          throw new IllegalStateException("Null wrapper not allowed");
       }
 
-      if (noContentionEnabled) {
-         noContentionWarmup(wrapper);
-      } else if (slaveIdx == 0 || isPassiveReplication) {
-         KeyGenerator keyGenerator = new KeyGenerator(0, 0, false, bucketPrefix);
-         warmup(wrapper, keyGenerator);
+      factory = new KeyGeneratorFactory(numberOfNodes, numOfThreads, numberOfKeys, sizeOfValue,
+                                        !noContentionEnabled, bucketPrefix);
+
+      List<WarmupIterator> iterators;
+      if (isPassiveReplication) {
+         iterators = factory.constructForWarmup(wrapper.canExecuteWriteTransactions(), true);
+      } else {
+         iterators = factory.constructForWarmup(slaveIdx, true);
       }
+
+      log.trace("Warmup iterators created are " + iterators);
+
+      if (isTransactional()) {
+         for (WarmupIterator warmupIterator : iterators) {
+            performTransactionalWarmup(wrapper, warmupIterator);
+         }
+      } else {
+         for (WarmupIterator warmupIterator : iterators) {
+            performNonTransactionalWarmup(wrapper, warmupIterator);
+         }
+      }
+
       return null;
    }
 
-   private void noContentionWarmup(CacheWrapper wrapper) {
-      for (int threadIdx = 0; threadIdx < numOfThreads; ++threadIdx) {
-         KeyGenerator keyGenerator = new KeyGenerator(slaveIdx, threadIdx, true, bucketPrefix);
-         warmup(wrapper, keyGenerator);
-      }
-   }
-
-   private void warmup(CacheWrapper cacheWrapper, KeyGenerator keyGenerator) {
-      if (!cacheWrapper.canExecuteWriteTransactions()) {
-         return;
-      }
-      for (int i = 0; i < numberOfKeys; ++i) {
+   private void performTransactionalWarmup(CacheWrapper cacheWrapper, WarmupIterator warmupIterator) {
+      log.trace("Performing transactional warmup. Transaction size is " + transactionSize);
+      while (warmupIterator.hasNext()) {
+         warmupIterator.setCheckpoint();
+         cacheWrapper.startTransaction();
+         boolean success;
          try {
-            cacheWrapper.put(keyGenerator.getBucketPrefix(), keyGenerator.getKey(i),
-                             generateRandomString(sizeOfValue));
+            for (int i = 0; i < transactionSize && warmupIterator.hasNext(); ++i) {
+               cacheWrapper.put(warmupIterator.getBucketPrefix(), warmupIterator.next(), warmupIterator.getRandomValue());
+            }
+            success = true;
          } catch (Exception e) {
-            log.warn("Exception occurred when put in " + keyGenerator.getKey(i) + ". " + e.getLocalizedMessage());
+            warmupIterator.returnToLastCheckpoint();
+            success = false;
+            log.warn("A put operation has failed. retry the transaction");
+         }
+         try {
+            cacheWrapper.endTransaction(success);
+         } catch (RollbackException e) {
+            log.warn("A transaction has rolled back. retry the transaction");
+            warmupIterator.returnToLastCheckpoint();
          }
       }
    }
 
-   private String generateRandomString(int size) {
-      // each char is 2 bytes
-      StringBuilder sb = new StringBuilder();
-      for (int i = 0; i < size / 2; i++) sb.append((char) (64 + r.nextInt(26)));
-      return sb.toString();
+   private void performNonTransactionalWarmup(CacheWrapper cacheWrapper, WarmupIterator warmupIterator) {
+      while (warmupIterator.hasNext()) {
+         warmupIterator.setCheckpoint();
+         try {
+            cacheWrapper.put(warmupIterator.getBucketPrefix(), warmupIterator.next(), warmupIterator.getRandomValue());
+         } catch (Exception e) {
+            log.warn("A put operation has failed. retry the put operation");
+            warmupIterator.returnToLastCheckpoint();
+         }
+      }
    }
 
    @Override
    public void destroy() throws Exception {
       //Do nothing... we don't want to loose the keys
+   }
+
+   @Override
+   public String toString() {
+      return "PutGetWarmupStressor{" +
+            "slaveIdx=" + slaveIdx +
+            ", noContentionEnabled=" + noContentionEnabled +
+            ", numberOfKeys=" + numberOfKeys +
+            ", sizeOfValue=" + sizeOfValue +
+            ", numOfThreads=" + numOfThreads +
+            ", bucketPrefix='" + bucketPrefix + '\'' +
+            ", isPassiveReplication=" + isPassiveReplication +
+            ", transactionSize=" + transactionSize +
+            ", numberOfNodes=" + numberOfNodes +
+            '}';
+   }
+
+   private boolean isTransactional() {
+      return transactionSize > 1;
+   }
+
+   public KeyGeneratorFactory getFactory() {
+      return factory;
    }
 
    public void setSlaveIdx(int slaveIdx) {
@@ -117,5 +172,13 @@ public class PutGetWarmupStressor implements CacheWrapperStressor {
 
    public void setPassiveReplication(boolean passiveReplication) {
       isPassiveReplication = passiveReplication;
+   }
+
+   public void setTransactionSize(int transactionSize) {
+      this.transactionSize = transactionSize;
+   }
+
+   public void setNumberOfNodes(int numberOfNodes) {
+      this.numberOfNodes = numberOfNodes;
    }
 }

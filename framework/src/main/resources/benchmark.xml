@@ -19,6 +19,7 @@
       <WebSessionWarmup
             passiveReplication="false"
             noContentionEnabled="false"
+            transactionSize="100"
             numberOfKeys="1000"
             sizeOfValue="1000"
             numOfThreads="2"/>

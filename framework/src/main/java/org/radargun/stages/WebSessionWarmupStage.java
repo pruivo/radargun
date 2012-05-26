@@ -8,10 +8,10 @@ import org.radargun.stressors.PutGetWarmupStressor;
 import java.util.List;
 
 /**
- * // TODO: Document this
+ * Performs a warmup in the cache, initializing all the keys used by benchmarking  
  *
  * @author pruivo
- * @since 4.0
+ * @since 1.1
  */
 public class WebSessionWarmupStage extends AbstractDistStage {
 
@@ -29,9 +29,10 @@ public class WebSessionWarmupStage extends AbstractDistStage {
 
    private String bucketPrefix = null;
 
-   /**
-    * true if the cache wrapper uses passive replication
-    */
+   //the size of the transaction. if size is less or equals 1, than it will be disable
+   private int transactionSize = 100;
+
+   //true if the cache wrapper uses passive replication   
    private boolean isPassiveReplication = false;
 
    @Override
@@ -50,12 +51,16 @@ public class WebSessionWarmupStage extends AbstractDistStage {
       putGetWarmupStressor.setNumOfThreads(numOfThreads);
       putGetWarmupStressor.setBucketPrefix(bucketPrefix);
       putGetWarmupStressor.setPassiveReplication(isPassiveReplication);
+      putGetWarmupStressor.setNumberOfNodes(getActiveSlaveCount());
+      putGetWarmupStressor.setTransactionSize(transactionSize);
 
       long startTime = System.currentTimeMillis();
       putGetWarmupStressor.stress(wrapper);
       long duration = System.currentTimeMillis() - startTime;
       log.info("The init stage took: " + (duration / 1000) + " seconds.");
       ack.setPayload(duration);
+
+      slaveState.put("key_gen_factory", putGetWarmupStressor.getFactory());
       return ack;
    }
 
@@ -77,6 +82,7 @@ public class WebSessionWarmupStage extends AbstractDistStage {
             ", numberOfKeys=" + numberOfKeys +
             ", sizeOfValue=" + sizeOfValue +
             ", numOfThreads=" + numOfThreads +
+            ", transactionSize=" + transactionSize +
             ", bucketPrefix='" + bucketPrefix + '\'' +
             '}';
    }
@@ -103,5 +109,9 @@ public class WebSessionWarmupStage extends AbstractDistStage {
 
    public void setPassiveReplication(boolean passiveReplication) {
       isPassiveReplication = passiveReplication;
+   }
+
+   public void setTransactionSize(int transactionSize) {
+      this.transactionSize = transactionSize;
    }
 }
