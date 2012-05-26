@@ -99,8 +99,6 @@ case $1 in
 esac
 done
 
-let SIMULATION_TIME=${SIMULATION_TIME}*1000000000
-
 echo "Writing configuration to ${DEST_FILE}"
 
 echo "<bench-config>" > ${DEST_FILE}

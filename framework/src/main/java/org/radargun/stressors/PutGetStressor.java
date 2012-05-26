@@ -65,7 +65,7 @@ public class PutGetStressor implements CacheWrapperStressor {
    //hte maximum number of operations per transaction
    private int upperBoundOp = 10;
 
-   //simulation time (in nanoseconds) (default: 30 seconds)
+   //simulation time (in nanoseconds) (default: 30 seconds) (Note: it converts from seconds to nanoseconds in the setter)
    private long simulationTime = 30000000000L;
 
    //allows execution without contention
@@ -471,7 +471,7 @@ public class PutGetStressor implements CacheWrapperStressor {
                }
 
                this.delta = System.nanoTime() - startTime;
-               //logProgress(i, lastReadValue);
+               logProgress(i, lastReadValue);
             }
          } else {
             long sleepTime = simulationTime / 1000000; //nano to millis
@@ -653,8 +653,9 @@ public class PutGetStressor implements CacheWrapperStressor {
       this.slaveIdx = slaveIdx;
    }
 
+   //NOTE this time is in seconds!
    public void setSimulationTime(long simulationTime) {
-      this.simulationTime = simulationTime*;
+      this.simulationTime = simulationTime * 1000000000;
    }
 
    public void setNoContentionEnabled(boolean noContentionEnabled) {

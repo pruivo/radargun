@@ -44,7 +44,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
    // as above
    private int upperBoundOp = 100;
 
-   //simulation time
+   //simulation time (in seconds)
    private long perThreadSimulTime;
 
    //allows execution without contention
@@ -153,8 +153,8 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
       this.upperBoundOp=ub;
    }
 
-   public void setPerThreadSimulTime(long l){
-      this.perThreadSimulTime=l * 1000000000;
+   public void setPerThreadSimulTime(long perThreadSimulTime){
+      this.perThreadSimulTime = perThreadSimulTime;
    }
 
    public void setNumberOfKeys(int numberOfKeys) {
