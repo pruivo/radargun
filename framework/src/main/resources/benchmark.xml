@@ -25,7 +25,7 @@
             numOfThreads="2"/>
       <ResetStats />
       <WebSessionBenchmark
-            perThreadSimulTime="30000000000"
+            perThreadSimulTime="300"
             opsCountStatusLog="5000"
             numberOfKeys="1000"
             sizeOfValue="1000"
