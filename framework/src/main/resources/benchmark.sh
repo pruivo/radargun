@@ -35,6 +35,8 @@ help_and_exit() {
   wrappedecho ""
   wrappedecho "   -h       Displays this help screen"
   wrappedecho ""
+  wrappedecho "   -i       number of slaves (overrides initial and final number of slaves)"
+  wrappedecho ""
   exit 0
 }
 
