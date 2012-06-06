@@ -8,20 +8,14 @@ import org.radargun.stressors.BankWarmupStressor;
 import java.util.List;
 
 /**
- * This stage shuld be run before the actual test, in order to activate JIT compiler. It will perform
- * <b>operationCount</b> puts and then gets on the cache wrapper. Note: this stage won't clear the added data from
- * slave.
- * <pre>
- * Params:
- *       - operationCount : the number of operations to perform.
- * </pre>
  *
- * @author Mircea.Markus@jboss.com
+ * @author Pedro Ruivo
+ * @since 1.1
  */
 public class BankWarmupStage extends AbstractDistStage {
 
     private int numberOfAccounts = 10;
-    private int initialAmmount = 1000;
+    private int initialAmount = 1000;
 
     public DistStageAck executeOnSlave() {
         DefaultDistStageAck ack = newDefaultStageAck();
@@ -41,7 +35,7 @@ public class BankWarmupStage extends AbstractDistStage {
     private void warmup(CacheWrapper wrapper) {
         BankWarmupStressor warmup = new BankWarmupStressor(getSlaveIndex(), getActiveSlaveCount());
         warmup.setNumberOfAccounts(numberOfAccounts);
-        warmup.setInitialAmmount(initialAmmount);
+        warmup.setInitialAmmount(initialAmount);
         warmup.stress(wrapper);
     }
 
@@ -60,14 +54,14 @@ public class BankWarmupStage extends AbstractDistStage {
         this.numberOfAccounts = numberOfAccounts;
     }
 
-    public void setInitialAmmount(int initialAmmount) {
-        this.initialAmmount = initialAmmount;
+    public void setInitialAmount(int initialAmount) {
+        this.initialAmount = initialAmount;
     }
 
     @Override
     public String toString() {
-        return "WarmupStage {" +
+        return "BankWarmupStage {" +
                 "numberOfAccounts=" + numberOfAccounts + ", " +
-                "initialAmmount=" + initialAmmount + ", " + super.toString();
+                "initialAmount=" + initialAmount + ", " + super.toString();
     }
 }
