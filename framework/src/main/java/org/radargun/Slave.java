@@ -2,6 +2,7 @@ package org.radargun;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.radargun.jmx.JmxRegistration;
 import org.radargun.state.SlaveState;
 
 import java.io.IOException;
@@ -37,6 +38,7 @@ public class Slave {
    private SocketChannel socketChannel;
    private ByteBuffer byteBuffer = ByteBuffer.allocate(8192);
    private SlaveState state = new SlaveState();
+   private final JmxRegistration jmxRegistration = JmxRegistration.getInstance();
 
    ExecutorService es = Executors.newSingleThreadExecutor(new ThreadFactory() {
       public Thread newThread(Runnable r) {
@@ -104,6 +106,7 @@ public class Slave {
                         try {
                            DistStage stage = (DistStage) SerializationHelper.deserialize(byteBuffer.array(), 4, expectedSize);
                            stage.initOnSlave(state);
+                           jmxRegistration.processStage(stage);
                            log.info("Executing stage: " + stage);
                            long start =System.currentTimeMillis();
                            DistStageAck ack = stage.executeOnSlave();
