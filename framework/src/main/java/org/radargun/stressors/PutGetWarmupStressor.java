@@ -99,7 +99,7 @@ public class PutGetWarmupStressor implements CacheWrapperStressor {
          }
          try {
             cacheWrapper.endTransaction(success);
-         } catch (RollbackException e) {
+         } catch (Exception e) {
             log.warn("A transaction has rolled back. retry the transaction");
             warmupIterator.returnToLastCheckpoint();
          }
