@@ -4,6 +4,7 @@
 if [ "x$RADARGUN_HOME" = "x" ]; then DIRNAME=`dirname $0`; RADARGUN_HOME=`cd $DIRNAME/..; pwd` ; fi; export RADARGUN_HOME
 . ${RADARGUN_HOME}/bin/includes.sh
 
+set_env
 
 MASTER_HOST=""
 MASTER_PORT=""
@@ -42,6 +43,8 @@ help_and_exit() {
   echo ""
   echo "   -l        Sets a local prefix for std_out (useful when running multiple nodes on the same machine). Optional"
   echo ""
+  wrappedecho "   -jmx     Set the JMX port for remote management. Default value is ${JMX_SLAVES_PORT}"
+  wrappedecho ""
   exit 0
 }
 
@@ -70,6 +73,10 @@ do
       LOCAL_PREFIX=$2
       shift
       ;;
+    "-jmx")
+      JMX_SLAVES_PORT=$2;
+      shift
+      ;;
     *)
       echo "Warn: unknown param \"${1}\"" 
       help_and_exit
@@ -86,7 +93,6 @@ fi
 CONF="-master $MASTER"
 
 add_fwk_to_classpath
-set_env
 
 BIND_ADDRESS=`hostname`
 D_VARS="-Djava.net.preferIPv4Stack=true" 
@@ -99,7 +105,7 @@ D_VARS="${D_VARS} -Djgroups.gossip_host=${GOSSIP_HOST}"
 fi
 
 #enable	remote JMX
-D_VARS="${D_VARS} -Dcom.sun.management.jmxremote.port=8081"
+D_VARS="${D_VARS} -Dcom.sun.management.jmxremote.port=${JMX_SLAVES_PORT}"
 D_VARS="${D_VARS} -Dcom.sun.management.jmxremote.authenticate=false"
 D_VARS="${D_VARS} -Dcom.sun.management.jmxremote.ssl=false"
 
