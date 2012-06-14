@@ -8,7 +8,7 @@ if [ "x$RADARGUN_HOME" = "x" ]; then DIRNAME=`dirname $0`; RADARGUN_HOME=`cd $DI
 CP=${RADARGUN_HOME}/lib/radargun-*.jar
 JAVA="org.radargun.jmx.JmxRemoteOperation"
 OP="highContention"
-OBJ="TpccBenchmark"
+OBJ="BenchmarkStage"
 
 help_and_exit() {
 echo "usage: $0 [-high] [-low] [-read]"

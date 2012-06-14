@@ -2,6 +2,8 @@ package org.radargun.stages;
 
 import org.radargun.CacheWrapper;
 import org.radargun.DistStageAck;
+import org.radargun.jmx.annotations.MBean;
+import org.radargun.jmx.annotations.ManagedOperation;
 import org.radargun.keygenerator.KeyGenerator.KeyGeneratorFactory;
 import org.radargun.state.MasterState;
 import org.radargun.stressors.PutGetStressor;
@@ -18,6 +20,7 @@ import static org.radargun.utils.Utils.numberFormat;
  *
  * @author Mircea.Markus@jboss.com
  */
+@MBean(objectName = "BenchmarkStage", description = "The benchmark stage")
 public class WebSessionBenchmarkStage extends AbstractDistStage {
 
    //for each session there will be created fixed number of attributes. On those attributes all the GETs and PUTs are
@@ -197,5 +200,20 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
 
    public void setStatsSamplingInterval(long interval){
       this.statsSamplingInterval = interval;
+   }
+   
+   @ManagedOperation(description = "Change the workload to high contention")
+   public void highContention() {
+      
+   }
+
+   @ManagedOperation(description = "Change the workload to low contention")
+   public void lowContention() {
+      
+   }
+
+   @ManagedOperation(description = "Change the workload to low contention and read intensive")
+   public void lowContentionAndRead() {
+      
    }
 }
