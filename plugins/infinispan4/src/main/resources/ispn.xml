@@ -18,7 +18,7 @@
    </global>
    <default>
       <locking
-            isolationLevel="REPEATABLE_READ"
+            isolationLevel="SERIALIZABLE"
             concurrencyLevel="32"
             writeSkewCheck="false"
             useLockStriping="false"
@@ -40,22 +40,24 @@
             enabled="true"/>
       <deadlockDetection
             enabled="false"/>
-      <clustering mode="r">
+      <clustering mode="d">
          <sync
-               replTimeout="150000" />
+               replTimeout="15000" />
          <stateTransfer
                fetchInMemoryState="false"
                chunkSize="100"
                timeout="240000"/>
+          <hash
+              numberOfOwners="1" />
       </clustering>
-      <!--<customInterceptors>
+      <customInterceptors>
          <interceptor
                after="org.infinispan.interceptors.InvocationContextInterceptor"
                class="org.infinispan.distribution.wrappers.ReplCustomStatsInterceptor"/>
          <interceptor
                before="org.infinispan.interceptors.NotificationInterceptor"
                class="org.infinispan.stats.topK.StreamLibInterceptor"/>
-      </customInterceptors>-->
+      </customInterceptors>>
    </default>
    <namedCache
          name="x" />
