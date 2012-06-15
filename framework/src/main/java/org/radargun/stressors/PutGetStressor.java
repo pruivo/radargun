@@ -419,11 +419,7 @@ public class PutGetStressor implements CacheWrapperStressor {
                   executionSuccessful = true;
                } catch (TransactionExecutionFailedException e) {
                   lastReadValue = e.getLastValueRead();
-                  if (log.isDebugEnabled()) {
-                     log.debug("[" + getName() + "] Failed to execute transaction: " + e.getLocalizedMessage(), e);
-                  } else {
-                     log.warn("[" + getName() + "] Failed to execute transaction: " + e.getLocalizedMessage());
-                  }
+                  logException(e, "Execution");
                   executionSuccessful = false;
                }
 
@@ -433,7 +429,7 @@ public class PutGetStressor implements CacheWrapperStressor {
                   commitSuccessful = true;
                }
                catch(Throwable e){
-                  log.warn("[" + getName() + "] error committing transaction", e);
+                  logException(e, "Commit");
                   commitSuccessful = false;
                }
 
@@ -491,6 +487,15 @@ public class PutGetStressor implements CacheWrapperStressor {
             } catch (InterruptedException e) {
                log.info("interrupted exception when sleeping (I'm coordinator and I don't execute transactions)");
             }
+         }
+      }
+
+      private void logException(Throwable e, String where) {
+         String msg = "[" + getName() + "] exception caught in " + where + ": " + e.getLocalizedMessage();
+         if (log.isDebugEnabled()) {
+            log.debug(msg, e);
+         } else {
+            log.warn(msg);
          }
       }
 
