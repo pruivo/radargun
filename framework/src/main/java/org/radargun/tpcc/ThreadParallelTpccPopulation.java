@@ -195,71 +195,66 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
 
       public void run(){
          logStart(toString());
+
          long remainder = (upperBound - lowerBound) % elementsPerBlock;
          long numBatches = (upperBound - lowerBound - remainder) / elementsPerBlock;
-         long elementsPerBatch = elementsPerBlock;
+         long base = lowerBound;
 
-         if(numBatches == 0){
-            numBatches=1;
-            elementsPerBatch = 0;  //there is only the remainder ;)
+         for(int batch = 1; batch <= numBatches; batch++){
+            logBatch(toString(), batch, numBatches);
+            executeTransaction(base, base + elementsPerBlock);
+            base += elementsPerBlock;
          }
 
-         long base = lowerBound;
-         long toAdd;
+         logRemainder(toString());
+         executeTransaction(base, upperBound + 1);
 
-         for(int j=1;j<=numBatches;j++){
-            logBatch(toString(), j, numBatches);
+         logFinish(toString());
+      }
 
-            toAdd = elementsPerBatch + ((j==numBatches)? remainder:0);
+      private void executeTransaction(long start, long end) {
+         logOrderPopulation(id_warehouse, id_district, start, end - 1);
+         LinkedList<Integer> seqAleaList = new LinkedList<Integer>();
+         boolean useList = false;
 
-            LinkedList<Integer> seqAleaList = new LinkedList<Integer>();
-            boolean useList = false;
+         do {
+            startTransactionIfNeeded();
+            Iterator<Integer> iterator = seqAleaList.iterator();
 
-            do {
-               startTransactionIfNeeded();
+            for(long id_order=start; id_order < end; id_order++){
 
-               Iterator<Integer> iterator = seqAleaList.iterator();
+               int generatedSeqAlea;
 
-               for(long id_order=base;id_order<base+toAdd;id_order++){
-
-                  int generatedSeqAlea;
-
-                  if (useList && iterator.hasNext()) {
-                     generatedSeqAlea = iterator.next();
-                  } else {
-                     generatedSeqAlea = generateSeqAlea(0, TpccTools.NB_MAX_CUSTOMER-1);
-                     seqAleaList.add(generatedSeqAlea);
-                  }
-
-                  int o_ol_cnt = TpccTools.aleaNumber(5, 15);
-                  Date aDate = new Date((new java.util.Date()).getTime());
-
-                  Order newOrder= new Order(id_order,
-                                            id_district,
-                                            id_warehouse,
-                                            generatedSeqAlea,
-                                            aDate,
-                                            (id_order < TpccTools.LIMIT_ORDER) ? TpccTools.aleaNumber(1, 10):0,
-                                            o_ol_cnt,
-                                            1);
-
-                  if (!txAwarePut(newOrder)) {
-                     break; // rollback tx
-                  }
-                  populateOrderLines(id_warehouse, id_district, (int)id_order, o_ol_cnt, aDate);
-
-                  if (id_order >= TpccTools.LIMIT_ORDER){
-                     populateNewOrder(id_warehouse, id_district, (int)id_order);
-                  }
+               if (useList && iterator.hasNext()) {
+                  generatedSeqAlea = iterator.next();
+               } else {
+                  generatedSeqAlea = generateSeqAlea(0, TpccTools.NB_MAX_CUSTOMER-1);
+                  seqAleaList.add(generatedSeqAlea);
                }
 
-               useList = true;
-            } while (!endTransactionIfNeeded());
-            base+=(toAdd);
+               int o_ol_cnt = TpccTools.aleaNumber(5, 15);
+               Date aDate = new Date((new java.util.Date()).getTime());
 
-         }
-         logFinish(toString());
+               Order newOrder= new Order(id_order,
+                                         id_district,
+                                         id_warehouse,
+                                         generatedSeqAlea,
+                                         aDate,
+                                         (id_order < TpccTools.LIMIT_ORDER) ? TpccTools.aleaNumber(1, 10):0,
+                                         o_ol_cnt,
+                                         1);
 
+               if (!txAwarePut(newOrder)) {
+                  break; // rollback tx
+               }
+               populateOrderLines(id_warehouse, id_district, (int)id_order, o_ol_cnt, aDate);
+
+               if (id_order >= TpccTools.LIMIT_ORDER){
+                  populateNewOrder(id_warehouse, id_district, (int)id_order);
+               }
+            }
+            useList = true;
+         } while (!endTransactionIfNeeded());
       }
    }
 
@@ -292,79 +287,76 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
 
       public void run(){
          logStart(toString());
+
          long remainder = (upperBound - lowerBound) % elementsPerBlock;
          long numBatches = (upperBound - lowerBound - remainder)  / elementsPerBlock;
-
          long base = lowerBound;
-         long toAdd;
-         long elementsPerBatch = elementsPerBlock;
 
-         if(numBatches ==0){
-            numBatches=1;
-            elementsPerBatch = 0;  //there is only the remainder ;)
+         for(int batch =1; batch <= numBatches; batch++){
+            logBatch(toString(), batch, numBatches);
+            executeTransaction(base, base + elementsPerBlock);
+            base += elementsPerBlock;
          }
 
+         logRemainder(toString());
+         executeTransaction(base, upperBound + 1);
 
-         for(int j=1; j<=numBatches; j++){
-            logBatch(toString(), j, numBatches);
+         logFinish(toString());
+      }
 
-            toAdd = elementsPerBatch + ((j==numBatches)? remainder:0);
+      private void executeTransaction(long start, long end) {
+         logCustomerPopulation(id_warehouse, id_district, start, end - 1);
+         do {
+            startTransactionIfNeeded();
+            for(long id_customer = start; id_customer < end; id_customer++) {
+               String c_last = c_last();
 
-            do {
-               startTransactionIfNeeded();
-               for(long i=base;i<base+toAdd;i++ ){
+               Customer newCustomer = new Customer(id_warehouse,
+                                                   id_district,
+                                                   id_customer,
+                                                   TpccTools.aleaChainec(8, 16),
+                                                   "OE",
+                                                   c_last,
+                                                   TpccTools.aleaChainec(10, 20),
+                                                   TpccTools.aleaChainec(10, 20),
+                                                   TpccTools.aleaChainec(10, 20),
+                                                   TpccTools.aleaChainel(2, 2),
+                                                   TpccTools.aleaChainen(4, 4) + TpccTools.CHAINE_5_1,
+                                                   TpccTools.aleaChainen(16, 16),
+                                                   new Date(System.currentTimeMillis()),
+                                                   (TpccTools.aleaNumber(1, 10) == 1) ? "BC" : "GC",
+                                                   500000.0,
+                                                   TpccTools.aleaDouble(0., 0.5, 4),
+                                                   -10.0,
+                                                   10.0,
+                                                   1,
+                                                   0,
+                                                   TpccTools.aleaChainec(300, 500));
 
-                  String c_last = c_last();
-                  Customer newCustomer;
+               if (!txAwarePut(newCustomer)) {
+                  break; // rollback tx
+               }
 
-                  newCustomer=new Customer(id_warehouse,
-                                           id_district,
-                                           i,
-                                           TpccTools.aleaChainec(8, 16),
-                                           "OE",
-                                           c_last,
-                                           TpccTools.aleaChainec(10, 20),
-                                           TpccTools.aleaChainec(10, 20),
-                                           TpccTools.aleaChainec(10, 20),
-                                           TpccTools.aleaChainel(2, 2),
-                                           TpccTools.aleaChainen(4, 4) + TpccTools.CHAINE_5_1,
-                                           TpccTools.aleaChainen(16, 16),
-                                           new Date(System.currentTimeMillis()),
-                                           (TpccTools.aleaNumber(1, 10) == 1) ? "BC" : "GC",
-                                           500000.0,
-                                           TpccTools.aleaDouble(0., 0.5, 4),
-                                           -10.0,
-                                           10.0,
-                                           1,
-                                           0,
-                                           TpccTools.aleaChainec(300, 500));
-                  if (!txAwarePut(newCustomer)) {
+               if(isBatchingEnabled()){
+                  CustomerLookupQuadruple clt = new CustomerLookupQuadruple(c_last,id_warehouse,id_district, id_customer);
+                  if(!this.lookupContentionAvoidance.containsKey(clt)){
+                     this.lookupContentionAvoidance.put(clt,1);
+                  }
+               } else{
+                  CustomerLookup customerLookup = new CustomerLookup(c_last, id_warehouse, id_district);
+                  if (!txAwareLoad(customerLookup)) {
                      break; // rollback tx
                   }
+                  customerLookup.addId(id_customer);
 
-                  if(isBatchingEnabled()){
-                     CustomerLookupQuadruple clt = new CustomerLookupQuadruple(c_last,id_warehouse,id_district, i);
-                     if(!this.lookupContentionAvoidance.containsKey(clt)){
-                        this.lookupContentionAvoidance.put(clt,1);
-                     }
-                  } else{
-                     CustomerLookup customerLookup = new CustomerLookup(c_last, id_warehouse, id_district);
-                     if (!txAwareLoad(customerLookup)) {
-                        break; // rollback tx
-                     }
-                     customerLookup.addId(i);
-
-                     if (!txAwarePut(customerLookup)) {
-                        break; // rollback tx
-                     }
+                  if (!txAwarePut(customerLookup)) {
+                     break; // rollback tx
                   }
-
-                  populateHistory((int)i, id_warehouse, id_district);
                }
-            } while (!endTransactionIfNeeded());
-            base+=(toAdd);
-         }
-         logFinish(toString());
+
+               populateHistory((int)id_customer, id_warehouse, id_district);
+            }
+         } while (!endTransactionIfNeeded());
       }
    }
 
@@ -392,38 +384,34 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
          long remainder = (upperBound - lowerBound) % elementsPerBlock;
          long numBatches = (upperBound - lowerBound - remainder ) / elementsPerBlock;
          long base = lowerBound;
-         long toAdd;
-
-         long elementsPerBatch = elementsPerBlock;
-
-         if(numBatches ==0){
-            numBatches=1;
-            elementsPerBatch = 0;  //there is only the remainder ;)
-         }
 
          for(long batch = 1; batch <=numBatches; batch++){
             logBatch(toString(), batch, numBatches);
-
-            toAdd = elementsPerBatch + ((batch==numBatches)? remainder:0);
-            //Process a batch of elementsperBlock element
-
-            logItemsPopulation(base, base + toAdd - 1);
-            do {
-               startTransactionIfNeeded();
-               for(long i=base; i<base+toAdd;i++){
-                  Item newItem = new Item(i,
-                                          TpccTools.aleaNumber(1, 10000),
-                                          TpccTools.aleaChainec(14, 24),
-                                          TpccTools.aleaFloat(1, 100, 2),
-                                          TpccTools.sData());
-                  if (!txAwarePut(newItem)) {
-                     break; //rollback tx;
-                  }
-               }
-            } while (!endTransactionIfNeeded());
-            base+=(toAdd);
+            executeTransaction(base, base + elementsPerBlock);
+            base += elementsPerBlock;
          }
+
+         logRemainder(toString());
+         executeTransaction(base, upperBound + 1);
+
          logFinish(toString());
+      }
+
+      private void executeTransaction(long start, long end) {
+         logItemsPopulation(start, end - 1);
+         do {
+            startTransactionIfNeeded();
+            for(long id_item = start; id_item < end; id_item++){
+               Item newItem = new Item(id_item,
+                                       TpccTools.aleaNumber(1, 10000),
+                                       TpccTools.aleaChainec(14, 24),
+                                       TpccTools.aleaFloat(1, 100, 2),
+                                       TpccTools.sData());
+               if (!txAwarePut(newItem)) {
+                  break; //rollback tx;
+               }
+            }
+         } while (!endTransactionIfNeeded());
       }
    }
 
@@ -453,51 +441,46 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
          long remainder = (upperBound - lowerBound) % elementsPerBlock;
          long numBatches = (upperBound - lowerBound - remainder ) / elementsPerBlock;
          long base = lowerBound;
-         long toAdd;
-
-         long elementsPerBatch = elementsPerBlock;
-
-         if(numBatches ==0){
-            numBatches=1;
-            elementsPerBatch = 0;  //there is only the remainder ;)
-         }
 
          for(long batch = 1; batch <=numBatches; batch++){
             logBatch(toString(), batch, numBatches);
-
-            toAdd = elementsPerBatch + ((batch==numBatches)? remainder:0);
-            //Process a batch of elementsperBlock element
-
-            logStockPopulation(id_warehouse, base, base + toAdd - 1);
-            do {
-               startTransactionIfNeeded();
-               for(long i=base; i<base+toAdd;i++){
-                  Stock newStock=new Stock(i,
-                                           this.id_warehouse,
-                                           TpccTools.aleaNumber(10, 100),
-                                           TpccTools.aleaChainel(24, 24),
-                                           TpccTools.aleaChainel(24, 24),
-                                           TpccTools.aleaChainel(24, 24),
-                                           TpccTools.aleaChainel(24, 24),
-                                           TpccTools.aleaChainel(24, 24),
-                                           TpccTools.aleaChainel(24, 24),
-                                           TpccTools.aleaChainel(24, 24),
-                                           TpccTools.aleaChainel(24, 24),
-                                           TpccTools.aleaChainel(24, 24),
-                                           TpccTools.aleaChainel(24, 24),
-                                           0,
-                                           0,
-                                           0,
-                                           TpccTools.sData());
-                  if (!txAwarePut(newStock)) {
-                     break;
-                  }
-               }
-            } while (!endTransactionIfNeeded());
-            base+=(toAdd);
+            executeTransaction(base, base + elementsPerBlock);
+            base += elementsPerBlock;
          }
-         logFinish(toString());
 
+         logRemainder(toString());
+         executeTransaction(base, upperBound + 1);
+
+         logFinish(toString());
+      }
+
+      private void executeTransaction(long start, long end) {
+         logStockPopulation(id_warehouse, start, end - 1);
+         do {
+            startTransactionIfNeeded();
+            for(long id_stock = start; id_stock < end; id_stock++){
+               Stock newStock=new Stock(id_stock,
+                                        id_warehouse,
+                                        TpccTools.aleaNumber(10, 100),
+                                        TpccTools.aleaChainel(24, 24),
+                                        TpccTools.aleaChainel(24, 24),
+                                        TpccTools.aleaChainel(24, 24),
+                                        TpccTools.aleaChainel(24, 24),
+                                        TpccTools.aleaChainel(24, 24),
+                                        TpccTools.aleaChainel(24, 24),
+                                        TpccTools.aleaChainel(24, 24),
+                                        TpccTools.aleaChainel(24, 24),
+                                        TpccTools.aleaChainel(24, 24),
+                                        TpccTools.aleaChainel(24, 24),
+                                        0,
+                                        0,
+                                        0,
+                                        TpccTools.sData());
+               if (!txAwarePut(newStock)) {
+                  break;
+               }
+            }
+         } while (!endTransactionIfNeeded());
       }
    }
 
@@ -523,44 +506,43 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
 
       public void run(){
          logStart(toString());
-         //I have to put +1  because it's inclusive
-         long remainder = (upperBound - lowerBound  +1) % elementsPerBlock;
-         long numBatches = (upperBound - lowerBound + 1 - remainder ) / elementsPerBlock;
+
+         long remainder = (upperBound - lowerBound) % elementsPerBlock;
+         long numBatches = (upperBound - lowerBound - remainder ) / elementsPerBlock;
          long base = lowerBound;
-         long toAdd;
 
-         long elementsPerBatch = elementsPerBlock;
-
-         if(numBatches ==0){
-            numBatches=1;
-            elementsPerBatch = 0;  //there is only the remainder ;)
-         }
-
-         for(long batch = 1; batch <=numBatches; batch++){
+         for(long batch = 1; batch <= numBatches; batch++){
             logBatch(toString(), batch, numBatches);
-            toAdd = elementsPerBatch + ((batch==numBatches)? remainder:0);
-
-            do {
-               startTransactionIfNeeded();
-               for(long i=base; i<base+toAdd;i++){
-
-                  CustomerLookupQuadruple clq = this.vector.get((int)i);
-                  CustomerLookup customerLookup = new CustomerLookup(clq.c_last, clq.id_warehouse, clq.id_district);
-
-                  if (!txAwareLoad(customerLookup)) {
-                     break; //rollback tx
-                  }
-
-                  customerLookup.addId(clq.id_customer);
-
-                  if (!txAwarePut(customerLookup)) {
-                     break; //rollback tx
-                  }
-               }
-            } while (!endTransactionIfNeeded());
-            base+=toAdd;
+            executeTransaction(base, base + elementsPerBlock);
+            base += elementsPerBlock;
          }
+
+         logRemainder(toString());
+         executeTransaction(base, upperBound + 1);
+
          logFinish(toString());
+      }
+
+      private void executeTransaction(long start, long end) {
+         logCustomerLookupPopulation(start, end - 1);
+         do {
+            startTransactionIfNeeded();
+            for(long idx = start; idx < end; idx++){
+
+               CustomerLookupQuadruple clq = this.vector.get((int)idx);
+               CustomerLookup customerLookup = new CustomerLookup(clq.c_last, clq.id_warehouse, clq.id_district);
+
+               if (!txAwareLoad(customerLookup)) {
+                  break; //rollback tx
+               }
+
+               customerLookup.addId(clq.id_customer);
+
+               if (!txAwarePut(customerLookup)) {
+                  break; //rollback tx
+               }
+            }
+         } while (!endTransactionIfNeeded());
       }
    }
 
@@ -721,6 +703,14 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
 
    private void logBatch(String thread, long batch, long numberOfBatches) {
       log.debug(thread + " is populating the " + batch + " batch out of " + numberOfBatches);
+   }
+
+   private void logRemainder(String thread) {
+      log.debug(thread + " is populating the remainder");
+   }
+
+   private void logCustomerLookupPopulation(long init, long end) {
+      log.debug("Populate Customer Lookup from index " + init + " to " + end);
    }
 
    protected void performMultiThreadPopulation(long initValue, long numberOfItems, ThreadCreator threadCreator) {

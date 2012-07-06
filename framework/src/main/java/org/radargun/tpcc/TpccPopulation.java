@@ -312,8 +312,7 @@ public class TpccPopulation {
          return;
       }
 
-      log.trace("Populating Customers for warehouse " + id_warehouse + " and district " + id_district);
-
+      logCustomerPopulation(id_warehouse, id_district, 1, TpccTools.NB_MAX_CUSTOMER);
       for (int i = 1; i <= TpccTools.NB_MAX_CUSTOMER; i++) {
 
          String c_last = c_last();
@@ -374,7 +373,7 @@ public class TpccPopulation {
          return;
       }
 
-      log.trace("Populating Orders for warehouse " + id_warehouse + " and district " + id_district);
+      logOrderPopulation(id_warehouse, id_district, 1, TpccTools.NB_MAX_ORDER);
       this._new_order = false;
       for (int id_order = 1; id_order <= TpccTools.NB_MAX_ORDER; id_order++) {
 
@@ -504,6 +503,16 @@ public class TpccPopulation {
 
    protected void logStockPopulation(int warehouseID, long initID, long finishID) {
       log.debug("Populating Stock for Warehouse " + warehouseID + ", Items from " + initID + " to " + finishID);
+   }
+
+   protected void logOrderPopulation(int warehouseID, int districtID, long initID, long finishID) {
+      log.debug("Populating Order for Warehouse " + warehouseID + " and District " + districtID +
+                      " , Orders from " + initID + " to " + finishID);
+   }
+
+   protected void logCustomerPopulation(int warehouseID, int districtID, long initID, long finishID) {
+      log.debug("Populating Customer for Warehouse " + warehouseID + " and District " + districtID +
+                      " , Customer from " + initID + " to " + finishID);
    }
 
    protected void logItemsPopulation(long initID, long finishID) {
