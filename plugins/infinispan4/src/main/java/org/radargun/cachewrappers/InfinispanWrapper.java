@@ -240,9 +240,26 @@ public class InfinispanWrapper implements CacheWrapper {
 
    private boolean isPassiveReplication() {
       try {
-         return isPassiveReplicationMethod != null && (Boolean) isPassiveReplicationMethod.invoke(cache.getConfiguration());
+         return isPassiveReplicationMethod != null && (isPassiveReplicationWithSwitch() ||
+                                                             (Boolean) isPassiveReplicationMethod.invoke(cache.getConfiguration()));
       } catch (Exception e) {
          log.debug("isPassiveReplication method not found or can't be invoked. Assuming *no* passive replication in use");
+      }
+      return false;
+   }
+
+   private boolean isPassiveReplicationWithSwitch() {
+      MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
+      String cacheComponentString = getCacheComponentBaseString(mBeanServer);
+
+      if (cacheComponentString != null) {
+         try {
+            return "PB".equals(getAsStringAttribute(mBeanServer,
+                                                    new ObjectName(cacheComponentString + "ReconfigurableReplicationManager"),
+                                                    "currentProtocolId"));
+         } catch (Exception e) {
+            log.warn("Unable to check for Passive Replication protocol");
+         }
       }
       return false;
    }
