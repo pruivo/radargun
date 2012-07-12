@@ -7,7 +7,8 @@ if [ "x$RADARGUN_HOME" = "x" ]; then DIRNAME=`dirname $0`; RADARGUN_HOME=`cd $DI
 
 CP=${RADARGUN_HOME}/lib/radargun-*.jar
 JAVA="org.radargun.SwitchJmxRequest"
-PROTOCOLS="PB,2PC,TO,PB,TO,2PC"
+PROTOCOLS="PB 2PC TO PB TO 2PC"
+FORCE_STOP=""
 
 help_and_exit() {
 echo "usage: $0 <slave>"
@@ -22,22 +23,24 @@ fi
 if [[ "$slave" == *:* ]]; then
 HOST=`echo $slave | cut -d: -f1`
 PORT=`echo $slave | cut -d: -f2`
+fullHostname="-hostname "$HOST" -port "$PORT
 else
 HOST=$slave
+fullHostname="-hostname "$HOST
 fi
-
-fullHostname=$HOST" "$PORT
 
 for protocol in $PROTOCOLS; do
 echo "sleeping 2min"
-sleep 2m
+sleep 120
 echo "Switch to "$protocol
-CMD="java -cp ${CP} ${JAVA} ${protocol} ${fullHostname}"
+CMD="java -cp ${CP} ${JAVA} -protocol ${protocol} ${fullHostname} ${FORCE_STOP}"
 echo $CMD
 eval $CMD
 done
 
-CMD="java -cp ${CP} ${JAVA} -print-stats something ${fullHostname}"
+sleep 10
+
+CMD="java -cp ${CP} ${JAVA} -print-stats ${fullHostname}"
 echo $CMD
 eval $CMD
 

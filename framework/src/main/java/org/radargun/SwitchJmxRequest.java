@@ -5,6 +5,9 @@ import javax.management.ObjectName;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
+import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.Map;
 
 /**
  * implements a switch request to infinispan
@@ -14,58 +17,100 @@ import javax.management.remote.JMXServiceURL;
  */
 public class SwitchJmxRequest {
 
+   private enum Option {
+      PRINT_STATS("-print-stats", true),
+      PROTOCOL("-protocol", false),
+      FORCE_STOP("-force-stop", true),
+      JMX_HOSTNAME("-hostname", false),
+      JMX_PORT("-port", false),
+      JMX_COMPONENT("-jmx-component", false);
+
+      private final String arg;
+      private final boolean isBoolean;
+
+      Option(String arg, boolean isBoolean) {
+         if (arg == null) {
+            throw new IllegalArgumentException("Null not allowed in Option name");
+         }
+         this.arg = arg;
+         this.isBoolean = isBoolean;
+      }
+
+      public final String getArgName() {
+         return arg;
+      }
+
+      public final boolean isBoolean() {
+         return isBoolean;
+      }
+
+      public final String toString() {
+         return arg;
+      }
+
+      public static Option fromString(String optionName) {
+         for (Option option : values()) {
+            if (option.getArgName().equalsIgnoreCase(optionName)) {
+               return option;
+            }
+         }
+         return null;
+      }
+   }
+
    private static final String JMX_DOMAIN = "org.infinispan";
    private static final String DEFAULT_COMPONENT = "ReconfigurableReplicationManager";
    private static final String DEFAULT_JMX_PORT = "9998";
-   private static final String PRINT_STATS = "-print-stats";
-   private static final int NUM_PARAMS = 2;
 
    private final ObjectName switchComponent;
    private final String newProtocolId;
    private final MBeanServerConnection mBeanServerConnection;
    private final boolean printOnly;
+   private final boolean forceStop;
 
    public static void main(String[] args) throws Exception {
-      if (args.length < NUM_PARAMS) {
-         System.err.println("Expected at least " + NUM_PARAMS + " arguments: [" + PRINT_STATS + "] <new protocol> <hostname> [<port> <component>]");
-         System.exit(1);
-      } else if (PRINT_STATS.equalsIgnoreCase(args[0]) && args.length < NUM_PARAMS + 1) {
-         System.err.println("Expected at least " + (NUM_PARAMS + 1) + " arguments: " + PRINT_STATS + " <new protocol> <hostname> [<port> <component>]");
-         System.exit(1);
+      Arguments arguments = new Arguments();
+      arguments.parse(args);
+      arguments.validate();
+      
+      System.out.println("Options are " + arguments.printOptions());
+
+      SwitchJmxRequest switchJmxRequest;
+      if (arguments.hasOption(Option.PRINT_STATS)) {
+         switchJmxRequest = SwitchJmxRequest.createPrintStatsRequest(arguments.getValue(Option.JMX_HOSTNAME),
+                                                                     arguments.getValue(Option.JMX_PORT),
+                                                                     arguments.getValue(Option.JMX_COMPONENT));
+      } else {
+         switchJmxRequest = SwitchJmxRequest.createSwitchRequest(arguments.getValue(Option.JMX_HOSTNAME),
+                                                                 arguments.getValue(Option.JMX_PORT),
+                                                                 arguments.getValue(Option.JMX_COMPONENT),
+                                                                 arguments.getValue(Option.PROTOCOL),
+                                                                 arguments.hasOption(Option.FORCE_STOP));
       }
 
-      String newProtocolId;
-      String hostname;
-      String port = DEFAULT_JMX_PORT;
-      String component = DEFAULT_COMPONENT;
-      boolean printOnly = false;
-      int i = 0;
-
-      if (args[0].equals(PRINT_STATS)) {
-         i = 1;
-         printOnly = true;
-      }
-
-      newProtocolId = args[i++];
-      hostname = args[i++];
-      if (args.length > i) {
-         port = args[i++];
-      }
-      if (args.length > i) {
-         component = args[i];
-      }
-
-      new SwitchJmxRequest(component, newProtocolId, hostname, port, printOnly).doRequest();
+      switchJmxRequest.doRequest();
    }
 
-   public SwitchJmxRequest(String component, String newProtocolId, String hostname, String port, boolean printOnly) throws Exception {
+   private SwitchJmxRequest(String component, String newProtocolId, String hostname, String port, boolean forceStop) throws Exception {
       String connectionUrl = "service:jmx:rmi:///jndi/rmi://" + hostname + ":" + port + "/jmxrmi";
 
       JMXConnector connector = JMXConnectorFactory.connect(new JMXServiceURL(connectionUrl));
       mBeanServerConnection = connector.getMBeanServerConnection();
       switchComponent = getCacheComponent(component);
       this.newProtocolId = newProtocolId;
-      this.printOnly = printOnly;
+      this.printOnly = false;
+      this.forceStop = forceStop;
+   }
+
+   private SwitchJmxRequest(String component, String hostname, String port) throws Exception {
+      String connectionUrl = "service:jmx:rmi:///jndi/rmi://" + hostname + ":" + port + "/jmxrmi";
+
+      JMXConnector connector = JMXConnectorFactory.connect(new JMXServiceURL(connectionUrl));
+      mBeanServerConnection = connector.getMBeanServerConnection();
+      switchComponent = getCacheComponent(component);
+      this.newProtocolId = null;
+      this.printOnly = true;
+      this.forceStop = false;
    }
 
    @SuppressWarnings("StringBufferReplaceableByString")
@@ -100,8 +145,82 @@ public class SwitchJmxRequest {
          System.out.println(stats);
          System.out.println();
       } else {
-         mBeanServerConnection.invoke(switchComponent, "switchTo", new Object[] {newProtocolId}, new String[] {"java.lang.String"});
+         mBeanServerConnection.invoke(switchComponent, "switchTo", new Object[] {newProtocolId, forceStop},
+                                      new String[] {"java.lang.String", "boolean"});
          System.out.println("Switch done!");
+      }
+   }
+
+   public static SwitchJmxRequest createPrintStatsRequest(String hostname, String port, String component) throws Exception {
+      return new SwitchJmxRequest(component, hostname, port);
+   }
+
+   public static SwitchJmxRequest createSwitchRequest(String hostname, String port, String component, String protocol,
+                                                      boolean forceStop) throws Exception {
+      return new SwitchJmxRequest(component, protocol, hostname, port, forceStop);
+   }
+
+   private static class Arguments {
+
+      private final Map<Option, String> argsValues;
+
+      private Arguments() {
+         argsValues = new EnumMap<Option, String>(Option.class);
+         argsValues.put(Option.JMX_COMPONENT, DEFAULT_COMPONENT);
+         argsValues.put(Option.JMX_PORT, DEFAULT_JMX_PORT);
+      }
+
+      public final void parse(String[] args) {
+         int idx = 0;
+         while (idx < args.length) {
+            Option option = Option.fromString(args[idx]);
+            if (option == null) {
+               throw new IllegalArgumentException("unkown option: " + args[idx] + ". Possible options are: " +
+                                                        Arrays.asList(Option.values()));
+            }
+            idx++;
+            if (option.isBoolean()) {
+               argsValues.put(option, "true");
+               continue;
+            }
+            if (idx >= args.length) {
+               throw new IllegalArgumentException("expected a value for option " + option);
+            }
+            argsValues.put(option, args[idx++]);
+         }
+      }
+
+      public final void validate() {
+         if (hasOption(Option.PRINT_STATS)) {
+            if (!hasOption(Option.JMX_HOSTNAME)) {
+               throw new IllegalArgumentException("Option " + Option.PRINT_STATS + " requires " + Option.JMX_HOSTNAME);
+            }
+            return;
+         }
+         if (!hasOption(Option.JMX_HOSTNAME)) {
+            throw new IllegalArgumentException("Option " + Option.JMX_HOSTNAME + " is required");
+         } else if (!hasOption(Option.PROTOCOL)) {
+            throw new IllegalArgumentException("Option " + Option.PROTOCOL + " is required");
+         }
+      }
+
+      public final String getValue(Option option) {
+         return argsValues.get(option);
+      }
+
+      public final boolean hasOption(Option option) {
+         return argsValues.containsKey(option);
+      }
+      
+      public final String printOptions() {
+         return argsValues.toString();
+      }
+
+      @Override
+      public final String toString() {
+         return "Arguments{" +
+               "argsValues=" + argsValues +
+               '}';
       }
    }
 
