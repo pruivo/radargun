@@ -111,11 +111,17 @@ public class Order implements Serializable, Comparable, DomainObject {
       return "ORDER_" + this.o_w_id + "_" + this.o_d_id + "_" + this.o_id;
    }
 
+   @Override
    public void store(CacheWrapper wrapper) throws Throwable {
-
       wrapper.put(null, this.getKey(), this);
    }
 
+   @Override
+   public void store(CacheWrapper wrapper, int nodeIndex) throws Throwable {
+      store(wrapper);
+   }
+
+   @Override
    public boolean load(CacheWrapper wrapper) throws Throwable {
 
       Order loaded = (Order) wrapper.get(null, this.getKey());

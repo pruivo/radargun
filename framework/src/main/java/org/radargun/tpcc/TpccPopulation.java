@@ -454,7 +454,7 @@ public class TpccPopulation {
       boolean successful=false;
       do {
          try {
-            domainObject.store(wrapper);
+            domainObject.store(wrapper, slaveIndex);
             successful=true;
          } catch (Throwable e) {
             logErrorWhilePut(domainObject, e);

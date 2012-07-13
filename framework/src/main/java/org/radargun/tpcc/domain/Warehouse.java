@@ -122,11 +122,17 @@ public class Warehouse implements Serializable, DomainObject {
       return "WAREHOUSE_" + this.w_id;
    }
 
+   @Override
    public void store(CacheWrapper wrapper) throws Throwable {
-
       wrapper.put(null, this.getKey(), this);
    }
 
+   @Override
+   public void store(CacheWrapper wrapper, int nodeIndex) throws Throwable {
+      store(wrapper);
+   }
+
+   @Override
    public boolean load(CacheWrapper wrapper) throws Throwable {
 
       Warehouse loaded = (Warehouse) wrapper.get(null, this.getKey());

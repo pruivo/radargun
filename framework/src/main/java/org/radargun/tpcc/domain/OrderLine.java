@@ -132,11 +132,17 @@ public class OrderLine implements Serializable, DomainObject {
       return "ORDERLINE_" + this.ol_w_id + "_" + this.ol_d_id + "_" + this.ol_o_id + "_" + this.ol_number;
    }
 
+   @Override
    public void store(CacheWrapper wrapper) throws Throwable {
-
       wrapper.put(null, this.getKey(), this);
    }
 
+   @Override
+   public void store(CacheWrapper wrapper, int nodeIndex) throws Throwable {
+      store(wrapper);
+   }
+
+   @Override
    public boolean load(CacheWrapper wrapper) throws Throwable {
 
       OrderLine loaded = (OrderLine) wrapper.get(null, this.getKey());

@@ -598,7 +598,7 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
    private boolean txAwarePut(DomainObject domainObject) {
       if (isBatchingEnabled()) {
          try {
-            domainObject.store(wrapper);
+            domainObject.store(wrapper, slaveIndex);
          } catch (Throwable throwable) {
             return false;
          }

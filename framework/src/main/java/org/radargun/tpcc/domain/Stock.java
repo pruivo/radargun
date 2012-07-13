@@ -209,11 +209,17 @@ public class Stock implements Serializable, DomainObject {
       return "STOCK_" + this.s_w_id + "_" + this.s_i_id;
    }
 
+   @Override
    public void store(CacheWrapper wrapper) throws Throwable {
-
       wrapper.put(null, this.getKey(), this);
    }
 
+   @Override
+   public void store(CacheWrapper wrapper, int nodeIndex) throws Throwable {
+      store(wrapper);
+   }
+
+   @Override
    public boolean load(CacheWrapper wrapper) throws Throwable {
 
       Stock loaded = (Stock) wrapper.get(null, this.getKey());

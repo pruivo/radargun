@@ -5,7 +5,6 @@ import org.radargun.tpcc.DomainObject;
 
 import java.io.Serializable;
 import java.util.Date;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -115,10 +114,10 @@ public class History implements Serializable, DomainObject {
    }
 
    private static String generateId(int slaveIndex) {
-
       return String.valueOf(slaveIndex) + String.valueOf(History.idGenerator.incrementAndGet());
    }
 
+   @Override
    public void store(CacheWrapper wrapper, int slaveIndex) throws Throwable {
       String id = generateId(slaveIndex);
       wrapper.put(null, id, this);
@@ -162,7 +161,7 @@ public class History implements Serializable, DomainObject {
 
    @Override
    public void store(CacheWrapper wrapper) throws Throwable {
-      store(wrapper, new Random().nextInt()); //TODO
+      store(wrapper, -1);
    }
 
    @Override

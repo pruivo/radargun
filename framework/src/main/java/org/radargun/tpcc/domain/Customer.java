@@ -255,11 +255,17 @@ public class Customer implements Serializable, Comparable, DomainObject {
       return "CUSTOMER_" + this.c_w_id + "_" + this.c_d_id + "_" + this.c_id;
    }
 
+   @Override
    public void store(CacheWrapper wrapper) throws Throwable {
-
       wrapper.put(null, this.getKey(), this);
    }
 
+   @Override
+   public void store(CacheWrapper wrapper, int nodeIndex) throws Throwable {
+      store(wrapper);
+   }
+
+   @Override
    public boolean load(CacheWrapper wrapper) throws Throwable {
 
       Customer loaded = (Customer) wrapper.get(null, this.getKey());
@@ -284,7 +290,6 @@ public class Customer implements Serializable, Comparable, DomainObject {
       this.c_street2 = loaded.c_street2;
       this.c_ytd_payment = loaded.c_ytd_payment;
       this.c_zip = loaded.c_zip;
-
 
       return true;
    }

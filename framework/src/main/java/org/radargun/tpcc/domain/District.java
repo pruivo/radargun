@@ -150,11 +150,17 @@ public class District implements Serializable, DomainObject {
       return "DISTRICT_" + this.d_w_id + "_" + this.d_id;
    }
 
+   @Override
    public void store(CacheWrapper wrapper) throws Throwable {
-
       wrapper.put(null, this.getKey(), this);
    }
 
+   @Override
+   public void store(CacheWrapper wrapper, int nodeIndex) throws Throwable {
+      store(wrapper);
+   }
+
+   @Override
    public boolean load(CacheWrapper wrapper) throws Throwable {
 
       District loaded = (District) wrapper.get(null, this.getKey());

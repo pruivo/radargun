@@ -56,19 +56,19 @@ public class NewOrder implements Serializable, DomainObject {
       return "NEWORDER_" + this.no_w_id + "_" + this.no_d_id + "_" + this.no_o_id;
    }
 
+   @Override
    public void store(CacheWrapper wrapper) throws Throwable {
-
       wrapper.put(null, this.getKey(), this);
+   }
+
+   @Override
+   public void store(CacheWrapper wrapper, int nodeIndex) throws Throwable {
+      store(wrapper);
    }
 
    @Override
    public boolean load(CacheWrapper wrapper) throws Throwable {
       return true;
-   }
-
-   public void insert(CacheWrapper wrapper) throws Throwable {
-
-      wrapper.put(null, this.getKey(), this);
    }
 
    @Override
