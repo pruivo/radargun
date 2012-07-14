@@ -3,11 +3,7 @@ package org.radargun.tpcc;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.radargun.CacheWrapper;
-import org.radargun.tpcc.domain.Customer;
 import org.radargun.tpcc.domain.CustomerLookup;
-import org.radargun.tpcc.domain.Item;
-import org.radargun.tpcc.domain.Order;
-import org.radargun.tpcc.domain.Stock;
 
 import java.util.Date;
 import java.util.Iterator;
@@ -79,12 +75,12 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
    }
 
    @Override
-   protected void populateStock(final int id_warehouse){
-      if (id_warehouse < 0) {
+   protected void populateStock(final int warehouseId){
+      if (warehouseId < 0) {
          log.warn("Trying to populate Stock for a negative warehouse ID. skipping...");
          return;
       }
-      log.trace("Populating Stock for warehouse " + id_warehouse);
+      log.trace("Populating Stock for warehouse " + warehouseId);
 
       long init_id_item=1;
       long num_of_items=TpccTools.NB_MAX_ITEM;
@@ -103,19 +99,19 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
       performMultiThreadPopulation(init_id_item, num_of_items, new ThreadCreator() {
          @Override
          public Thread createThread(long lowerBound, long upperBound) {
-            return new PopulateStockThread(lowerBound, upperBound, id_warehouse);
+            return new PopulateStockThread(lowerBound, upperBound, warehouseId);
          }
       });
    }
 
    @Override
-   protected void populateCustomers(final int id_warehouse, final int id_district){
-      if (id_warehouse < 0 || id_district < 0) {
+   protected void populateCustomers(final int _warehouseId, final int _districtId){
+      if (_warehouseId < 0 || _districtId < 0) {
          log.warn("Trying to populate Customer with a negative warehouse or district ID. skipping...");
          return;
       }
 
-      log.trace("Populating Customers for warehouse " + id_warehouse + " and district " + id_district);
+      log.trace("Populating Customers for warehouse " + _warehouseId + " and district " + _districtId);
 
       final ConcurrentHashMap<CustomerLookupQuadruple,Integer> lookupContentionAvoidance =
             new ConcurrentHashMap<CustomerLookupQuadruple, Integer>();
@@ -123,7 +119,7 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
       performMultiThreadPopulation(1, TpccTools.NB_MAX_CUSTOMER, new ThreadCreator() {
          @Override
          public Thread createThread(long lowerBound, long upperBound) {
-            return new PopulateCustomerThread(lowerBound, upperBound, id_warehouse, id_district, lookupContentionAvoidance);
+            return new PopulateCustomerThread(lowerBound, upperBound, _warehouseId, _districtId, lookupContentionAvoidance);
          }
       });
 
@@ -149,19 +145,19 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
    }
 
    @Override
-   protected void populateOrders(final int id_warehouse, final int id_district){
-      if (id_warehouse < 0 || id_district < 0) {
+   protected void populateOrders(final int warehouseId, final int districtId){
+      if (warehouseId < 0 || districtId < 0) {
          log.warn("Trying to populate Order with a negative warehouse or district ID. skipping...");
          return;
       }
 
-      log.trace("Populating Orders for warehouse " + id_warehouse + " and district " + id_district);
+      log.trace("Populating Orders for warehouse " + warehouseId + " and district " + districtId);
       this._new_order = false;
 
       performMultiThreadPopulation(1, TpccTools.NB_MAX_ORDER, new ThreadCreator() {
          @Override
          public Thread createThread(long lowerBound, long upperBound) {
-            return new PopulateOrderThread(lowerBound, upperBound, id_warehouse, id_district);
+            return new PopulateOrderThread(lowerBound, upperBound, warehouseId, districtId);
          }
       });
    }
@@ -173,24 +169,24 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
    protected class PopulateOrderThread extends Thread{
       private long lowerBound;
       private long upperBound;
-      private int id_warehouse;
-      private int id_district;
+      private int warehouseId;
+      private int districtId;
 
       @Override
       public String toString() {
          return "PopulateOrderThread{" +
                "lowerBound=" + lowerBound +
                ", upperBound=" + upperBound +
-               ", id_warehouse=" + id_warehouse +
-               ", id_district=" + id_district +
+               ", warehouseId=" + warehouseId +
+               ", districtId=" + districtId +
                '}';
       }
 
       public PopulateOrderThread(long l, long u, int w, int d){
          this.lowerBound = l;
          this.upperBound = u;
-         this.id_district = d;
-         this.id_warehouse = w;
+         this.districtId = d;
+         this.warehouseId = w;
       }
 
       public void run(){
@@ -213,7 +209,7 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
       }
 
       private void executeTransaction(long start, long end) {
-         logOrderPopulation(id_warehouse, id_district, start, end - 1);
+         logOrderPopulation(warehouseId, districtId, start, end - 1);
          LinkedList<Integer> seqAleaList = new LinkedList<Integer>();
          boolean useList = false;
 
@@ -221,7 +217,7 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
             startTransactionIfNeeded();
             Iterator<Integer> iterator = seqAleaList.iterator();
 
-            for(long id_order=start; id_order < end; id_order++){
+            for(long orderId=start; orderId < end; orderId++){
 
                int generatedSeqAlea;
 
@@ -235,22 +231,13 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
                int o_ol_cnt = tpccTools.aleaNumber(5, 15);
                Date aDate = new Date((new java.util.Date()).getTime());
 
-               Order newOrder= new Order(id_order,
-                                         id_district,
-                                         id_warehouse,
-                                         generatedSeqAlea,
-                                         aDate,
-                                         (id_order < TpccTools.LIMIT_ORDER) ? tpccTools.aleaNumber(1, 10):0,
-                                         o_ol_cnt,
-                                         1);
-
-               if (!txAwarePut(newOrder)) {
+               if (!txAwarePut(createOrder(orderId, districtId, warehouseId, aDate, o_ol_cnt, generatedSeqAlea))) {
                   break; // rollback tx
                }
-               populateOrderLines(id_warehouse, id_district, (int)id_order, o_ol_cnt, aDate);
+               populateOrderLines(warehouseId, districtId, (int)orderId, o_ol_cnt, aDate);
 
-               if (id_order >= TpccTools.LIMIT_ORDER){
-                  populateNewOrder(id_warehouse, id_district, (int)id_order);
+               if (orderId >= TpccTools.LIMIT_ORDER){
+                  populateNewOrder(warehouseId, districtId, (int)orderId);
                }
             }
             useList = true;
@@ -261,8 +248,8 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
    protected class PopulateCustomerThread extends Thread{
       private long lowerBound;
       private long upperBound;
-      private int id_warehouse;
-      private int id_district;
+      private int warehouseId;
+      private int districtId;
       private ConcurrentHashMap<CustomerLookupQuadruple,Integer> lookupContentionAvoidance;
 
       @Override
@@ -270,18 +257,18 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
          return "PopulateCustomerThread{" +
                "lowerBound=" + lowerBound +
                ", upperBound=" + upperBound +
-               ", id_warehouse=" + id_warehouse +
-               ", id_district=" + id_district +
+               ", warehouseId=" + warehouseId +
+               ", districtId=" + districtId +
                '}';
       }
 
       @SuppressWarnings("unchecked")
-      public PopulateCustomerThread(long lowerBound, long upperBound, int id_warehouse, int id_district,
+      public PopulateCustomerThread(long lowerBound, long upperBound, int warehouseId, int districtId,
                                     ConcurrentHashMap c){
          this.lowerBound = lowerBound;
          this.upperBound = upperBound;
-         this.id_district = id_district;
-         this.id_warehouse = id_warehouse;
+         this.districtId = districtId;
+         this.warehouseId = warehouseId;
          this.lookupContentionAvoidance = c;
       }
 
@@ -305,56 +292,34 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
       }
 
       private void executeTransaction(long start, long end) {
-         logCustomerPopulation(id_warehouse, id_district, start, end - 1);
+         logCustomerPopulation(warehouseId, districtId, start, end - 1);
          do {
             startTransactionIfNeeded();
-            for(long id_customer = start; id_customer < end; id_customer++) {
+            for(long customerId = start; customerId < end; customerId++) {
                String c_last = c_last();
 
-               Customer newCustomer = new Customer(id_warehouse,
-                                                   id_district,
-                                                   id_customer,
-                                                   tpccTools.aleaChainec(8, 16),
-                                                   "OE",
-                                                   c_last,
-                                                   tpccTools.aleaChainec(10, 20),
-                                                   tpccTools.aleaChainec(10, 20),
-                                                   tpccTools.aleaChainec(10, 20),
-                                                   tpccTools.aleaChainel(2, 2),
-                                                   tpccTools.aleaChainen(4, 4) + TpccTools.CHAINE_5_1,
-                                                   tpccTools.aleaChainen(16, 16),
-                                                   new Date(System.currentTimeMillis()),
-                                                   (tpccTools.aleaNumber(1, 10) == 1) ? "BC" : "GC",
-                                                   500000.0,
-                                                   tpccTools.aleaDouble(0., 0.5, 4),
-                                                   -10.0,
-                                                   10.0,
-                                                   1,
-                                                   0,
-                                                   tpccTools.aleaChainec(300, 500));
-
-               if (!txAwarePut(newCustomer)) {
+               if (!txAwarePut(createCustomer(warehouseId, districtId, customerId, c_last))) {
                   break; // rollback tx
                }
 
                if(isBatchingEnabled()){
-                  CustomerLookupQuadruple clt = new CustomerLookupQuadruple(c_last,id_warehouse,id_district, id_customer);
+                  CustomerLookupQuadruple clt = new CustomerLookupQuadruple(c_last,warehouseId,districtId, customerId);
                   if(!this.lookupContentionAvoidance.containsKey(clt)){
                      this.lookupContentionAvoidance.put(clt,1);
                   }
                } else{
-                  CustomerLookup customerLookup = new CustomerLookup(c_last, id_warehouse, id_district);
+                  CustomerLookup customerLookup = new CustomerLookup(c_last, warehouseId, districtId);
                   if (!txAwareLoad(customerLookup)) {
                      break; // rollback tx
                   }
-                  customerLookup.addId(id_customer);
+                  customerLookup.addId(customerId);
 
                   if (!txAwarePut(customerLookup)) {
                      break; // rollback tx
                   }
                }
 
-               populateHistory((int)id_customer, id_warehouse, id_district);
+               populateHistory((int)customerId, warehouseId, districtId);
             }
          } while (!endTransactionIfNeeded());
       }
@@ -401,13 +366,8 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
          logItemsPopulation(start, end - 1);
          do {
             startTransactionIfNeeded();
-            for(long id_item = start; id_item < end; id_item++){
-               Item newItem = new Item(id_item,
-                                       tpccTools.aleaNumber(1, 10000),
-                                       tpccTools.aleaChainec(14, 24),
-                                       tpccTools.aleaFloat(1, 100, 2),
-                                       tpccTools.sData());
-               if (!txAwarePut(newItem)) {
+            for(long itemId = start; itemId < end; itemId++){
+               if (!txAwarePut(createItem(itemId))) {
                   break; //rollback tx;
                }
             }
@@ -418,21 +378,21 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
    protected class PopulateStockThread extends Thread{
       private long lowerBound;
       private long upperBound;
-      private int id_warehouse;
+      private int warehouseId;
 
       @Override
       public String toString() {
          return "PopulateStockThread{" +
                "lowerBound=" + lowerBound +
                ", upperBound=" + upperBound +
-               ", id_warehouse=" + id_warehouse +
+               ", warehouseId=" + warehouseId +
                '}';
       }
 
-      public PopulateStockThread(long low, long up, int id_warehouse){
+      public PopulateStockThread(long low, long up, int warehouseId){
          this.lowerBound = low;
          this.upperBound = up;
-         this.id_warehouse = id_warehouse;
+         this.warehouseId = warehouseId;
       }
 
       public void run(){
@@ -455,28 +415,11 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
       }
 
       private void executeTransaction(long start, long end) {
-         logStockPopulation(id_warehouse, start, end - 1);
+         logStockPopulation(warehouseId, start, end - 1);
          do {
             startTransactionIfNeeded();
-            for(long id_stock = start; id_stock < end; id_stock++){
-               Stock newStock=new Stock(id_stock,
-                                        id_warehouse,
-                                        tpccTools.aleaNumber(10, 100),
-                                        tpccTools.aleaChainel(24, 24),
-                                        tpccTools.aleaChainel(24, 24),
-                                        tpccTools.aleaChainel(24, 24),
-                                        tpccTools.aleaChainel(24, 24),
-                                        tpccTools.aleaChainel(24, 24),
-                                        tpccTools.aleaChainel(24, 24),
-                                        tpccTools.aleaChainel(24, 24),
-                                        tpccTools.aleaChainel(24, 24),
-                                        tpccTools.aleaChainel(24, 24),
-                                        tpccTools.aleaChainel(24, 24),
-                                        0,
-                                        0,
-                                        0,
-                                        tpccTools.sData());
-               if (!txAwarePut(newStock)) {
+            for(long stockId = start; stockId < end; stockId++){
+               if (!txAwarePut(createStock(stockId, warehouseId))) {
                   break;
                }
             }
@@ -530,13 +473,13 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
             for(long idx = start; idx < end; idx++){
 
                CustomerLookupQuadruple clq = this.vector.get((int)idx);
-               CustomerLookup customerLookup = new CustomerLookup(clq.c_last, clq.id_warehouse, clq.id_district);
+               CustomerLookup customerLookup = new CustomerLookup(clq.c_last, clq.warehouseId, clq.districtId);
 
                if (!txAwareLoad(customerLookup)) {
                   break; //rollback tx
                }
 
-               customerLookup.addId(clq.id_customer);
+               customerLookup.addId(clq.customerId);
 
                if (!txAwarePut(customerLookup)) {
                   break; //rollback tx
@@ -548,16 +491,16 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
 
    protected class CustomerLookupQuadruple {
       private String c_last;
-      private int id_warehouse;
-      private int id_district;
-      private long id_customer;
+      private int warehouseId;
+      private int districtId;
+      private long customerId;
 
 
       public CustomerLookupQuadruple(String c, int w, int d, long i){
          this.c_last = c;
-         this.id_warehouse = w;
-         this.id_district = d;
-         this.id_customer = i;
+         this.warehouseId = w;
+         this.districtId = d;
+         this.customerId = i;
       }
 
       @Override
@@ -567,9 +510,9 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
 
          CustomerLookupQuadruple that = (CustomerLookupQuadruple) o;
          //The customer id does not count!!! it's not part of the key
-         //if (id_customer != that.id_customer) return false;
-         return id_district == that.id_district &&
-               id_warehouse == that.id_warehouse &&
+         //if (customerId != that.customerId) return false;
+         return districtId == that.districtId &&
+               warehouseId == that.warehouseId &&
                !(c_last != null ? !c_last.equals(that.c_last) : that.c_last != null);
 
       }
@@ -577,10 +520,10 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
       @Override
       public int hashCode() {
          int result = c_last != null ? c_last.hashCode() : 0;
-         result = 31 * result + id_warehouse;
-         result = 31 * result + id_district;
-         //I don't need id_customer since it's not part of a customerLookup's key
-         //result = 31 * result + (int)id_customer;
+         result = 31 * result + warehouseId;
+         result = 31 * result + districtId;
+         //I don't need customerId since it's not part of a customerLookup's key
+         //result = 31 * result + (int)customerId;
          return result;
       }
 
@@ -588,9 +531,9 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
       public String toString() {
          return "CustomerLookupQuadruple{" +
                "c_last='" + c_last + '\'' +
-               ", id_warehouse=" + id_warehouse +
-               ", id_district=" + id_district +
-               ", id_customer=" + id_customer +
+               ", warehouseId=" + warehouseId +
+               ", districtId=" + districtId +
+               ", customerId=" + customerId +
                '}';
       }
    }

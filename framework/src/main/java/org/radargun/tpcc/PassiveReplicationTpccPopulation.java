@@ -3,8 +3,6 @@ package org.radargun.tpcc;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.radargun.CacheWrapper;
-import org.radargun.tpcc.domain.District;
-import org.radargun.tpcc.domain.Warehouse;
 
 /**
  * This population is used when passive replication is enabled. Only the primary can perform the population.
@@ -77,52 +75,34 @@ public class PassiveReplicationTpccPopulation extends ThreadParallelTpccPopulati
    protected void populateWarehouses() {
       log.trace("Populate warehouses");
 
-      for (int i = 1; i <= this.numWarehouses; i++) {
-         log.info("Populate Warehouse " + i);
+      for (int warehouseId = 1; warehouseId <= this.numWarehouses; warehouseId++) {
+         log.info("Populate Warehouse " + warehouseId);
 
-         Warehouse newWarehouse = new Warehouse(i,
-                                                tpccTools.aleaChainec(6, 10),
-                                                tpccTools.aleaChainec(10, 20), tpccTools.aleaChainec(10, 20),
-                                                tpccTools.aleaChainec(10, 20), tpccTools.aleaChainel(2, 2),
-                                                tpccTools.aleaChainen(4, 4) + TpccTools.CHAINE_5_1,
-                                                tpccTools.aleaFloat(Float.valueOf("0.0000"), Float.valueOf("0.2000"), 4),
-                                                TpccTools.WAREHOUSE_YTD);
-         txAwarePut(newWarehouse);
+         txAwarePut(createWarehouse(warehouseId));
 
-         populateStock(i);
+         populateStock(warehouseId);
 
-         populateDistricts(i);
+         populateDistricts(warehouseId);
 
          printMemoryInfo();
       }
    }
 
    @Override
-   protected void populateDistricts(int id_warehouse) {
-      if (id_warehouse < 0) {
+   protected void populateDistricts(int warehouseId) {
+      if (warehouseId < 0) {
          log.warn("Trying to populate Districts for a negative warehouse ID. skipping...");
          return;
       }
-      log.trace("Populating District for warehouse " + id_warehouse);
+      log.trace("Populating District for warehouse " + warehouseId);
 
-      logDistrictPopulation(id_warehouse, 1, TpccTools.NB_MAX_DISTRICT);
-      for (int id_district = 1; id_district <= TpccTools.NB_MAX_DISTRICT; id_district++) {
-         District newDistrict = new District(id_warehouse,
-                                             id_district,
-                                             tpccTools.aleaChainec(6, 10),
-                                             tpccTools.aleaChainec(10, 20),
-                                             tpccTools.aleaChainec(10, 20),
-                                             tpccTools.aleaChainec(10, 20),
-                                             tpccTools.aleaChainel(2, 2),
-                                             tpccTools.aleaChainen(4, 4) + TpccTools.CHAINE_5_1,
-                                             tpccTools.aleaFloat(Float.valueOf("0.0000"), Float.valueOf("0.2000"), 4),
-                                             TpccTools.WAREHOUSE_YTD,
-                                             3001);
-         txAwarePut(newDistrict);
+      logDistrictPopulation(warehouseId, 1, TpccTools.NB_MAX_DISTRICT);
+      for (int districtId = 1; districtId <= TpccTools.NB_MAX_DISTRICT; districtId++) {
+         txAwarePut(createDistrict(districtId, warehouseId));
 
-         populateCustomers(id_warehouse, id_district);
+         populateCustomers(warehouseId, districtId);
 
-         populateOrders(id_warehouse, id_district);
+         populateOrders(warehouseId, districtId);
       }
    }
 
@@ -139,17 +119,17 @@ public class PassiveReplicationTpccPopulation extends ThreadParallelTpccPopulati
    }
 
    @Override
-   protected void populateStock(final int id_warehouse) {
-      if (id_warehouse < 0) {
+   protected void populateStock(final int warehouseId) {
+      if (warehouseId < 0) {
          log.warn("Trying to populate Stock for a negative warehouse ID. skipping...");
          return;
       }
-      log.trace("Populating Stock for warehouse " + id_warehouse);
+      log.trace("Populating Stock for warehouse " + warehouseId);
 
       performMultiThreadPopulation(1, TpccTools.NB_MAX_ITEM, new ThreadCreator() {
          @Override
          public Thread createThread(long lowerBound, long upperBound) {
-            return new PopulateStockThread(lowerBound, upperBound, id_warehouse);
+            return new PopulateStockThread(lowerBound, upperBound, warehouseId);
          }
       });
    }
