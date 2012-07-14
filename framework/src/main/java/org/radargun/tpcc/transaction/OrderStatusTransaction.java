@@ -31,28 +31,28 @@ public class OrderStatusTransaction implements TpccTransaction {
 
    private boolean customerByName;
 
-   public OrderStatusTransaction(int warehouseID) {
+   public OrderStatusTransaction(TpccTools tpccTools, int warehouseID) {
 
       if (warehouseID <= 0) {
-         this.terminalWarehouseID = TpccTools.randomNumber(1, TpccTools.NB_WAREHOUSES);
+         this.terminalWarehouseID = tpccTools.randomNumber(1, TpccTools.NB_WAREHOUSES);
       } else {
          this.terminalWarehouseID = warehouseID;
       }
 
       // clause 2.6.1.2
-      this.districtID = TpccTools.randomNumber(1, TpccTools.NB_MAX_DISTRICT);
+      this.districtID = tpccTools.randomNumber(1, TpccTools.NB_MAX_DISTRICT);
 
-      long y = TpccTools.randomNumber(1, 100);
+      long y = tpccTools.randomNumber(1, 100);
       this.customerLastName = null;
       this.customerID = -1;
       if (y <= 60) {
          // clause 2.6.1.2 (dot 1)
          this.customerByName = true;
-         this.customerLastName = lastName((int) TpccTools.nonUniformRandom(TpccTools.C_C_LAST, TpccTools.A_C_LAST, 0, TpccTools.MAX_C_LAST));
+         this.customerLastName = lastName((int) tpccTools.nonUniformRandom(TpccTools.C_C_LAST, TpccTools.A_C_LAST, 0, TpccTools.MAX_C_LAST));
       } else {
          // clause 2.6.1.2 (dot 2)
          customerByName = false;
-         customerID = TpccTools.nonUniformRandom(TpccTools.C_C_ID, TpccTools.A_C_ID, 1, TpccTools.NB_MAX_CUSTOMER);
+         customerID = tpccTools.nonUniformRandom(TpccTools.C_C_ID, TpccTools.A_C_ID, 1, TpccTools.NB_MAX_CUSTOMER);
       }
 
 

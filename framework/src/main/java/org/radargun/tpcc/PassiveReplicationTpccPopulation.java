@@ -38,9 +38,9 @@ public class PassiveReplicationTpccPopulation extends ThreadParallelTpccPopulati
    protected void initializeToolsParameters() {
       initTpccTools();
 
-      long c_c_last = TpccTools.randomNumber(0, TpccTools.A_C_LAST);
-      long c_c_id = TpccTools.randomNumber(0, TpccTools.A_C_ID);
-      long c_ol_i_id = TpccTools.randomNumber(0, TpccTools.A_OL_I_ID);
+      long c_c_last = tpccTools.randomNumber(0, TpccTools.A_C_LAST);
+      long c_c_id = tpccTools.randomNumber(0, TpccTools.A_C_ID);
+      long c_ol_i_id = tpccTools.randomNumber(0, TpccTools.A_OL_I_ID);
 
       boolean successful = false;
       do {
@@ -81,11 +81,11 @@ public class PassiveReplicationTpccPopulation extends ThreadParallelTpccPopulati
          log.info("Populate Warehouse " + i);
 
          Warehouse newWarehouse = new Warehouse(i,
-                                                TpccTools.aleaChainec(6, 10),
-                                                TpccTools.aleaChainec(10, 20), TpccTools.aleaChainec(10, 20),
-                                                TpccTools.aleaChainec(10, 20), TpccTools.aleaChainel(2, 2),
-                                                TpccTools.aleaChainen(4, 4) + TpccTools.CHAINE_5_1,
-                                                TpccTools.aleaFloat(Float.valueOf("0.0000"), Float.valueOf("0.2000"), 4),
+                                                tpccTools.aleaChainec(6, 10),
+                                                tpccTools.aleaChainec(10, 20), tpccTools.aleaChainec(10, 20),
+                                                tpccTools.aleaChainec(10, 20), tpccTools.aleaChainel(2, 2),
+                                                tpccTools.aleaChainen(4, 4) + TpccTools.CHAINE_5_1,
+                                                tpccTools.aleaFloat(Float.valueOf("0.0000"), Float.valueOf("0.2000"), 4),
                                                 TpccTools.WAREHOUSE_YTD);
          txAwarePut(newWarehouse);
 
@@ -109,13 +109,13 @@ public class PassiveReplicationTpccPopulation extends ThreadParallelTpccPopulati
       for (int id_district = 1; id_district <= TpccTools.NB_MAX_DISTRICT; id_district++) {
          District newDistrict = new District(id_warehouse,
                                              id_district,
-                                             TpccTools.aleaChainec(6, 10),
-                                             TpccTools.aleaChainec(10, 20),
-                                             TpccTools.aleaChainec(10, 20),
-                                             TpccTools.aleaChainec(10, 20),
-                                             TpccTools.aleaChainel(2, 2),
-                                             TpccTools.aleaChainen(4, 4) + TpccTools.CHAINE_5_1,
-                                             TpccTools.aleaFloat(Float.valueOf("0.0000"), Float.valueOf("0.2000"), 4),
+                                             tpccTools.aleaChainec(6, 10),
+                                             tpccTools.aleaChainec(10, 20),
+                                             tpccTools.aleaChainec(10, 20),
+                                             tpccTools.aleaChainec(10, 20),
+                                             tpccTools.aleaChainel(2, 2),
+                                             tpccTools.aleaChainen(4, 4) + TpccTools.CHAINE_5_1,
+                                             tpccTools.aleaFloat(Float.valueOf("0.0000"), Float.valueOf("0.2000"), 4),
                                              TpccTools.WAREHOUSE_YTD,
                                              3001);
          txAwarePut(newDistrict);

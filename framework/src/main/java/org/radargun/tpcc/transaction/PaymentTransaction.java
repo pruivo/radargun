@@ -39,45 +39,45 @@ public class PaymentTransaction implements TpccTransaction {
 
    private int slaveIndex;
 
-   public PaymentTransaction(int slaveIndex, int warehouseID) {
+   public PaymentTransaction(TpccTools tpccTools, int slaveIndex, int warehouseID) {
 
       this.slaveIndex = slaveIndex;
 
       if (warehouseID <= 0) {
-         this.terminalWarehouseID = TpccTools.randomNumber(1, TpccTools.NB_WAREHOUSES);
+         this.terminalWarehouseID = tpccTools.randomNumber(1, TpccTools.NB_WAREHOUSES);
       } else {
          this.terminalWarehouseID = warehouseID;
       }
 
-      this.districtID = TpccTools.randomNumber(1, TpccTools.NB_MAX_DISTRICT);
+      this.districtID = tpccTools.randomNumber(1, TpccTools.NB_MAX_DISTRICT);
 
-      long x = TpccTools.randomNumber(1, 100);
+      long x = tpccTools.randomNumber(1, 100);
 
       if (x <= 85) {
          this.customerDistrictID = this.districtID;
          this.customerWarehouseID = this.terminalWarehouseID;
       } else {
-         this.customerDistrictID = TpccTools.randomNumber(1, TpccTools.NB_MAX_DISTRICT);
+         this.customerDistrictID = tpccTools.randomNumber(1, TpccTools.NB_MAX_DISTRICT);
          do {
-            this.customerWarehouseID = TpccTools.randomNumber(1, TpccTools.NB_WAREHOUSES);
+            this.customerWarehouseID = tpccTools.randomNumber(1, TpccTools.NB_WAREHOUSES);
          }
          while (this.customerWarehouseID == this.terminalWarehouseID && TpccTools.NB_WAREHOUSES > 1);
       }
 
-      long y = TpccTools.randomNumber(1, 100);
+      long y = tpccTools.randomNumber(1, 100);
 
 
       this.customerID = -1;
       this.customerLastName = null;
       if (y <= 60) {
          this.customerByName = true;
-         customerLastName = lastName((int) TpccTools.nonUniformRandom(TpccTools.C_C_LAST, TpccTools.A_C_LAST, 0, TpccTools.MAX_C_LAST));
+         customerLastName = lastName((int) tpccTools.nonUniformRandom(TpccTools.C_C_LAST, TpccTools.A_C_LAST, 0, TpccTools.MAX_C_LAST));
       } else {
          this.customerByName = false;
-         this.customerID = TpccTools.nonUniformRandom(TpccTools.C_C_ID, TpccTools.A_C_ID, 1, TpccTools.NB_MAX_CUSTOMER);
+         this.customerID = tpccTools.nonUniformRandom(TpccTools.C_C_ID, TpccTools.A_C_ID, 1, TpccTools.NB_MAX_CUSTOMER);
       }
 
-      this.paymentAmount = TpccTools.randomNumber(100, 500000) / 100.0;
+      this.paymentAmount = tpccTools.randomNumber(100, 500000) / 100.0;
 
 
    }

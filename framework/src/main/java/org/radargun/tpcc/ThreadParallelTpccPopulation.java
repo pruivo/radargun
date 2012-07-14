@@ -232,7 +232,7 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
                   seqAleaList.add(generatedSeqAlea);
                }
 
-               int o_ol_cnt = TpccTools.aleaNumber(5, 15);
+               int o_ol_cnt = tpccTools.aleaNumber(5, 15);
                Date aDate = new Date((new java.util.Date()).getTime());
 
                Order newOrder= new Order(id_order,
@@ -240,7 +240,7 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
                                          id_warehouse,
                                          generatedSeqAlea,
                                          aDate,
-                                         (id_order < TpccTools.LIMIT_ORDER) ? TpccTools.aleaNumber(1, 10):0,
+                                         (id_order < TpccTools.LIMIT_ORDER) ? tpccTools.aleaNumber(1, 10):0,
                                          o_ol_cnt,
                                          1);
 
@@ -314,24 +314,24 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
                Customer newCustomer = new Customer(id_warehouse,
                                                    id_district,
                                                    id_customer,
-                                                   TpccTools.aleaChainec(8, 16),
+                                                   tpccTools.aleaChainec(8, 16),
                                                    "OE",
                                                    c_last,
-                                                   TpccTools.aleaChainec(10, 20),
-                                                   TpccTools.aleaChainec(10, 20),
-                                                   TpccTools.aleaChainec(10, 20),
-                                                   TpccTools.aleaChainel(2, 2),
-                                                   TpccTools.aleaChainen(4, 4) + TpccTools.CHAINE_5_1,
-                                                   TpccTools.aleaChainen(16, 16),
+                                                   tpccTools.aleaChainec(10, 20),
+                                                   tpccTools.aleaChainec(10, 20),
+                                                   tpccTools.aleaChainec(10, 20),
+                                                   tpccTools.aleaChainel(2, 2),
+                                                   tpccTools.aleaChainen(4, 4) + TpccTools.CHAINE_5_1,
+                                                   tpccTools.aleaChainen(16, 16),
                                                    new Date(System.currentTimeMillis()),
-                                                   (TpccTools.aleaNumber(1, 10) == 1) ? "BC" : "GC",
+                                                   (tpccTools.aleaNumber(1, 10) == 1) ? "BC" : "GC",
                                                    500000.0,
-                                                   TpccTools.aleaDouble(0., 0.5, 4),
+                                                   tpccTools.aleaDouble(0., 0.5, 4),
                                                    -10.0,
                                                    10.0,
                                                    1,
                                                    0,
-                                                   TpccTools.aleaChainec(300, 500));
+                                                   tpccTools.aleaChainec(300, 500));
 
                if (!txAwarePut(newCustomer)) {
                   break; // rollback tx
@@ -403,10 +403,10 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
             startTransactionIfNeeded();
             for(long id_item = start; id_item < end; id_item++){
                Item newItem = new Item(id_item,
-                                       TpccTools.aleaNumber(1, 10000),
-                                       TpccTools.aleaChainec(14, 24),
-                                       TpccTools.aleaFloat(1, 100, 2),
-                                       TpccTools.sData());
+                                       tpccTools.aleaNumber(1, 10000),
+                                       tpccTools.aleaChainec(14, 24),
+                                       tpccTools.aleaFloat(1, 100, 2),
+                                       tpccTools.sData());
                if (!txAwarePut(newItem)) {
                   break; //rollback tx;
                }
@@ -461,21 +461,21 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
             for(long id_stock = start; id_stock < end; id_stock++){
                Stock newStock=new Stock(id_stock,
                                         id_warehouse,
-                                        TpccTools.aleaNumber(10, 100),
-                                        TpccTools.aleaChainel(24, 24),
-                                        TpccTools.aleaChainel(24, 24),
-                                        TpccTools.aleaChainel(24, 24),
-                                        TpccTools.aleaChainel(24, 24),
-                                        TpccTools.aleaChainel(24, 24),
-                                        TpccTools.aleaChainel(24, 24),
-                                        TpccTools.aleaChainel(24, 24),
-                                        TpccTools.aleaChainel(24, 24),
-                                        TpccTools.aleaChainel(24, 24),
-                                        TpccTools.aleaChainel(24, 24),
+                                        tpccTools.aleaNumber(10, 100),
+                                        tpccTools.aleaChainel(24, 24),
+                                        tpccTools.aleaChainel(24, 24),
+                                        tpccTools.aleaChainel(24, 24),
+                                        tpccTools.aleaChainel(24, 24),
+                                        tpccTools.aleaChainel(24, 24),
+                                        tpccTools.aleaChainel(24, 24),
+                                        tpccTools.aleaChainel(24, 24),
+                                        tpccTools.aleaChainel(24, 24),
+                                        tpccTools.aleaChainel(24, 24),
+                                        tpccTools.aleaChainel(24, 24),
                                         0,
                                         0,
                                         0,
-                                        TpccTools.sData());
+                                        tpccTools.sData());
                if (!txAwarePut(newStock)) {
                   break;
                }

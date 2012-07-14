@@ -28,22 +28,24 @@ public class TpccTerminal {
 
    private final int localWarehouseID;
 
+   private final TpccTools tpccTools;
 
    public TpccTerminal(double paymentWeight, double orderStatusWeight, int indexNode, int localWarehouseID) {
       this.paymentWeight = paymentWeight;
       this.orderStatusWeight = orderStatusWeight;
       this.indexNode = indexNode;
       this.localWarehouseID = localWarehouseID;
+      tpccTools = TpccTools.newInstance();
    }
 
    public final TpccTransaction createTransaction(int type) {
       switch (type) {
          case PAYMENT:
-            return new PaymentTransaction(indexNode, localWarehouseID);
+            return new PaymentTransaction(tpccTools, indexNode, localWarehouseID);
          case ORDER_STATUS:
-            return new OrderStatusTransaction(localWarehouseID);
+            return new OrderStatusTransaction(tpccTools, localWarehouseID);
          case NEW_ORDER:
-            return new NewOrderTransaction(localWarehouseID);
+            return new NewOrderTransaction(tpccTools, localWarehouseID);
          case DELIVERY:
          case STOCK_LEVEL:
          default:
@@ -56,7 +58,7 @@ public class TpccTerminal {
    }
 
    public final int chooseTransactionType(boolean isPassiveReplication, boolean isTheMaster) {
-      double transactionType = Math.min(TpccTools.doubleRandomNumber(1, 100), 100.0);
+      double transactionType = Math.min(tpccTools.doubleRandomNumber(1, 100), 100.0);
 
       double realPaymentWeight = paymentWeight, realOrderStatusWeight = orderStatusWeight;
 

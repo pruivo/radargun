@@ -36,18 +36,18 @@ public class NewOrderTransaction implements TpccTransaction {
 
    private long[] orderQuantities;
 
-   public NewOrderTransaction(int warehouseID) {
+   public NewOrderTransaction(TpccTools tpccTools, int warehouseID) {
 
       if (warehouseID <= 0) {
-         this.terminalWarehouseID = TpccTools.randomNumber(1, TpccTools.NB_WAREHOUSES);
+         this.terminalWarehouseID = tpccTools.randomNumber(1, TpccTools.NB_WAREHOUSES);
       } else {
          this.terminalWarehouseID = warehouseID;
       }
 
-      this.districtID = TpccTools.randomNumber(1, TpccTools.NB_MAX_DISTRICT);
-      this.customerID = TpccTools.nonUniformRandom(TpccTools.C_C_ID, TpccTools.A_C_ID, 1, TpccTools.NB_MAX_CUSTOMER);
+      this.districtID = tpccTools.randomNumber(1, TpccTools.NB_MAX_DISTRICT);
+      this.customerID = tpccTools.nonUniformRandom(TpccTools.C_C_ID, TpccTools.A_C_ID, 1, TpccTools.NB_MAX_CUSTOMER);
 
-      this.numItems = (int) TpccTools.randomNumber(TpccTools.NUMBER_OF_ITEMS_INTERVAL[0],
+      this.numItems = (int) tpccTools.randomNumber(TpccTools.NUMBER_OF_ITEMS_INTERVAL[0],
                                                    TpccTools.NUMBER_OF_ITEMS_INTERVAL[1]); // o_ol_cnt
       this.itemIDs = new long[numItems];
       this.supplierWarehouseIDs = new long[numItems];
@@ -55,21 +55,21 @@ public class NewOrderTransaction implements TpccTransaction {
       this.allLocal = 1; // see clause 2.4.2.2 (dot 6)
       for (int i = 0; i < numItems; i++) // clause 2.4.1.5
       {
-         itemIDs[i] = TpccTools.nonUniformRandom(TpccTools.C_OL_I_ID, TpccTools.A_OL_I_ID, 1, TpccTools.NB_MAX_ITEM);
-         if (TpccTools.randomNumber(1, 100) > 1) {
+         itemIDs[i] = tpccTools.nonUniformRandom(TpccTools.C_OL_I_ID, TpccTools.A_OL_I_ID, 1, TpccTools.NB_MAX_ITEM);
+         if (tpccTools.randomNumber(1, 100) > 1) {
             supplierWarehouseIDs[i] = terminalWarehouseID;
          } else //see clause 2.4.1.5 (dot 2)
          {
             do {
-               supplierWarehouseIDs[i] = TpccTools.randomNumber(1, TpccTools.NB_WAREHOUSES);
+               supplierWarehouseIDs[i] = tpccTools.randomNumber(1, TpccTools.NB_WAREHOUSES);
             }
             while (supplierWarehouseIDs[i] == terminalWarehouseID && TpccTools.NB_WAREHOUSES > 1);
             allLocal = 0;// see clause 2.4.2.2 (dot 6)
          }
-         orderQuantities[i] = TpccTools.randomNumber(1, TpccTools.NB_MAX_DISTRICT); //see clause 2.4.1.5 (dot 6)
+         orderQuantities[i] = tpccTools.randomNumber(1, TpccTools.NB_MAX_DISTRICT); //see clause 2.4.1.5 (dot 6)
       }
       // clause 2.4.1.5 (dot 1)
-      if (TpccTools.randomNumber(1, 100) == 1)
+      if (tpccTools.randomNumber(1, 100) == 1)
          this.itemIDs[this.numItems - 1] = -12345;
 
    }
