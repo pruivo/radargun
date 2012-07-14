@@ -72,9 +72,11 @@ public class TpccTerminal {
          }
       }
 
-      log.debug("Choose transaction " + transactionType +
-                      ". Payment Weight=" + realPaymentWeight + "(" + paymentWeight + ")" +
-                      ", Order Status Weight=" + realOrderStatusWeight + "(" + orderStatusWeight + ")");
+      if (log.isDebugEnabled()) {
+         log.debug("Choose transaction " + transactionType +
+                         ". Payment Weight=" + realPaymentWeight + "(" + paymentWeight + ")" +
+                         ", Order Status Weight=" + realOrderStatusWeight + "(" + orderStatusWeight + ")");
+      }
 
       if (transactionType <= realPaymentWeight) {
          return PAYMENT;

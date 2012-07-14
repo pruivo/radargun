@@ -562,7 +562,7 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
             startPoint.await();
             log.info("Starting thread: " + getName());
          } catch (InterruptedException e) {
-            log.warn(e);
+            log.warn("Interrupted while waiting for starting in " + getName());
          }
 
          TpccTerminal terminal = new TpccTerminal(this.paymentWeight, this.orderStatusWeight, this.nodeIndex, localWarehouseID);
@@ -628,13 +628,13 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
                transaction.executeTransaction(cacheWrapper);
             } catch (Throwable e) {
                successful = false;
-               log.warn(e);
+               if (log.isDebugEnabled()) {
+                  log.debug("Exception while executing transaction.", e);
+               } else {
+                  log.warn("Exception while executing transaction: " + e.getMessage());
+               }
                if (e instanceof ElementNotFoundException) {
                   this.appFailures++;
-               }
-
-               if (e instanceof Exception) {
-                  e.printStackTrace();
                }
             }
 
@@ -666,8 +666,6 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
 
                }
             } catch (Throwable rb) {
-               log.info(this.threadIndex + "Error while committing");
-
                nrFailures++;
 
                if (!isReadOnly) {
@@ -682,13 +680,14 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
                   nrRdFailures++;
                }
                successful = false;
-               log.warn(rb);
-
+               if (log.isDebugEnabled()) {
+                  log.debug("Error while committing", rb);
+               } else {
+                  log.warn("Error while committing: " + rb.getMessage());
+               }
             }
 
-
             end = System.nanoTime();
-
 
             if (this.arrivalRate == 0.0) {  //Closed system
                start = startService;
@@ -782,7 +781,9 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
       }
 
       public void run() {
-         log.debug("Starting " + getName() + " with rate of " + rate.getLambda());
+         if (log.isDebugEnabled()) {
+            log.debug("Starting " + getName() + " with rate of " + rate.getLambda());
+         }
          while (completedThread.get() != numOfThreads && run) {
             try {
                queue.offer(new RequestType(System.nanoTime(), terminal.chooseTransactionType(
