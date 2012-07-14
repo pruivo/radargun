@@ -12,8 +12,11 @@ JVM_OPTS="$JVM_OPTS -Xmx1024M -Xms1024M"
 #JVM_OPTS="$JVM_OPTS -Xmx16G -Xms16G"
 #choose on of the GC types (or none if you want to use the default)
 #JVM_OPTS="$JVM_OPTS -XX:+UseConcMarkSweepGC -XX:+CMSIncrementalMode"
-#JVM_OPTS="$JVM_OPTS -XX:+UseParallelGC"
+JVM_OPTS="$JVM_OPTS -XX:+UseParallelGC"
+JVM_OPTS="$JVM_OPTS -XX:+UseParallelOldGC"
 JVM_OPTS="$JVM_OPTS $JG_FLAGS"
 JPROFILER_HOME=${HOME}/jprofiler6
 JPROFILER_CFG_ID=103
+JMX_MASTER_PORT="9999"
+JMX_SLAVES_PORT="9998"
 

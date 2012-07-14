@@ -58,18 +58,12 @@
          max_retransmit_time="0"
          conn_expiry_timeout="0"
          xmit_interval="1000"
-         />
-   <RSVP
-         ack_on_delivery="false"
-         resend_interval="1000"
-         throw_exception_on_timeout="false"
-         timeout="60000"
-         />
+         />   
    <pbcast.STABLE
          stability_delay="2000"
          desired_avg_gossip="10000"
          max_bytes="10M"
-         cap="0.1"
+         cap="0.001"
          />
    <pbcast.GMS
          print_local_addr="true"
