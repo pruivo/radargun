@@ -21,6 +21,8 @@ import org.radargun.utils.Utils;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
+import javax.transaction.Status;
+import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import java.io.BufferedWriter;
@@ -164,6 +166,16 @@ public class InfinispanWrapper implements CacheWrapper {
       catch (Exception e) {
          throw new RuntimeException(e);
       }
+   }
+
+   @Override
+   public boolean isInTransaction() {
+      try {
+         return tm != null && tm.getStatus() != Status.STATUS_NO_TRANSACTION;
+      } catch (SystemException e) {
+         //
+      }
+      return false;
    }
 
    private void blockForRehashing() throws InterruptedException {

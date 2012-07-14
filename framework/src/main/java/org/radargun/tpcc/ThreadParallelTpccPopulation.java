@@ -595,33 +595,7 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
       }
    }
 
-   private boolean txAwarePut(DomainObject domainObject) {
-      if (isBatchingEnabled()) {
-         try {
-            domainObject.store(wrapper, slaveIndex);
-         } catch (Throwable throwable) {
-            return false;
-         }
-      } else {
-         super.stubbornPut(domainObject);
-      }
-      return true;
-   }
-
-   private boolean txAwareLoad(DomainObject domainObject) {
-      if (isBatchingEnabled()) {
-         try {
-            domainObject.load(wrapper);
-         } catch (Throwable throwable) {
-            return false;
-         }
-      } else {
-         super.stubbornLoad(domainObject);
-      }
-      return true;
-   }
-
-   protected boolean isBatchingEnabled(){
+   protected final boolean isBatchingEnabled(){
       return this.elementsPerBlock != 1;
    }
 

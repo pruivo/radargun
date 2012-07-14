@@ -87,7 +87,7 @@ public class PassiveReplicationTpccPopulation extends ThreadParallelTpccPopulati
                                                 TpccTools.aleaChainen(4, 4) + TpccTools.CHAINE_5_1,
                                                 TpccTools.aleaFloat(Float.valueOf("0.0000"), Float.valueOf("0.2000"), 4),
                                                 TpccTools.WAREHOUSE_YTD);
-         stubbornPut(newWarehouse);
+         txAwarePut(newWarehouse);
 
          populateStock(i);
 
@@ -118,7 +118,7 @@ public class PassiveReplicationTpccPopulation extends ThreadParallelTpccPopulati
                                              TpccTools.aleaFloat(Float.valueOf("0.0000"), Float.valueOf("0.2000"), 4),
                                              TpccTools.WAREHOUSE_YTD,
                                              3001);
-         stubbornPut(newDistrict);
+         txAwarePut(newDistrict);
 
          populateCustomers(id_warehouse, id_district);
 

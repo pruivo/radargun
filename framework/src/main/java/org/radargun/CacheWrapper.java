@@ -87,6 +87,13 @@ public interface CacheWrapper
    void endTransaction(boolean successful);
 
    /**
+    * returns true if the current thread is inside a transaction when the method is invoked
+    *
+    * @return  true if the current thread is inside a transaction when the method is invoked
+    */
+   boolean isInTransaction();
+
+   /**
     * returns a map with cache dependent statistics 
     * @return the map with cache dependent statistics or an empty map of no statistics are available
     */

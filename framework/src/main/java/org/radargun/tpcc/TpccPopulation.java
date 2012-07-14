@@ -187,7 +187,7 @@ public class TpccPopulation {
 
          Item newItem = new Item(i, TpccTools.aleaNumber(1, 10000), TpccTools.aleaChainec(14, 24),
                                  TpccTools.aleaFloat(1, 100, 2), TpccTools.sData());
-         stubbornPut(newItem);
+         txAwarePut(newItem);
       }
       printMemoryInfo();
    }
@@ -205,7 +205,7 @@ public class TpccPopulation {
                                                       TpccTools.aleaChainen(4, 4) + TpccTools.CHAINE_5_1,
                                                       TpccTools.aleaFloat(Float.valueOf("0.0000"), Float.valueOf("0.2000"), 4),
                                                       TpccTools.WAREHOUSE_YTD);
-               stubbornPut(newWarehouse);
+               txAwarePut(newWarehouse);
             }
             populateStock(i);
 
@@ -258,7 +258,7 @@ public class TpccPopulation {
                                     0,
                                     0,
                                     TpccTools.sData());
-         stubbornPut(newStock);
+         txAwarePut(newStock);
       }
    }
 
@@ -298,7 +298,7 @@ public class TpccPopulation {
                                              TpccTools.aleaFloat(Float.valueOf("0.0000"), Float.valueOf("0.2000"), 4),
                                              TpccTools.WAREHOUSE_YTD,
                                              3001);
-         stubbornPut(newDistrict);
+         txAwarePut(newDistrict);
 
          populateCustomers(id_warehouse, id_district);
 
@@ -337,15 +337,15 @@ public class TpccPopulation {
                                              1,
                                              0,
                                              TpccTools.aleaChainec(300, 500));
-         stubbornPut(newCustomer);
+         txAwarePut(newCustomer);
 
          CustomerLookup customerLookup = new CustomerLookup(c_last, id_warehouse, id_district);
 
-         stubbornLoad(customerLookup);
+         txAwareLoad(customerLookup);
 
          customerLookup.addId(i);
 
-         stubbornPut(customerLookup);
+         txAwarePut(customerLookup);
 
          populateHistory(i, id_warehouse, id_district);
       }
@@ -363,7 +363,7 @@ public class TpccPopulation {
 
       History newHistory = new History(id_customer, id_district, id_warehouse, id_district, id_warehouse,
                                        new Date(System.currentTimeMillis()), 10, TpccTools.aleaChainec(12, 24));
-      stubbornPut(newHistory);
+      txAwarePut(newHistory);
    }
 
 
@@ -390,7 +390,7 @@ public class TpccPopulation {
                                     1);
 
 
-         stubbornPut(newOrder);
+         txAwarePut(newOrder);
 
          populateOrderLines(id_warehouse, id_district, id_order, o_ol_cnt, aDate);
 
@@ -431,7 +431,7 @@ public class TpccPopulation {
                                                 5,
                                                 amount,
                                                 TpccTools.aleaChainel(12, 24));
-         stubbornPut(newOrderLine);
+         txAwarePut(newOrderLine);
       }
    }
 
@@ -446,33 +446,49 @@ public class TpccPopulation {
 
       NewOrder newNewOrder = new NewOrder(id_order, id_district, id_warehouse);
 
-      stubbornPut(newNewOrder);
+      txAwarePut(newNewOrder);
    }
 
-   @SuppressWarnings("ConstantConditions")
-   protected void stubbornPut(DomainObject domainObject){
-      boolean successful=false;
-      do {
+   protected final boolean txAwarePut(DomainObject domainObject) {
+      if (wrapper.isInTransaction()) {
          try {
             domainObject.store(wrapper, slaveIndex);
-            successful=true;
-         } catch (Throwable e) {
-            logErrorWhilePut(domainObject, e);
+         } catch (Throwable throwable) {
+            return false;
          }
-      } while (!successful);
+      } else {
+         boolean putDone = false;
+         do {
+            try {
+               domainObject.store(wrapper, slaveIndex);
+               putDone = true;
+            } catch (Throwable e) {
+               logErrorWhilePut(domainObject, e);
+            }
+         } while (!putDone);
+      }
+      return true;
    }
 
-   @SuppressWarnings("ConstantConditions")
-   protected void stubbornLoad(DomainObject domainObject){
-      boolean successful=false;
-      do {
+   protected final boolean txAwareLoad(DomainObject domainObject) {
+      if (wrapper.isInTransaction()) {
          try {
             domainObject.load(wrapper);
-            successful=true;
-         } catch (Throwable e) {
-            logErrorWhileGet(domainObject, e);
+         } catch (Throwable throwable) {
+            return false;
          }
-      } while(!successful);
+      } else {
+         boolean loadDone = false;
+         do {
+            try {
+               domainObject.load(wrapper);
+               loadDone = true;
+            } catch (Throwable e) {
+               logErrorWhileGet(domainObject, e);
+            }
+         } while(!loadDone);
+      }
+      return true;
    }
 
    protected int generateSeqAlea(int deb, int fin) {
