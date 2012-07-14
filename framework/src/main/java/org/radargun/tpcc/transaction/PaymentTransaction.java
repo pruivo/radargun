@@ -21,23 +21,23 @@ import java.util.List;
  */
 public class PaymentTransaction implements TpccTransaction {
 
-   private long terminalWarehouseID;
+   private final long terminalWarehouseID;
 
-   private long districtID;
+   private final long districtID;
 
-   private long customerDistrictID;
+   private final long customerDistrictID;
 
    private long customerWarehouseID;
 
-   private long customerID;
+   private final long customerID;
 
-   private boolean customerByName;
+   private final boolean customerByName;
 
-   private String customerLastName;
+   private final String customerLastName;
 
-   private double paymentAmount;
+   private final double paymentAmount;
 
-   private int slaveIndex;
+   private final int slaveIndex;
 
    public PaymentTransaction(TpccTools tpccTools, int slaveIndex, int warehouseID) {
 
@@ -66,15 +66,14 @@ public class PaymentTransaction implements TpccTransaction {
 
       long y = tpccTools.randomNumber(1, 100);
 
-
-      this.customerID = -1;
-      this.customerLastName = null;
       if (y <= 60) {
          this.customerByName = true;
          customerLastName = lastName((int) tpccTools.nonUniformRandom(TpccTools.C_C_LAST, TpccTools.A_C_LAST, 0, TpccTools.MAX_C_LAST));
+         this.customerID = -1;
       } else {
          this.customerByName = false;
          this.customerID = tpccTools.nonUniformRandom(TpccTools.C_C_ID, TpccTools.A_C_ID, 1, TpccTools.NB_MAX_CUSTOMER);
+         this.customerLastName = null;
       }
 
       this.paymentAmount = tpccTools.randomNumber(100, 500000) / 100.0;
@@ -84,9 +83,7 @@ public class PaymentTransaction implements TpccTransaction {
 
    @Override
    public void executeTransaction(CacheWrapper cacheWrapper) throws Throwable {
-
-      paymentTransaction(cacheWrapper, terminalWarehouseID, customerWarehouseID, paymentAmount, districtID, customerDistrictID, customerID, customerLastName, customerByName);
-
+      paymentTransaction(cacheWrapper);
    }
 
    @Override
@@ -99,80 +96,75 @@ public class PaymentTransaction implements TpccTransaction {
    }
 
 
-   private void paymentTransaction(CacheWrapper cacheWrapper, long w_id, long c_w_id, double h_amount, long d_id, long c_d_id, long c_id, String c_last, boolean c_by_name) throws Throwable {
+   private void paymentTransaction(CacheWrapper cacheWrapper) throws Throwable {
       String w_name;
       String d_name;
-      long namecnt;
+      long nameCnt;
 
       String new_c_last;
 
-      String c_data = null, c_new_data, h_data;
+      String c_data, c_new_data, h_data;
 
 
       Warehouse w = new Warehouse();
-      w.setW_id(w_id);
+      w.setW_id(terminalWarehouseID);
 
       boolean found = w.load(cacheWrapper);
-      if (!found) throw new ElementNotFoundException("W_ID=" + w_id + " not found!");
-      w.setW_ytd(h_amount);
+      if (!found) throw new ElementNotFoundException("W_ID=" + terminalWarehouseID + " not found!");
+      w.setW_ytd(paymentAmount);
       w.store(cacheWrapper);
 
 
       District d = new District();
-      d.setD_id(d_id);
-      d.setD_w_id(w_id);
+      d.setD_id(districtID);
+      d.setD_w_id(terminalWarehouseID);
       found = d.load(cacheWrapper);
-      if (!found) throw new ElementNotFoundException("D_ID=" + d_id + " D_W_ID=" + w_id + " not found!");
+      if (!found) throw new ElementNotFoundException("D_ID=" + districtID + " D_W_ID=" + terminalWarehouseID + " not found!");
 
-      d.setD_ytd(h_amount);
+      d.setD_ytd(paymentAmount);
       d.store(cacheWrapper);
 
 
       Customer c = null;
 
-      if (c_by_name) {
-         new_c_last = c_last;
-         List cList = null;
-         cList = CustomerDAC.loadByCLast(cacheWrapper, c_w_id, c_d_id, new_c_last);
+      if (customerByName) {
+         new_c_last = customerLastName;
+         List cList;
+         cList = CustomerDAC.loadByCLast(cacheWrapper, customerWarehouseID, customerDistrictID, new_c_last);
 
          if (cList == null || cList.isEmpty())
-            throw new ElementNotFoundException("C_LAST=" + c_last + " C_D_ID=" + c_d_id + " C_W_ID=" + c_w_id + " not found!");
+            throw new ElementNotFoundException("C_LAST=" + customerLastName + " C_D_ID=" + customerDistrictID + " C_W_ID=" + customerWarehouseID + " not found!");
 
          Collections.sort(cList);
 
+         nameCnt = cList.size();
 
-         namecnt = cList.size();
-
-
-         if (namecnt % 2 == 1) namecnt++;
+         if (nameCnt % 2 == 1) nameCnt++;
          Iterator<Customer> itr = cList.iterator();
 
-         for (int i = 1; i <= namecnt / 2; i++) {
-
+         for (int i = 1; i <= nameCnt / 2; i++) {
             c = itr.next();
-
          }
-
       } else {
 
          c = new Customer();
-         c.setC_id(c_id);
-         c.setC_d_id(c_d_id);
-         c.setC_w_id(c_w_id);
+         c.setC_id(customerID);
+         c.setC_d_id(customerDistrictID);
+         c.setC_w_id(customerWarehouseID);
          found = c.load(cacheWrapper);
          if (!found)
-            throw new ElementNotFoundException("C_ID=" + c_id + " C_D_ID=" + c_d_id + " C_W_ID=" + c_w_id + " not found!");
+            throw new ElementNotFoundException("C_ID=" + customerID + " C_D_ID=" + customerDistrictID + " C_W_ID=" + customerWarehouseID + " not found!");
 
 
       }
 
 
-      c.setC_balance(c.getC_balance() + h_amount);
+      c.setC_balance(c.getC_balance() + paymentAmount);
       if (c.getC_credit().equals("BC")) {
 
          c_data = c.getC_data();
 
-         c_new_data = c.getC_id() + " " + c_d_id + " " + c_w_id + " " + d_id + " " + w_id + " " + h_amount + " |";
+         c_new_data = c.getC_id() + " " + customerDistrictID + " " + customerWarehouseID + " " + districtID + " " + terminalWarehouseID + " " + paymentAmount + " |";
          if (c_data.length() > c_new_data.length()) {
             c_new_data += c_data.substring(0, c_data.length() - c_new_data.length());
          } else {
@@ -198,7 +190,7 @@ public class PaymentTransaction implements TpccTransaction {
       if (d_name.length() > 10) d_name = d_name.substring(0, 10);
       h_data = w_name + "    " + d_name;
 
-      History h = new History(c.getC_id(), c_d_id, c_w_id, d_id, w_id, new Date(), h_amount, h_data);
+      History h = new History(c.getC_id(), customerDistrictID, customerWarehouseID, districtID, terminalWarehouseID, new Date(), paymentAmount, h_data);
       h.store(cacheWrapper, this.slaveIndex);
 
 
