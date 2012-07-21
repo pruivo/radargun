@@ -23,6 +23,9 @@ import static org.radargun.utils.Utils.numberFormat;
 @MBean(objectName = "BenchmarkStage", description = "The benchmark stage")
 public class WebSessionBenchmarkStage extends AbstractDistStage {
 
+   private static final String SCRIPT_LAUNCH = "_script_launch_";
+   private static final String SCRIPT_PATH = "/home/pruivo/beforeBenchmark.sh";
+
    //for each session there will be created fixed number of attributes. On those attributes all the GETs and PUTs are
    // performed (for PUT is overwrite)
    private int numberOfKeys = 10000;
@@ -60,6 +63,27 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
 
    private long statsSamplingInterval = 0;
 
+   private final transient PutGetStressor stressor = new PutGetStressor();
+
+   @Override
+   public void initOnMaster(MasterState masterState, int slaveIndex) {
+      super.initOnMaster(masterState, slaveIndex);
+      Boolean started = (Boolean) masterState.get(SCRIPT_LAUNCH);
+      if (started == null || !started) {
+         masterState.put(SCRIPT_LAUNCH, startScript());
+      }
+   }
+
+   private Boolean startScript() {
+      try {
+         Runtime.getRuntime().exec(SCRIPT_PATH);
+         log.info("Script " + SCRIPT_PATH + " started successfully");
+         return Boolean.TRUE;
+      } catch (Exception e) {
+         log.warn("Error starting script " + SCRIPT_PATH + ". " + e.getMessage());
+         return Boolean.FALSE;
+      }
+   }
 
    public DistStageAck executeOnSlave() {
       DefaultDistStageAck result = new DefaultDistStageAck(slaveIndex, slaveState.getLocalAddress());
@@ -71,7 +95,6 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
 
       log.info("Starting WebSessionBenchmarkStage: " + this.toString());
 
-      PutGetStressor stressor = new PutGetStressor();
       stressor.setSlaveIdx(getSlaveIndex());
       stressor.setNumberOfNodes(getActiveSlaveCount());
       stressor.setLowerBoundOp(lowerBoundOp);
@@ -150,12 +173,16 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
             ", " + super.toString();
    }
 
+   @ManagedOperation
    public void setLowerBoundOp(int lb){
       this.lowerBoundOp=lb;
+      stressor.setLowerBoundOp(lb);
    }
 
+   @ManagedOperation
    public void setUpperBoundOp(int ub){
       this.upperBoundOp=ub;
+      stressor.setUpperBoundOp(ub);
    }
 
    public void setPerThreadSimulTime(long perThreadSimulTime){
@@ -178,8 +205,10 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
       this.reportNanos = reportNanos;
    }
 
+   @ManagedOperation
    public void setWriteOperationPercentage(int writeOperationPercentage) {
       this.writeOperationPercentage = writeOperationPercentage;
+      stressor.setWriteOperationPercentage(writeOperationPercentage);
    }
 
    public void setOpsCountStatusLog(int opsCountStatusLog) {
@@ -194,26 +223,19 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
       this.noContentionEnabled = noContentionEnabled;
    }
 
+   @ManagedOperation
    public void setWriteTransactionPercentage(int writeTransactionPercentage) {
       this.writeTransactionPercentage = writeTransactionPercentage;
+      stressor.setWriteTransactionPercentage(writeTransactionPercentage);
    }
 
    public void setStatsSamplingInterval(long interval){
       this.statsSamplingInterval = interval;
    }
-   
-   @ManagedOperation(description = "Change the workload to high contention")
-   public void highContention() {
-      
+
+   @ManagedOperation
+   public void stop() {
+      stressor.stopBenchmark();
    }
 
-   @ManagedOperation(description = "Change the workload to low contention")
-   public void lowContention() {
-      
-   }
-
-   @ManagedOperation(description = "Change the workload to low contention and read intensive")
-   public void lowContentionAndRead() {
-      
-   }
 }

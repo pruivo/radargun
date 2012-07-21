@@ -18,7 +18,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.radargun.utils.Utils.convertNanosToMillis;
 
@@ -50,10 +53,10 @@ public class PutGetStressor implements CacheWrapperStressor {
    private int sizeOfValue = 1000;
 
    //Out of the total number of operations, this defines the frequency of writes (percentage).
-   private int writeOperationPercentage = 20;
+   private volatile int writeOperationPercentage = 20;
 
    //The percentage of write transactions generated
-   private int writeTransactionPercentage = 100;
+   private volatile int writeTransactionPercentage = 100;
 
    //the number of threads that will work on this cache wrapper.
    private int numOfThreads = 1;
@@ -62,19 +65,23 @@ public class PutGetStressor implements CacheWrapperStressor {
    private boolean coordinatorParticipation = true;
 
    //the minimum number of operations per transaction
-   private int lowerBoundOp = 10;
+   private volatile int lowerBoundOp = 10;
 
    //hte maximum number of operations per transaction
-   private int upperBoundOp = 10;
+   private volatile int upperBoundOp = 10;
 
-   //simulation time (in nanoseconds) (default: 30 seconds) (Note: it converts from seconds to nanoseconds in the setter)
-   private long simulationTime = 30000000000L;
+   //simulation time (default: 30 seconds)
+   private long simulationTime = 30L;
 
    //allows execution without contention
    private boolean noContentionEnabled = false;
 
    private StatSampler statSampler;
    private long statsSamplingInterval = 0;
+
+   private final Timer stopBenchmarkTimer = new Timer("stop-benchmark-timer");
+
+   private final AtomicBoolean running = new AtomicBoolean(true);
 
    public PutGetStressor() {}
 
@@ -304,6 +311,12 @@ public class PutGetStressor implements CacheWrapperStressor {
 
       log.info("Cache private class Stresser extends Thread { wrapper info is: " + cacheWrapper.getInfo());
       startPoint.countDown();
+      stopBenchmarkTimer.schedule(new TimerTask() {
+         @Override
+         public void run() {
+            finishBenchmark();
+         }
+      }, simulationTime * 1000);
       for (Stresser stresser : stresserList) {
          stresser.join();
          log.info("stresser[" + stresser.getName() + "] finished");
@@ -400,7 +413,7 @@ public class PutGetStressor implements CacheWrapperStressor {
          startTime = System.nanoTime();
          if(coordinatorParticipation || !cacheWrapper.isCoordinator()) {
 
-            while(delta < simulationTime){
+            while(running.get()){
 
                operationLeft = opPerTx(lowerBoundOp,upperBoundOp,privateRandomGenerator);
                readOnlyTransaction = isNextTransactionReadOnly();
@@ -620,6 +633,15 @@ public class PutGetStressor implements CacheWrapperStressor {
       }
    }
 
+   private void finishBenchmark() {
+      running.set(false);
+   }
+
+   public void stopBenchmark() {
+      stopBenchmarkTimer.cancel();
+      running.set(false);
+   }
+
    @Override
    public String toString() {
       return "PutGetStressor{" +
@@ -663,7 +685,7 @@ public class PutGetStressor implements CacheWrapperStressor {
 
    //NOTE this time is in seconds!
    public void setSimulationTime(long simulationTime) {
-      this.simulationTime = simulationTime * 1000000000;
+      this.simulationTime = simulationTime;
    }
 
    public void setNoContentionEnabled(boolean noContentionEnabled) {
