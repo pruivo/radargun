@@ -6,7 +6,7 @@ if [ "x$RADARGUN_HOME" = "x" ]; then DIRNAME=`dirname $0`; RADARGUN_HOME=`cd $DI
 . ${RADARGUN_HOME}/bin/environment.sh
 
 CP=${RADARGUN_HOME}/lib/radargun-*.jar
-JAVA="org.radargun.ChangeWorkloadJmxRequest"
+JAVA="org.radargun.WorkloadJmxRequest"
 OBJ="-jmx-component BenchmarkStage"
 
 help_and_exit() {
@@ -24,11 +24,16 @@ case $1 in
   -stop) STOP="-stop"; shift 1;;
   -h) help_and_exit;;
   -*) echo "Unknown option $1"; shift 1;;
-  *) echo "Unknown parameter $1"; shift 1;;
+  *) SLAVES=${SLAVES}" "$1; shift 1;;
 esac
 done
 
-for slave in `cat ${RADARGUN_HOME}/slaves`; do
+if [ -z "$SLAVES" ]; then
+echo "No slaves found!";
+help_and_exit;
+fi
+
+for slave in ${SLAVES}; do
 
 if [[ "$slave" == *:* ]]; then
 HOST="-hostname "`echo $slave | cut -d: -f1`

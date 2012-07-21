@@ -603,9 +603,11 @@ public class PutGetStressor implements CacheWrapperStressor {
    }
 
    private int opPerTx(int lower_bound, int upper_bound,Random ran){
-      if(lower_bound == upper_bound)
-         return lower_bound;
-      return(ran.nextInt(upper_bound-lower_bound)+lower_bound);
+      //TODO: hack, just to keep it simple and to change the workload
+      return lower_bound;
+      //if(lower_bound == upper_bound)
+      //   return lower_bound;
+      //return(ran.nextInt(upper_bound-lower_bound)+lower_bound);
    }
 
    private void saveSamples() {

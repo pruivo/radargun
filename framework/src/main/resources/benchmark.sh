@@ -107,6 +107,9 @@ for slave in $SLAVES; do
   eval $TOEXEC
 done
 
+echo "Slaves started in $SLAVES"
+echo $SLAVES > slaves
+
 if [ $TAILF == "true" ]
 then
   tail -f radargun.log

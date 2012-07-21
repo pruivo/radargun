@@ -15,7 +15,7 @@ import java.util.Map;
  * @author Pedro Ruivo
  * @since 1.1
  */
-public class ChangeWorkloadJmxRequest {
+public class WorkloadJmxRequest {
 
    public static final int DON_NOT_MODIFY = -1;
 
@@ -62,8 +62,8 @@ public class ChangeWorkloadJmxRequest {
       }
    }
 
-   private static final String JMX_DOMAIN = "org.infinispan";
-   private static final String DEFAULT_COMPONENT = "ReconfigurableReplicationManager";
+   private static final String COMPONENT_PREFIX = "org.radargun:stage=";
+   private static final String DEFAULT_COMPONENT = "BenchmarkStage";
    private static final String DEFAULT_JMX_PORT = "9998";
 
    private final ObjectName benchmarkComponent;
@@ -81,10 +81,10 @@ public class ChangeWorkloadJmxRequest {
 
       System.out.println("Options are " + arguments.printOptions());
 
-      new ChangeWorkloadJmxRequest(arguments.getValue(Option.JMX_COMPONENT),
+      new WorkloadJmxRequest(arguments.getValue(Option.JMX_COMPONENT),
                                    arguments.getValue(Option.JMX_HOSTNAME),
                                    arguments.getValue(Option.JMX_PORT),
-                                   arguments.getValueAsInt(Option.OP_UPPER_BOUND),
+                                   arguments.getValueAsInt(Option.OP_LOWER_BOUND),
                                    arguments.getValueAsInt(Option.OP_UPPER_BOUND),
                                    arguments.getValueAsInt(Option.OP_WRITE_PERCENTAGE),
                                    arguments.getValueAsInt(Option.WRITE_PERCENTAGE),
@@ -94,40 +94,18 @@ public class ChangeWorkloadJmxRequest {
 
    }
 
-   private ChangeWorkloadJmxRequest(String component, String hostname, String port, int opLowerBound, int opUpperBound,
-                                    int opWritePercentage, int txWritePercentage, boolean stop) throws Exception {
+   private WorkloadJmxRequest(String component, String hostname, String port, int opLowerBound, int opUpperBound,
+                              int opWritePercentage, int txWritePercentage, boolean stop) throws Exception {
       String connectionUrl = "service:jmx:rmi:///jndi/rmi://" + hostname + ":" + port + "/jmxrmi";
 
       JMXConnector connector = JMXConnectorFactory.connect(new JMXServiceURL(connectionUrl));
       mBeanServerConnection = connector.getMBeanServerConnection();
-      benchmarkComponent = getCacheComponent(component);
+      benchmarkComponent = new ObjectName(COMPONENT_PREFIX + component);
       this.opLowerBound = opLowerBound;
       this.opUpperBound = opUpperBound;
       this.opWritePercentage = opWritePercentage;
       this.txWritePercentage = txWritePercentage;
       this.stop = stop;
-   }
-
-   @SuppressWarnings("StringBufferReplaceableByString")
-   private ObjectName getCacheComponent(String component) throws Exception {
-      for (ObjectName name : mBeanServerConnection.queryNames(null, null)) {
-         if (name.getDomain().equals(JMX_DOMAIN)) {
-
-            if ("Cache".equals(name.getKeyProperty("type"))) {
-               String cacheName = name.getKeyProperty("name");
-               String cacheManagerName = name.getKeyProperty("manager");
-               String objectNameString = new StringBuilder(JMX_DOMAIN)
-                     .append(":type=Cache,name=")
-                     .append(cacheName.startsWith("\"") ? cacheName :
-                                   ObjectName.quote(cacheName))
-                     .append(",manager=").append(cacheManagerName.startsWith("\"") ? cacheManagerName :
-                                                       ObjectName.quote(cacheManagerName))
-                     .append(",component=").append(component).toString();
-               return new ObjectName(objectNameString);
-            }
-         }
-      }
-      return null;
    }
 
    public void doRequest() throws Exception {
@@ -165,6 +143,8 @@ public class ChangeWorkloadJmxRequest {
 
       private Arguments() {
          argsValues = new EnumMap<Option, String>(Option.class);
+         
+         //set the default values
          argsValues.put(Option.JMX_COMPONENT, DEFAULT_COMPONENT);
          argsValues.put(Option.JMX_PORT, DEFAULT_JMX_PORT);
 

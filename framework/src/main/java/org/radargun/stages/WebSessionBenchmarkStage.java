@@ -3,6 +3,7 @@ package org.radargun.stages;
 import org.radargun.CacheWrapper;
 import org.radargun.DistStageAck;
 import org.radargun.jmx.annotations.MBean;
+import org.radargun.jmx.annotations.ManagedAttribute;
 import org.radargun.jmx.annotations.ManagedOperation;
 import org.radargun.keygenerator.KeyGenerator.KeyGeneratorFactory;
 import org.radargun.state.MasterState;
@@ -63,7 +64,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
 
    private long statsSamplingInterval = 0;
 
-   private final transient PutGetStressor stressor = new PutGetStressor();
+   private transient PutGetStressor stressor;
 
    @Override
    public void initOnMaster(MasterState masterState, int slaveIndex) {
@@ -95,6 +96,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
 
       log.info("Starting WebSessionBenchmarkStage: " + this.toString());
 
+      stressor = new PutGetStressor();
       stressor.setSlaveIdx(getSlaveIndex());
       stressor.setNumberOfNodes(getActiveSlaveCount());
       stressor.setLowerBoundOp(lowerBoundOp);
@@ -176,13 +178,17 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
    @ManagedOperation
    public void setLowerBoundOp(int lb){
       this.lowerBoundOp=lb;
-      stressor.setLowerBoundOp(lb);
+      if (stressor != null) {
+         stressor.setLowerBoundOp(lb);
+      }
    }
 
    @ManagedOperation
    public void setUpperBoundOp(int ub){
       this.upperBoundOp=ub;
-      stressor.setUpperBoundOp(ub);
+      if (stressor != null) {
+         stressor.setUpperBoundOp(ub);
+      }
    }
 
    public void setPerThreadSimulTime(long perThreadSimulTime){
@@ -208,7 +214,9 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
    @ManagedOperation
    public void setWriteOperationPercentage(int writeOperationPercentage) {
       this.writeOperationPercentage = writeOperationPercentage;
-      stressor.setWriteOperationPercentage(writeOperationPercentage);
+      if (stressor != null) {
+         stressor.setWriteOperationPercentage(writeOperationPercentage);
+      }
    }
 
    public void setOpsCountStatusLog(int opsCountStatusLog) {
@@ -226,7 +234,9 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
    @ManagedOperation
    public void setWriteTransactionPercentage(int writeTransactionPercentage) {
       this.writeTransactionPercentage = writeTransactionPercentage;
-      stressor.setWriteTransactionPercentage(writeTransactionPercentage);
+      if (stressor != null) {
+         stressor.setWriteTransactionPercentage(writeTransactionPercentage);
+      }
    }
 
    public void setStatsSamplingInterval(long interval){
@@ -238,4 +248,28 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
       stressor.stopBenchmark();
    }
 
+   @ManagedAttribute
+   public int getWriteOperationPercentage() {
+      return writeOperationPercentage;
+   }
+
+   @ManagedAttribute
+   public int getExpectedWritePercentage() {
+      return writeTransactionPercentage;
+   }
+
+   @ManagedAttribute
+   public int getUpperBoundOp() {
+      return upperBoundOp;
+   }
+
+   @ManagedAttribute
+   public int getLowerBoundOp() {
+      return lowerBoundOp;
+   }
+
+   @ManagedAttribute
+   public int getNumberOfActiveThreads() {
+      return numOfThreads;
+   }
 }
