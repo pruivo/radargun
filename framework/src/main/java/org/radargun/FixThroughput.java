@@ -233,7 +233,7 @@ public class FixThroughput implements Runnable {
    private int fixThroughput(String[] line) {
       Number expectedWritePercentage = readNumber(line, Header.EXPECTED_WRITE_PERCENTAGE);
 
-      if (expectedWritePercentage == null || "PB".equals(readString(line, Header.PROTOCOL))) {
+      if (expectedWritePercentage == null || !"PB".equals(readString(line, Header.PROTOCOL))) {
          Number throughput = readNumber(line, Header.THROUGHPUT);
          return throughput == null ? 0 : throughput.intValue();
       } else {
