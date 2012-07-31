@@ -19,6 +19,7 @@ public class SwitchJmxRequest {
 
    private enum Option {
       PRINT_STATS("-print-stats", true),
+      PRINT_STATE("-print-state", true),
       PROTOCOL("-protocol", false),
       FORCE_STOP("-force-stop", true),
       JMX_HOSTNAME("-hostname", false),
@@ -65,18 +66,23 @@ public class SwitchJmxRequest {
    private final ObjectName switchComponent;
    private final String newProtocolId;
    private final MBeanServerConnection mBeanServerConnection;
-   private final boolean printOnly;
+   private final boolean printStatusOnly;
+   private final boolean printStateOnly;
    private final boolean forceStop;
 
    public static void main(String[] args) throws Exception {
       Arguments arguments = new Arguments();
       arguments.parse(args);
       arguments.validate();
-      
+
       System.out.println("Options are " + arguments.printOptions());
 
       SwitchJmxRequest switchJmxRequest;
-      if (arguments.hasOption(Option.PRINT_STATS)) {
+      if (arguments.hasOption(Option.PRINT_STATE)) {
+         switchJmxRequest = SwitchJmxRequest.createPrintStateRequest(arguments.getValue(Option.JMX_HOSTNAME),
+                                                                     arguments.getValue(Option.JMX_PORT),
+                                                                     arguments.getValue(Option.JMX_COMPONENT));
+      } else if (arguments.hasOption(Option.PRINT_STATS)) {
          switchJmxRequest = SwitchJmxRequest.createPrintStatsRequest(arguments.getValue(Option.JMX_HOSTNAME),
                                                                      arguments.getValue(Option.JMX_PORT),
                                                                      arguments.getValue(Option.JMX_COMPONENT));
@@ -98,18 +104,20 @@ public class SwitchJmxRequest {
       mBeanServerConnection = connector.getMBeanServerConnection();
       switchComponent = getCacheComponent(component);
       this.newProtocolId = newProtocolId;
-      this.printOnly = false;
+      this.printStatusOnly = false;
+      this.printStateOnly = false;
       this.forceStop = forceStop;
    }
 
-   private SwitchJmxRequest(String component, String hostname, String port) throws Exception {
+   private SwitchJmxRequest(String component, String hostname, String port, boolean state) throws Exception {
       String connectionUrl = "service:jmx:rmi:///jndi/rmi://" + hostname + ":" + port + "/jmxrmi";
 
       JMXConnector connector = JMXConnectorFactory.connect(new JMXServiceURL(connectionUrl));
       mBeanServerConnection = connector.getMBeanServerConnection();
       switchComponent = getCacheComponent(component);
       this.newProtocolId = null;
-      this.printOnly = true;
+      this.printStatusOnly = !state;
+      this.printStateOnly = state;
       this.forceStop = false;
    }
 
@@ -139,7 +147,12 @@ public class SwitchJmxRequest {
       if (switchComponent == null) {
          throw new NullPointerException("Component does not exists");
       }
-      if (printOnly) {
+      if (printStateOnly) {
+         Object stats = mBeanServerConnection.invoke(switchComponent, "printState", new Object[0], new String[0]);
+         System.out.println();
+         System.out.println(stats);
+         System.out.println();
+      } else if (printStatusOnly) {
          Object stats = mBeanServerConnection.invoke(switchComponent, "printSwitchAvgDurations", new Object[0], new String[0]);
          System.out.println();
          System.out.println(stats);
@@ -152,7 +165,11 @@ public class SwitchJmxRequest {
    }
 
    public static SwitchJmxRequest createPrintStatsRequest(String hostname, String port, String component) throws Exception {
-      return new SwitchJmxRequest(component, hostname, port);
+      return new SwitchJmxRequest(component, hostname, port, false);
+   }
+
+   public static SwitchJmxRequest createPrintStateRequest(String hostname, String port, String component) throws Exception {
+      return new SwitchJmxRequest(component, hostname, port, true);
    }
 
    public static SwitchJmxRequest createSwitchRequest(String hostname, String port, String component, String protocol,
@@ -191,7 +208,7 @@ public class SwitchJmxRequest {
       }
 
       public final void validate() {
-         if (hasOption(Option.PRINT_STATS)) {
+         if (hasOption(Option.PRINT_STATS) || hasOption(Option.PRINT_STATE)) {
             if (!hasOption(Option.JMX_HOSTNAME)) {
                throw new IllegalArgumentException("Option " + Option.PRINT_STATS + " requires " + Option.JMX_HOSTNAME);
             }
@@ -211,7 +228,7 @@ public class SwitchJmxRequest {
       public final boolean hasOption(Option option) {
          return argsValues.containsKey(option);
       }
-      
+
       public final String printOptions() {
          return argsValues.toString();
       }

@@ -54,6 +54,12 @@ public interface KeyGenerator {
    WarmupIterator getWarmupIterator();
 
    /**
+    * changes the number of keys
+    * @param numberOfKeys  the new number of keys
+    */
+   void setNumberOfKeys(int numberOfKeys);
+
+   /**
     * The key generator factory. It can construct WarmupIterators for warmup phase or KeyGenerators for the benchmark
     * phase
     */

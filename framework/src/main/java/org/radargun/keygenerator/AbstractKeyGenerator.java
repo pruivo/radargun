@@ -18,7 +18,7 @@ public abstract class AbstractKeyGenerator implements KeyGenerator {
    protected final int slaveIdx;
    protected final int threadIdx;
    private final int startIdx;
-   private final int endIdx;
+   protected int endIdx;
    private final int valueSize;
    private final String bucketPrefix;
    private final Random random;
@@ -66,6 +66,11 @@ public abstract class AbstractKeyGenerator implements KeyGenerator {
    @Override
    public final String getBucketPrefix() {
       return bucketPrefix + threadIdx;
+   }
+
+   @Override
+   public void setNumberOfKeys(int numberOfKeys) {
+      //no-op by default
    }
 
    @Override

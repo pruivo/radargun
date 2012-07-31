@@ -13,8 +13,8 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -83,6 +83,8 @@ public class PutGetStressor implements CacheWrapperStressor {
 
    private final AtomicBoolean running = new AtomicBoolean(true);
 
+   private final List<Stresser> stresserList = new LinkedList<Stresser>();
+
    public PutGetStressor() {}
 
    public Map<String, String> stress(CacheWrapper wrapper) {
@@ -91,19 +93,18 @@ public class PutGetStressor implements CacheWrapperStressor {
       startTime = System.currentTimeMillis();
       log.info("Executing: " + this.toString());
 
-      List<Stresser> stressers;
       try {
          log.warn("Resetting statistics before the PutGetStressors start executing");
          wrapper.resetAdditionalStats();
          if(this.statsSamplingInterval > 0) {
             this.statSampler = new StatSampler(this.statsSamplingInterval);
          }
-         stressers = executeOperations();
+         executeOperations();
       } catch (Exception e) {
          log.warn("exception when stressing the cache wrapper", e);
          throw new RuntimeException(e);
       }
-      return processResults(stressers);
+      return processResults();
    }
 
    public void destroy() throws Exception {
@@ -111,7 +112,7 @@ public class PutGetStressor implements CacheWrapperStressor {
       cacheWrapper = null;
    }
 
-   private Map<String, String> processResults(List<Stresser> stressers) {
+   private Map<String, String> processResults() {
       //total duration
       long totalDuration = 0;
 
@@ -143,7 +144,7 @@ public class PutGetStressor implements CacheWrapperStressor {
       long readOnlyTxRollbackDuration = 0;
       long writeTxRollbackDuration = 0;
 
-      for (Stresser stresser : stressers) {
+      for (Stresser stresser : stresserList) {
          totalDuration += stresser.delta;
 
          commitFailedReadOnlyTxDuration += stresser.commitFailedReadOnlyTxDuration;
@@ -281,8 +282,7 @@ public class PutGetStressor implements CacheWrapperStressor {
       return txCount / ((txDuration / numOfThreads) / 1000.0);
    }
 
-   private List<Stresser> executeOperations() throws Exception {
-      List<Stresser> stresserList = new ArrayList<Stresser>();
+   private void executeOperations() throws Exception {
       startPoint = new CountDownLatch(1);
 
       if (factory != null) {
@@ -335,8 +335,6 @@ public class PutGetStressor implements CacheWrapperStressor {
       log.info("Keys stressed saved");
 
       saveSamples();
-
-      return stresserList;
    }
 
    private class Stresser extends Thread {
@@ -700,6 +698,9 @@ public class PutGetStressor implements CacheWrapperStressor {
 
    public void setNumberOfKeys(int numberOfKeys) {
       this.numberOfKeys = numberOfKeys;
+      for (Stresser stresser : stresserList) {
+         stresser.keyGenerator.setNumberOfKeys(numberOfKeys);
+      }
    }
 
    public void setSizeOfValue(int sizeOfValue) {

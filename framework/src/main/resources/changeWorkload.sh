@@ -10,7 +10,7 @@ JAVA="org.radargun.WorkloadJmxRequest"
 OBJ="-jmx-component BenchmarkStage"
 
 help_and_exit() {
-echo "usage: $0 [-jmx-component <mbean>] [-op-lo-bound <value>] [-op-up-bound <value>] [-op-wrt-percent <value>] [-wrt-tx-percent <value>] [-stop]"
+echo "usage: $0 [-jmx-component <mbean>] [-op-lo-bound <value>] [-op-up-bound <value>] [-op-wrt-percent <value>] [-wrt-tx-percent <value>] [-nr-keys <value>] [-stop]"
 exit 0;
 }
 
@@ -21,6 +21,7 @@ case $1 in
   -op-up-bound) OP_UP="-upper-bound $2"; shift 2;;
   -op-wrt-percent) OP_WRT="-op-write-percentage $2"; shift 2;;
   -wrt-tx-percent) WRT_TX="-write-percentage $2"; shift 2;;
+  -nr-keys) NR_KEYS="-nr-keys $2"; shift 2;;
   -stop) STOP="-stop"; shift 1;;
   -h) help_and_exit;;
   -*) echo "Unknown option $1"; shift 1;;
@@ -43,7 +44,7 @@ HOST="-hostname "$slave
 PORT="-port "${JMX_SLAVES_PORT}
 fi
 
-CMD="java -cp ${CP} ${JAVA} ${OBJ} ${OP_LOW} ${OP_UP} ${OP_WRT} ${WRT_TX} ${STOP} ${HOST} ${PORT}"
+CMD="java -cp ${CP} ${JAVA} ${OBJ} ${OP_LOW} ${OP_UP} ${OP_WRT} ${WRT_TX} ${NR_KEYS} ${STOP} ${HOST} ${PORT}"
 echo $CMD
 eval $CMD
 

@@ -20,4 +20,9 @@ public class SharedKeyGenerator extends AbstractKeyGenerator {
    protected final String getKey(int idx) {
       return "KEY_" + idx;
    }
+
+   @Override
+   public void setNumberOfKeys(int numberOfKeys) {
+      this.endIdx = numberOfKeys; 
+   }
 }

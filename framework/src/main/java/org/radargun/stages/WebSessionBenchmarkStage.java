@@ -195,8 +195,12 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
       this.perThreadSimulTime = perThreadSimulTime;
    }
 
+   @ManagedOperation
    public void setNumberOfKeys(int numberOfKeys) {
       this.numberOfKeys = numberOfKeys;
+      if (stressor != null) {
+         stressor.setNumberOfKeys(numberOfKeys);
+      }
    }
 
    public void setSizeOfValue(int sizeOfValue) {
@@ -254,8 +258,8 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
    }
 
    @ManagedAttribute
-   public int getExpectedWritePercentage() {
-      return writeTransactionPercentage;
+   public double getExpectedWritePercentage() {
+      return writeTransactionPercentage / 100.0;
    }
 
    @ManagedAttribute
@@ -271,5 +275,10 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
    @ManagedAttribute
    public int getNumberOfActiveThreads() {
       return numOfThreads;
+   }
+
+   @ManagedAttribute
+   public int getNumberOfKeys() {
+      return numberOfKeys;
    }
 }

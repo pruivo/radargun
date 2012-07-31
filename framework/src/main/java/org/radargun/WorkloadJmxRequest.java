@@ -24,6 +24,7 @@ public class WorkloadJmxRequest {
       OP_UPPER_BOUND("-upper-bound", false),
       WRITE_PERCENTAGE("-write-percentage", false),
       OP_WRITE_PERCENTAGE("-op-write-percentage", false),
+      NR_KEYS("-nr-keys", false),
       STOP("-stop", true),
       JMX_COMPONENT("-jmx-component", false),
       JMX_HOSTNAME("-hostname", false),
@@ -72,6 +73,7 @@ public class WorkloadJmxRequest {
    private final int opUpperBound;
    private final int opWritePercentage;
    private final int txWritePercentage;
+   private final int numberOfKeys;
    private final boolean stop;
 
    public static void main(String[] args) throws Exception {
@@ -82,20 +84,21 @@ public class WorkloadJmxRequest {
       System.out.println("Options are " + arguments.printOptions());
 
       new WorkloadJmxRequest(arguments.getValue(Option.JMX_COMPONENT),
-                                   arguments.getValue(Option.JMX_HOSTNAME),
-                                   arguments.getValue(Option.JMX_PORT),
-                                   arguments.getValueAsInt(Option.OP_LOWER_BOUND),
-                                   arguments.getValueAsInt(Option.OP_UPPER_BOUND),
-                                   arguments.getValueAsInt(Option.OP_WRITE_PERCENTAGE),
-                                   arguments.getValueAsInt(Option.WRITE_PERCENTAGE),
-                                   arguments.hasOption(Option.STOP))
+                             arguments.getValue(Option.JMX_HOSTNAME),
+                             arguments.getValue(Option.JMX_PORT),
+                             arguments.getValueAsInt(Option.OP_LOWER_BOUND),
+                             arguments.getValueAsInt(Option.OP_UPPER_BOUND),
+                             arguments.getValueAsInt(Option.OP_WRITE_PERCENTAGE),
+                             arguments.getValueAsInt(Option.WRITE_PERCENTAGE),
+                             arguments.getValueAsInt(Option.NR_KEYS),
+                             arguments.hasOption(Option.STOP))
             .doRequest();
 
 
    }
 
    private WorkloadJmxRequest(String component, String hostname, String port, int opLowerBound, int opUpperBound,
-                              int opWritePercentage, int txWritePercentage, boolean stop) throws Exception {
+                              int opWritePercentage, int txWritePercentage, int numberOfKeys, boolean stop) throws Exception {
       String connectionUrl = "service:jmx:rmi:///jndi/rmi://" + hostname + ":" + port + "/jmxrmi";
 
       JMXConnector connector = JMXConnectorFactory.connect(new JMXServiceURL(connectionUrl));
@@ -105,6 +108,7 @@ public class WorkloadJmxRequest {
       this.opUpperBound = opUpperBound;
       this.opWritePercentage = opWritePercentage;
       this.txWritePercentage = txWritePercentage;
+      this.numberOfKeys = numberOfKeys;
       this.stop = stop;
    }
 
@@ -134,6 +138,10 @@ public class WorkloadJmxRequest {
          mBeanServerConnection.invoke(benchmarkComponent, "setWriteTransactionPercentage",
                                       new Object[] {txWritePercentage}, args);
       }
+      if (numberOfKeys != DON_NOT_MODIFY && numberOfKeys > 0) {
+         mBeanServerConnection.invoke(benchmarkComponent, "setNumberOfKeys",
+                                      new Object[] {numberOfKeys}, args);
+      }
       System.out.println("done!");
    }
 
@@ -143,7 +151,7 @@ public class WorkloadJmxRequest {
 
       private Arguments() {
          argsValues = new EnumMap<Option, String>(Option.class);
-         
+
          //set the default values
          argsValues.put(Option.JMX_COMPONENT, DEFAULT_COMPONENT);
          argsValues.put(Option.JMX_PORT, DEFAULT_JMX_PORT);
@@ -154,6 +162,7 @@ public class WorkloadJmxRequest {
          argsValues.put(Option.OP_UPPER_BOUND, doNotChange);
          argsValues.put(Option.OP_WRITE_PERCENTAGE, doNotChange);
          argsValues.put(Option.WRITE_PERCENTAGE, doNotChange);
+         argsValues.put(Option.NR_KEYS, doNotChange);
       }
 
       public final void parse(String[] args) {
@@ -204,6 +213,12 @@ public class WorkloadJmxRequest {
          if (value != DON_NOT_MODIFY && (value < 0 || value > 100)) {
             throw new IllegalArgumentException("Option " + Option.WRITE_PERCENTAGE + " must be higher or equals than " +
                                                      "zero and less or equals than 100. Value is " + value);
+         }
+
+         value = getValueAsInt(Option.NR_KEYS);
+         if (value != DON_NOT_MODIFY && value <= 0) {
+            throw new IllegalArgumentException("Option " + Option.NR_KEYS + " must be higher than " +
+                                                     "zero. Value is " + value);
          }
       }
 
