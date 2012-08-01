@@ -22,6 +22,7 @@ public class SwitchJmxRequest {
       PRINT_STATE("-print-state", true),
       PROTOCOL("-protocol", false),
       FORCE_STOP("-force-stop", true),
+      ABORT_ON_STOP("-abort-on-stop", true),
       JMX_HOSTNAME("-hostname", false),
       JMX_PORT("-port", false),
       JMX_COMPONENT("-jmx-component", false);
@@ -39,11 +40,7 @@ public class SwitchJmxRequest {
 
       public final String getArgName() {
          return arg;
-      }
-
-      public final boolean isBoolean() {
-         return isBoolean;
-      }
+      }      
 
       public final String toString() {
          return arg;
@@ -69,6 +66,7 @@ public class SwitchJmxRequest {
    private final boolean printStatusOnly;
    private final boolean printStateOnly;
    private final boolean forceStop;
+   private final boolean abortOnStop;
 
    public static void main(String[] args) throws Exception {
       Arguments arguments = new Arguments();
@@ -91,13 +89,14 @@ public class SwitchJmxRequest {
                                                                  arguments.getValue(Option.JMX_PORT),
                                                                  arguments.getValue(Option.JMX_COMPONENT),
                                                                  arguments.getValue(Option.PROTOCOL),
-                                                                 arguments.hasOption(Option.FORCE_STOP));
+                                                                 arguments.hasOption(Option.FORCE_STOP),
+                                                                 arguments.hasOption(Option.ABORT_ON_STOP));
       }
 
       switchJmxRequest.doRequest();
    }
 
-   private SwitchJmxRequest(String component, String newProtocolId, String hostname, String port, boolean forceStop) throws Exception {
+   private SwitchJmxRequest(String component, String newProtocolId, String hostname, String port, boolean forceStop, boolean abortOnStop) throws Exception {
       String connectionUrl = "service:jmx:rmi:///jndi/rmi://" + hostname + ":" + port + "/jmxrmi";
 
       JMXConnector connector = JMXConnectorFactory.connect(new JMXServiceURL(connectionUrl));
@@ -107,6 +106,7 @@ public class SwitchJmxRequest {
       this.printStatusOnly = false;
       this.printStateOnly = false;
       this.forceStop = forceStop;
+      this.abortOnStop = abortOnStop;
    }
 
    private SwitchJmxRequest(String component, String hostname, String port, boolean state) throws Exception {
@@ -119,6 +119,7 @@ public class SwitchJmxRequest {
       this.printStatusOnly = !state;
       this.printStateOnly = state;
       this.forceStop = false;
+      this.abortOnStop = false;
    }
 
    @SuppressWarnings("StringBufferReplaceableByString")
@@ -158,8 +159,8 @@ public class SwitchJmxRequest {
          System.out.println(stats);
          System.out.println();
       } else {
-         mBeanServerConnection.invoke(switchComponent, "switchTo", new Object[] {newProtocolId, forceStop},
-                                      new String[] {"java.lang.String", "boolean"});
+         mBeanServerConnection.invoke(switchComponent, "switchTo", new Object[] {newProtocolId, forceStop, abortOnStop},
+                                      new String[] {"java.lang.String", "boolean", "boolean"});
          System.out.println("Switch done!");
       }
    }
@@ -173,8 +174,8 @@ public class SwitchJmxRequest {
    }
 
    public static SwitchJmxRequest createSwitchRequest(String hostname, String port, String component, String protocol,
-                                                      boolean forceStop) throws Exception {
-      return new SwitchJmxRequest(component, protocol, hostname, port, forceStop);
+                                                      boolean forceStop, boolean abortOnStop) throws Exception {
+      return new SwitchJmxRequest(component, protocol, hostname, port, forceStop, abortOnStop);
    }
 
    private static class Arguments {
@@ -196,7 +197,7 @@ public class SwitchJmxRequest {
                                                         Arrays.asList(Option.values()));
             }
             idx++;
-            if (option.isBoolean()) {
+            if (option.isBoolean) {
                argsValues.put(option, "true");
                continue;
             }

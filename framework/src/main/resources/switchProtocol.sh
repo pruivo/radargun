@@ -10,7 +10,7 @@ JAVA="org.radargun.SwitchJmxRequest"
 OBJ="ReconfigurableReplicationManager"
 
 help_and_exit() {
-echo "usage: $0 <slave> [-print-stats] [-print-state] -protocol <protocol id> [-force-stop] [-jmx-mbean <mbean name>]"
+echo "usage: $0 <slave> [-print-stats] [-print-state] -protocol <protocol id> [-force-stop] [-abort-on-stop] [-jmx-mbean <mbean name>]"
 echo "   slave: <hostname or hostname:port>"
 exit 0;
 }
@@ -22,7 +22,8 @@ fi
 while [ -n "$1" ]; do
 case $1 in
   -protocol) PROTOCOL=$2; shift 2;;
-  -force-stop) FORCE_STOP="-force-stop"; shift 1;;  
+  -force-stop) FORCE_STOP="-force-stop"; shift 1;;
+  -abort-on-stop) ABORT_STOP="-abort-on-stop"; shift 1;;
   -jmx-mbean) OBJ=$2; shift 2;;
   -print-stats) PRINT_STATS="true"; shift 1;;
   -print-state) PRINT_STATE="true"; shift 1;;
@@ -64,7 +65,7 @@ echo "Protocol is required";
 help_and_exit;
 fi
 
-CMD="java -cp ${CP} ${JAVA} -jmx-component ${OBJ} -protocol ${PROTOCOL} -hostname ${HOST} -port ${PORT} ${FORCE_STOP}"
+CMD="java -cp ${CP} ${JAVA} -jmx-component ${OBJ} -protocol ${PROTOCOL} -hostname ${HOST} -port ${PORT} ${FORCE_STOP} ${ABORT_STOP}"
 echo $CMD
 eval $CMD
 
