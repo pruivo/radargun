@@ -7,6 +7,7 @@ import org.radargun.CacheWrapperStressor;
 import org.radargun.keygenerator.KeyGenerator.KeyGeneratorFactory;
 import org.radargun.utils.BucketsKeysTreeSet;
 import org.radargun.utils.StatSampler;
+import org.radargun.utils.TransactionSelector;
 import org.radargun.utils.Utils;
 
 import java.io.BufferedWriter;
@@ -50,10 +51,7 @@ public class PutGetStressor implements CacheWrapperStressor {
    private int numberOfKeys = 1000;
 
    //Each key will be a byte[] of this size.
-   private int sizeOfValue = 1000;
-
-   //Out of the total number of operations, this defines the frequency of writes (percentage).
-   private volatile int writeOperationPercentage = 20;
+   private int sizeOfValue = 1000;   
 
    //The percentage of write transactions generated
    private volatile int writeTransactionPercentage = 100;
@@ -64,11 +62,11 @@ public class PutGetStressor implements CacheWrapperStressor {
    //indicates that the coordinator execute or not txs -- PEDRO
    private boolean coordinatorParticipation = true;
 
-   //the minimum number of operations per transaction
-   private volatile int lowerBoundOp = 10;
+   private String wrtOpsPerWriteTx = "100";
 
-   //hte maximum number of operations per transaction
-   private volatile int upperBoundOp = 10;
+   private String rdOpsPerWriteTx = "100";
+
+   private String rdOpsPerReadTx = "100";
 
    //simulation time (default: 30 seconds)
    private long simulationTime = 30L;
@@ -341,7 +339,8 @@ public class PutGetStressor implements CacheWrapperStressor {
 
       private int threadIndex;
       private org.radargun.keygenerator.KeyGenerator keyGenerator;
-      private Random privateRandomGenerator;
+      private final Random privateRandomGenerator;
+      private final TransactionSelector transactionSelector;
 
       private long delta = 0;
       private long startTime = 0;
@@ -386,20 +385,22 @@ public class PutGetStressor implements CacheWrapperStressor {
          super("Stresser-" + threadIndex);
          this.threadIndex = threadIndex;
          this.privateRandomGenerator = new Random(System.nanoTime());
+         this.transactionSelector = new TransactionSelector(privateRandomGenerator);
+         this.transactionSelector.setReadOperationsForReadTx(rdOpsPerReadTx);
+         this.transactionSelector.setReadOperationsForWriteTx(rdOpsPerWriteTx);
+         this.transactionSelector.setWriteOperationsForWriteTx(wrtOpsPerWriteTx);         
+         this.transactionSelector.setWriteTxPercentage(writeTransactionPercentage);
          this.keyGenerator = factory.constructForBenchmark(slaveIdx, threadIndex);
       }
 
       @Override
       public void run() {
          int i = 0;
-         int operationLeft;
          boolean executionSuccessful;
          boolean commitSuccessful;
-         boolean readOnlyTransaction;
          long startTx;
          long startCommit = 0;
-         Object lastReadValue;
-         String bucketId = keyGenerator.getBucketPrefix();
+         Object lastReadValue;         
 
          try {
             startPoint.await();
@@ -413,8 +414,7 @@ public class PutGetStressor implements CacheWrapperStressor {
 
             while(running.get()){
 
-               operationLeft = opPerTx(lowerBoundOp,upperBoundOp,privateRandomGenerator);
-               readOnlyTransaction = isNextTransactionReadOnly();
+               TransactionSelector.OperationIterator operationIterator = transactionSelector.chooseTransaction(cacheWrapper);
 
                startTx = System.nanoTime();
 
@@ -422,11 +422,7 @@ public class PutGetStressor implements CacheWrapperStressor {
                log.trace("*** [" + getName() + "] new transaction: " + i + "***");
 
                try{
-                  if (readOnlyTransaction) {
-                     lastReadValue = executeReadOnlyTransaction(operationLeft, bucketId);
-                  } else {
-                     lastReadValue = executeWriteTransaction(operationLeft, bucketId);
-                  }
+                  lastReadValue = executeTransaction(operationIterator);
                   executionSuccessful = true;
                } catch (TransactionExecutionFailedException e) {
                   lastReadValue = e.getLastValueRead();
@@ -448,6 +444,7 @@ public class PutGetStressor implements CacheWrapperStressor {
 
                log.trace("*** [" + getName() + "] end transaction: " + i++ + "***");
 
+               boolean readOnlyTransaction = operationIterator.isReadOnly();
                long commitDuration = endCommit - startCommit;
                long execDuration = endCommit - startTx;
 
@@ -510,29 +507,19 @@ public class PutGetStressor implements CacheWrapperStressor {
          }
       }
 
-      /**
-       *
-       * @return true if the transaction is a read-only transaction
-       */
-      private boolean isNextTransactionReadOnly() {
-         return cacheWrapper.canExecuteReadOnlyTransactions() &&
-               (!cacheWrapper.canExecuteWriteTransactions() || privateRandomGenerator.nextInt(100) >= writeTransactionPercentage);
-      }
-
-      private Object executeWriteTransaction(int operationLeft, String bucketId)
+      private Object executeTransaction(TransactionSelector.OperationIterator operationIterator)
             throws TransactionExecutionFailedException {
          Object lastReadValue = null;
-         boolean alreadyWritten = false;
 
-         while(operationLeft > 0){
+         while(operationIterator.hasNext()){
             String key = keyGenerator.getRandomKey();
 
-            if (isReadOperation(operationLeft, alreadyWritten)) {
+            if (operationIterator.isNextOperationARead()) {
                try {
-                  lastReadValue = cacheWrapper.get(bucketId, key);
+                  lastReadValue = cacheWrapper.get(null, key);
                } catch (Throwable e) {
                   TransactionExecutionFailedException tefe = new TransactionExecutionFailedException(
-                        "Error while reading " + bucketId + ":" + key, e);
+                        "Error while reading " + key, e);
                   tefe.setLastValueRead(lastReadValue);
                   throw tefe;
                }
@@ -540,48 +527,17 @@ public class PutGetStressor implements CacheWrapperStressor {
                String payload = keyGenerator.getRandomValue();
 
                try {
-                  alreadyWritten = true;
-                  cacheWrapper.put(bucketId, key, payload);
+                  cacheWrapper.put(null, key, payload);
                } catch (Throwable e) {
                   TransactionExecutionFailedException tefe = new TransactionExecutionFailedException(
-                        "Error while writing " + bucketId + ":" + key, e);
+                        "Error while writing " + key, e);
                   tefe.setLastValueRead(lastReadValue);
                   throw tefe;
                }
 
             }
-            operationLeft--;
          }
          return lastReadValue;
-      }
-
-      private Object executeReadOnlyTransaction(int operationLeft, String bucketId)
-            throws TransactionExecutionFailedException {
-         Object lastReadValue = null;
-
-         while(operationLeft > 0){
-            String key = keyGenerator.getRandomKey();
-
-            try {
-               lastReadValue = cacheWrapper.get(bucketId, key);
-            } catch (Throwable e) {
-               TransactionExecutionFailedException tefe = new TransactionExecutionFailedException(
-                     "Error while reading " + bucketId + ":" + key, e);
-               tefe.setLastValueRead(lastReadValue);
-               throw tefe;
-            }
-
-            operationLeft--;
-         }
-         return lastReadValue;
-      }
-
-      private boolean isReadOperation(int operationLeft, boolean alreadyWritten) {
-         //is a read operation when:
-         // -- the random generate number is higher thant the write percentage... and...         
-         // -- it is the last operation and at least one write operation was done.
-         return privateRandomGenerator.nextInt(100) >= writeOperationPercentage &&
-               !(operationLeft == 1 && !alreadyWritten);
       }
 
       private void logProgress(int i, Object result) {
@@ -598,14 +554,6 @@ public class PutGetStressor implements CacheWrapperStressor {
 
    private String str(Object o) {
       return String.valueOf(o);
-   }
-
-   private int opPerTx(int lower_bound, int upper_bound,Random ran){
-      //TODO: hack, just to keep it simple and to change the workload
-      return lower_bound;
-      //if(lower_bound == upper_bound)
-      //   return lower_bound;
-      //return(ran.nextInt(upper_bound-lower_bound)+lower_bound);
    }
 
    private void saveSamples() {
@@ -647,14 +595,14 @@ public class PutGetStressor implements CacheWrapperStressor {
       return "PutGetStressor{" +
             "opsCountStatusLog=" + opsCountStatusLog +
             ", numberOfKeys=" + numberOfKeys +
-            ", sizeOfValue=" + sizeOfValue +
-            ", writeOperationPercentage=" + writeOperationPercentage +
+            ", sizeOfValue=" + sizeOfValue +            
             ", writeTransactionPercentage=" + writeTransactionPercentage +
             ", numOfThreads=" + numOfThreads +
             ", bucketPrefix=" + bucketPrefix +
             ", coordinatorParticipation=" + coordinatorParticipation +
-            ", lowerBoundOp=" + lowerBoundOp +
-            ", upperBoundOp=" + upperBoundOp +
+            ", wrtOpsPerWriteTx=" + wrtOpsPerWriteTx + 
+            ", rdOpsPerWriteTx=" + rdOpsPerWriteTx +
+            ", rdOpsPerReadTx=" + rdOpsPerReadTx +            
             ", simulationTime=" + simulationTime +
             ", noContentionEnabled=" + noContentionEnabled +
             ", cacheWrapper=" + cacheWrapper.getInfo() +
@@ -667,13 +615,26 @@ public class PutGetStressor implements CacheWrapperStressor {
    * -----------------------------------------------------------------------------------
    */
 
-   public void setLowerBoundOp(int lower_bound_op) {
-      this.lowerBoundOp = lower_bound_op;
+   public void setWrtOpsPerWriteTx(String wrtOpsPerWriteTx) {
+      this.wrtOpsPerWriteTx = wrtOpsPerWriteTx;
+      for (Stresser stresser : stresserList) {
+         stresser.transactionSelector.setWriteOperationsForWriteTx(wrtOpsPerWriteTx);
+      }
    }
 
-   public void setUpperBoundOp(int upper_bound_op) {
-      this.upperBoundOp = upper_bound_op;
+   public void setRdOpsPerWriteTx(String rdOpsPerWriteTx) {
+      this.rdOpsPerWriteTx = rdOpsPerWriteTx;
+      for (Stresser stresser : stresserList) {
+         stresser.transactionSelector.setReadOperationsForWriteTx(rdOpsPerWriteTx);
+      }
    }
+
+   public void setRdOpsPerReadTx(String rdOpsPerReadTx) {
+      this.rdOpsPerReadTx = rdOpsPerReadTx;
+      for (Stresser stresser : stresserList) {
+         stresser.transactionSelector.setReadOperationsForReadTx(rdOpsPerReadTx);
+      }
+   }   
 
    public void setSlaveIdx(int slaveIdx) {
       this.slaveIdx = slaveIdx;
@@ -709,11 +670,7 @@ public class PutGetStressor implements CacheWrapperStressor {
 
    public void setNumOfThreads(int numOfThreads) {
       this.numOfThreads = numOfThreads;
-   }
-
-   public void setWriteOperationPercentage(int writeOperationPercentage) {
-      this.writeOperationPercentage = writeOperationPercentage;
-   }
+   }   
 
    public void setOpsCountStatusLog(int opsCountStatusLog) {
       this.opsCountStatusLog = opsCountStatusLog;
@@ -725,6 +682,9 @@ public class PutGetStressor implements CacheWrapperStressor {
 
    public void setWriteTransactionPercentage(int writeTransactionPercentage) {
       this.writeTransactionPercentage = writeTransactionPercentage;
+      for (Stresser stresser : stresserList) {
+         stresser.transactionSelector.setWriteTxPercentage(writeTransactionPercentage);
+      }
    }
 
    public void setStatsSamplingInterval(long l){

@@ -10,16 +10,16 @@ JAVA="org.radargun.WorkloadJmxRequest"
 OBJ="-jmx-component BenchmarkStage"
 
 help_and_exit() {
-echo "usage: $0 [-jmx-component <mbean>] [-op-lo-bound <value>] [-op-up-bound <value>] [-op-wrt-percent <value>] [-wrt-tx-percent <value>] [-nr-keys <value>] [-stop]"
+echo "usage: $0 [-jmx-component <mbean>] [-wrt-op-wrt-tx <value>] [-rd-op-wrt-tx <value>] [-rd-op-rd-tx <value>] [-wrt-tx-percent <value>] [-nr-keys <value>] [-stop]"
 exit 0;
 }
 
 while [ -n "$1" ]; do
 case $1 in
   -jmx-component) OBJ="-jmx-component $2"; shift 2;;
-  -op-lo-bound) OP_LOW="-lower-bound $2"; shift 2;;
-  -op-up-bound) OP_UP="-upper-bound $2"; shift 2;;
-  -op-wrt-percent) OP_WRT="-op-write-percentage $2"; shift 2;;
+  -wrt-op-wrt-tx) WRT="-wrt-op-wrt-tx $2"; shift 2;;
+  -rd-op-wrt-tx) RD_WRT="-rd-op-wrt-tx $2"; shift 2;;
+  -rd-op-rd-tx) RD_RD="-rd-op-rd-tx $2"; shift 2;;
   -wrt-tx-percent) WRT_TX="-write-percentage $2"; shift 2;;
   -nr-keys) NR_KEYS="-nr-keys $2"; shift 2;;
   -stop) STOP="-stop"; shift 1;;
@@ -44,7 +44,7 @@ HOST="-hostname "$slave
 PORT="-port "${JMX_SLAVES_PORT}
 fi
 
-CMD="java -cp ${CP} ${JAVA} ${OBJ} ${OP_LOW} ${OP_UP} ${OP_WRT} ${WRT_TX} ${NR_KEYS} ${STOP} ${HOST} ${PORT}"
+CMD="java -cp ${CP} ${JAVA} ${OBJ} ${WRT} ${RD_WRT} ${RD_RD} ${WRT_TX} ${NR_KEYS} ${STOP} ${HOST} ${PORT}"
 echo $CMD
 eval $CMD
 

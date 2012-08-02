@@ -20,10 +20,10 @@ public class WorkloadJmxRequest {
    public static final int DON_NOT_MODIFY = -1;
 
    private enum Option {
-      OP_LOWER_BOUND("-lower-bound", false),
-      OP_UPPER_BOUND("-upper-bound", false),
+      WRT_OP_WRT_TX("-wrt-op-wrt-tx", false),
+      RD_OP_WRT_TX("-rd-op-wrt-tx", false),
+      RD_OP_RD_TX("-rd-op-rd-tx", false),
       WRITE_PERCENTAGE("-write-percentage", false),
-      OP_WRITE_PERCENTAGE("-op-write-percentage", false),
       NR_KEYS("-nr-keys", false),
       STOP("-stop", true),
       JMX_COMPONENT("-jmx-component", false),
@@ -69,9 +69,9 @@ public class WorkloadJmxRequest {
 
    private final ObjectName benchmarkComponent;
    private final MBeanServerConnection mBeanServerConnection;
-   private final int opLowerBound;
-   private final int opUpperBound;
-   private final int opWritePercentage;
+   private final String wrtOpsWrtTx;
+   private final String rdOpsWrtTx;
+   private final String rdOpsRdTx;
    private final int txWritePercentage;
    private final int numberOfKeys;
    private final boolean stop;
@@ -86,9 +86,9 @@ public class WorkloadJmxRequest {
       new WorkloadJmxRequest(arguments.getValue(Option.JMX_COMPONENT),
                              arguments.getValue(Option.JMX_HOSTNAME),
                              arguments.getValue(Option.JMX_PORT),
-                             arguments.getValueAsInt(Option.OP_LOWER_BOUND),
-                             arguments.getValueAsInt(Option.OP_UPPER_BOUND),
-                             arguments.getValueAsInt(Option.OP_WRITE_PERCENTAGE),
+                             arguments.getValue(Option.WRT_OP_WRT_TX),
+                             arguments.getValue(Option.RD_OP_WRT_TX),
+                             arguments.getValue(Option.RD_OP_RD_TX),
                              arguments.getValueAsInt(Option.WRITE_PERCENTAGE),
                              arguments.getValueAsInt(Option.NR_KEYS),
                              arguments.hasOption(Option.STOP))
@@ -97,16 +97,16 @@ public class WorkloadJmxRequest {
 
    }
 
-   private WorkloadJmxRequest(String component, String hostname, String port, int opLowerBound, int opUpperBound,
-                              int opWritePercentage, int txWritePercentage, int numberOfKeys, boolean stop) throws Exception {
+   private WorkloadJmxRequest(String component, String hostname, String port, String wrtOps, String rdWrtTx,
+                              String rdRdTx, int txWritePercentage, int numberOfKeys, boolean stop) throws Exception {
       String connectionUrl = "service:jmx:rmi:///jndi/rmi://" + hostname + ":" + port + "/jmxrmi";
 
       JMXConnector connector = JMXConnectorFactory.connect(new JMXServiceURL(connectionUrl));
       mBeanServerConnection = connector.getMBeanServerConnection();
       benchmarkComponent = new ObjectName(COMPONENT_PREFIX + component);
-      this.opLowerBound = opLowerBound;
-      this.opUpperBound = opUpperBound;
-      this.opWritePercentage = opWritePercentage;
+      this.wrtOpsWrtTx = wrtOps;
+      this.rdOpsRdTx = rdRdTx;
+      this.rdOpsWrtTx = rdWrtTx;
       this.txWritePercentage = txWritePercentage;
       this.numberOfKeys = numberOfKeys;
       this.stop = stop;
@@ -122,25 +122,25 @@ public class WorkloadJmxRequest {
          return;
       }
 
-      String[] args = new String[] {"int"};
+      String[] intArg = new String[] {"int"};
+      String[] stringArg = new String[] {"String"};
 
-      if (opLowerBound != DON_NOT_MODIFY && opLowerBound > 0) {
-         mBeanServerConnection.invoke(benchmarkComponent, "setLowerBoundOp", new Object[] {opLowerBound}, args);
+      if (wrtOpsWrtTx != null) {
+         mBeanServerConnection.invoke(benchmarkComponent, "setWrtOpsPerWriteTx", new Object[] {wrtOpsWrtTx}, stringArg);
       }
-      if (opUpperBound != DON_NOT_MODIFY && opUpperBound > 0) {
-         mBeanServerConnection.invoke(benchmarkComponent, "setUpperBoundOp", new Object[] {opUpperBound}, args);
+      if (rdOpsWrtTx != null) {
+         mBeanServerConnection.invoke(benchmarkComponent, "setRdOpsPerWriteTx", new Object[] {rdOpsWrtTx}, stringArg);
       }
-      if (opWritePercentage != DON_NOT_MODIFY && opWritePercentage >= 0 && opWritePercentage <= 100) {
-         mBeanServerConnection.invoke(benchmarkComponent, "setWriteOperationPercentage",
-                                      new Object[] {opWritePercentage}, args);
+      if (rdOpsRdTx != null) {
+         mBeanServerConnection.invoke(benchmarkComponent, "setRdOpsPerReadTx", new Object[] {rdOpsRdTx}, stringArg);
       }
       if (txWritePercentage != DON_NOT_MODIFY && txWritePercentage >= 0 && txWritePercentage <= 100) {
          mBeanServerConnection.invoke(benchmarkComponent, "setWriteTransactionPercentage",
-                                      new Object[] {txWritePercentage}, args);
+                                      new Object[] {txWritePercentage}, intArg);
       }
       if (numberOfKeys != DON_NOT_MODIFY && numberOfKeys > 0) {
          mBeanServerConnection.invoke(benchmarkComponent, "setNumberOfKeys",
-                                      new Object[] {numberOfKeys}, args);
+                                      new Object[] {numberOfKeys}, intArg);
       }
       System.out.println("done!");
    }
@@ -158,9 +158,6 @@ public class WorkloadJmxRequest {
 
          String doNotChange = Integer.toString(DON_NOT_MODIFY);
 
-         argsValues.put(Option.OP_LOWER_BOUND, doNotChange);
-         argsValues.put(Option.OP_UPPER_BOUND, doNotChange);
-         argsValues.put(Option.OP_WRITE_PERCENTAGE, doNotChange);
          argsValues.put(Option.WRITE_PERCENTAGE, doNotChange);
          argsValues.put(Option.NR_KEYS, doNotChange);
       }
@@ -190,26 +187,7 @@ public class WorkloadJmxRequest {
             throw new IllegalArgumentException("Option " + Option.JMX_HOSTNAME + " is required");
          }
 
-         int value = getValueAsInt(Option.OP_LOWER_BOUND);
-         if (value != DON_NOT_MODIFY && value < 1) {
-            throw new IllegalArgumentException("Option " + Option.OP_LOWER_BOUND + " must be higher than zero. "
-                                                     + "Value is " + value);
-         }
-
-         value = getValueAsInt(Option.OP_UPPER_BOUND);
-         if (value != DON_NOT_MODIFY && value < 1) {
-            throw new IllegalArgumentException("Option " + Option.OP_UPPER_BOUND + " must be higher than zero. "
-                                                     + "Value is " + value);
-         }
-
-         value = getValueAsInt(Option.OP_WRITE_PERCENTAGE);
-         if (value != DON_NOT_MODIFY && (value < 0 || value > 100)) {
-            throw new IllegalArgumentException("Option " + Option.OP_WRITE_PERCENTAGE + " must be higher or equals " +
-                                                     "than zero " +
-                                                     " and less or equals than 100. Value is " + value);
-         }
-
-         value = getValueAsInt(Option.WRITE_PERCENTAGE);
+         int value = getValueAsInt(Option.WRITE_PERCENTAGE);
          if (value != DON_NOT_MODIFY && (value < 0 || value > 100)) {
             throw new IllegalArgumentException("Option " + Option.WRITE_PERCENTAGE + " must be higher or equals than " +
                                                      "zero and less or equals than 100. Value is " + value);

@@ -32,10 +32,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
    private int numberOfKeys = 10000;
 
    //Each attribute will be a byte[] of this size
-   private int sizeOfValue = 1000;
-
-   //Out of the total number of request, this define the frequency of writes (percentage)
-   private int writeOperationPercentage = 20;
+   private int sizeOfValue = 1000;   
 
    //The percentage of write transactions generated
    private int writeTransactionPercentage = 100;
@@ -46,11 +43,11 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
    //indicates that the coordinator executes transactions or not
    private boolean coordinatorParticipation = true;
 
-   //needed to compute the uniform distribution of operations per transaction
-   private int lowerBoundOp = 100;
-
-   // as above
-   private int upperBoundOp = 100;
+   private String wrtOpsPerWriteTx = "100";
+   
+   private String rdOpsPerWriteTx = "100";
+   
+   private String rdOpsPerReadTx = "100";
 
    //simulation time (in seconds)
    private long perThreadSimulTime;
@@ -99,15 +96,15 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
       stressor = new PutGetStressor();
       stressor.setSlaveIdx(getSlaveIndex());
       stressor.setNumberOfNodes(getActiveSlaveCount());
-      stressor.setLowerBoundOp(lowerBoundOp);
-      stressor.setUpperBoundOp(upperBoundOp);
+      stressor.setWrtOpsPerWriteTx(wrtOpsPerWriteTx);
+      stressor.setRdOpsPerWriteTx(rdOpsPerWriteTx);
+      stressor.setRdOpsPerReadTx(rdOpsPerReadTx);
       stressor.setSimulationTime(perThreadSimulTime);
       stressor.setBucketPrefix(getSlaveIndex() + "");
       stressor.setNumberOfKeys(numberOfKeys);
       stressor.setNumOfThreads(numOfThreads);
       stressor.setOpsCountStatusLog(opsCountStatusLog);
-      stressor.setSizeOfValue(sizeOfValue);
-      stressor.setWriteOperationPercentage(writeOperationPercentage);
+      stressor.setSizeOfValue(sizeOfValue);      
       stressor.setWriteTransactionPercentage(writeTransactionPercentage);
       stressor.setCoordinatorParticipation(coordinatorParticipation);
       stressor.setNoContentionEnabled(noContentionEnabled);
@@ -161,14 +158,14 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
       return "WebSessionBenchmarkStage {" +
             "opsCountStatusLog=" + opsCountStatusLog +
             ", numberOfKeys=" + numberOfKeys +
-            ", sizeOfValue=" + sizeOfValue +
-            ", writeOperationPercentage=" + writeOperationPercentage +
+            ", sizeOfValue=" + sizeOfValue +            
             ", writeTransactionPercentage=" + writeTransactionPercentage +
             ", numOfThreads=" + numOfThreads +
             ", reportNanos=" + reportNanos +
             ", coordinatorParticipation=" + coordinatorParticipation +
-            ", lowerBoundOp=" + lowerBoundOp +
-            ", upperBoundOp=" + upperBoundOp +
+            ", wrtOpsPerWriteTx=" + wrtOpsPerWriteTx +
+            ", rdOpsPerWriteTx=" + rdOpsPerWriteTx +
+            ", rdOpsPerReadTx=" + rdOpsPerReadTx +
             ", perThreadSimulTime=" + perThreadSimulTime +
             ", noContentionEnabled=" + noContentionEnabled +
             ", cacheWrapper=" + cacheWrapper +
@@ -176,19 +173,18 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
    }
 
    @ManagedOperation
-   public void setLowerBoundOp(int lb){
-      this.lowerBoundOp=lb;
-      if (stressor != null) {
-         stressor.setLowerBoundOp(lb);
-      }
+   public void setWrtOpsPerWriteTx(String wrtOpsPerWriteTx) {
+      this.wrtOpsPerWriteTx = wrtOpsPerWriteTx;
    }
 
    @ManagedOperation
-   public void setUpperBoundOp(int ub){
-      this.upperBoundOp=ub;
-      if (stressor != null) {
-         stressor.setUpperBoundOp(ub);
-      }
+   public void setRdOpsPerWriteTx(String rdOpsPerWriteTx) {
+      this.rdOpsPerWriteTx = rdOpsPerWriteTx;
+   }
+
+   @ManagedOperation
+   public void setRdOpsPerReadTx(String rdOpsPerReadTx) {
+      this.rdOpsPerReadTx = rdOpsPerReadTx;
    }
 
    public void setPerThreadSimulTime(long perThreadSimulTime){
@@ -213,15 +209,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
 
    public void setReportNanos(boolean reportNanos) {
       this.reportNanos = reportNanos;
-   }
-
-   @ManagedOperation
-   public void setWriteOperationPercentage(int writeOperationPercentage) {
-      this.writeOperationPercentage = writeOperationPercentage;
-      if (stressor != null) {
-         stressor.setWriteOperationPercentage(writeOperationPercentage);
-      }
-   }
+   }   
 
    public void setOpsCountStatusLog(int opsCountStatusLog) {
       this.opsCountStatusLog = opsCountStatusLog;
@@ -250,12 +238,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
    @ManagedOperation
    public void stop() {
       stressor.stopBenchmark();
-   }
-
-   @ManagedAttribute
-   public int getWriteOperationPercentage() {
-      return writeOperationPercentage;
-   }
+   }   
 
    @ManagedAttribute
    public double getExpectedWritePercentage() {
@@ -263,13 +246,18 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
    }
 
    @ManagedAttribute
-   public int getUpperBoundOp() {
-      return upperBoundOp;
+   public String getWrtOpsPerWriteTx() {
+      return wrtOpsPerWriteTx;
    }
 
    @ManagedAttribute
-   public int getLowerBoundOp() {
-      return lowerBoundOp;
+   public String getRdOpsPerWriteTx() {
+      return rdOpsPerWriteTx;
+   }
+
+   @ManagedAttribute
+   public String getRdOpsPerReadTx() {
+      return rdOpsPerReadTx;
    }
 
    @ManagedAttribute
