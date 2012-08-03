@@ -32,7 +32,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
    private int numberOfKeys = 10000;
 
    //Each attribute will be a byte[] of this size
-   private int sizeOfValue = 1000;   
+   private int sizeOfValue = 1000;
 
    //The percentage of write transactions generated
    private int writeTransactionPercentage = 100;
@@ -44,9 +44,9 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
    private boolean coordinatorParticipation = true;
 
    private String wrtOpsPerWriteTx = "100";
-   
+
    private String rdOpsPerWriteTx = "100";
-   
+
    private String rdOpsPerReadTx = "100";
 
    //simulation time (in seconds)
@@ -104,7 +104,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
       stressor.setNumberOfKeys(numberOfKeys);
       stressor.setNumOfThreads(numOfThreads);
       stressor.setOpsCountStatusLog(opsCountStatusLog);
-      stressor.setSizeOfValue(sizeOfValue);      
+      stressor.setSizeOfValue(sizeOfValue);
       stressor.setWriteTransactionPercentage(writeTransactionPercentage);
       stressor.setCoordinatorParticipation(coordinatorParticipation);
       stressor.setNoContentionEnabled(noContentionEnabled);
@@ -153,12 +153,32 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
       return success;
    }
 
+   private boolean validate(String string) {
+      if (string == null || string.equals("")) {
+         return false;
+      }
+      String[] split = string.split(":");
+      if (split.length == 0 || split.length > 2) {
+         return false;
+      }
+
+      for (String s : split) {
+         try {
+            Integer.parseInt(s);
+         } catch (NumberFormatException nfe) {
+            log.warn("Error validating " + string + ". " + nfe.getMessage());
+            return false;
+         }
+      }
+      return true;
+   }
+
    @Override
    public String toString() {
       return "WebSessionBenchmarkStage {" +
             "opsCountStatusLog=" + opsCountStatusLog +
             ", numberOfKeys=" + numberOfKeys +
-            ", sizeOfValue=" + sizeOfValue +            
+            ", sizeOfValue=" + sizeOfValue +
             ", writeTransactionPercentage=" + writeTransactionPercentage +
             ", numOfThreads=" + numOfThreads +
             ", reportNanos=" + reportNanos +
@@ -174,17 +194,35 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
 
    @ManagedOperation
    public void setWrtOpsPerWriteTx(String wrtOpsPerWriteTx) {
+      if (!validate(wrtOpsPerWriteTx)) {
+         return;
+      }
       this.wrtOpsPerWriteTx = wrtOpsPerWriteTx;
+      if (stressor != null) {
+         stressor.setWrtOpsPerWriteTx(wrtOpsPerWriteTx);
+      }
    }
 
    @ManagedOperation
    public void setRdOpsPerWriteTx(String rdOpsPerWriteTx) {
+      if (!validate(rdOpsPerWriteTx)) {
+         return;
+      }
       this.rdOpsPerWriteTx = rdOpsPerWriteTx;
+      if (stressor != null) {
+         stressor.setRdOpsPerWriteTx(rdOpsPerWriteTx);
+      }
    }
 
    @ManagedOperation
    public void setRdOpsPerReadTx(String rdOpsPerReadTx) {
+      if (!validate(rdOpsPerReadTx)) {
+         return;
+      }
       this.rdOpsPerReadTx = rdOpsPerReadTx;
+      if (stressor != null) {
+         stressor.setRdOpsPerReadTx(rdOpsPerReadTx);
+      }
    }
 
    public void setPerThreadSimulTime(long perThreadSimulTime){
@@ -209,7 +247,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
 
    public void setReportNanos(boolean reportNanos) {
       this.reportNanos = reportNanos;
-   }   
+   }
 
    public void setOpsCountStatusLog(int opsCountStatusLog) {
       this.opsCountStatusLog = opsCountStatusLog;
@@ -238,7 +276,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
    @ManagedOperation
    public void stop() {
       stressor.stopBenchmark();
-   }   
+   }
 
    @ManagedAttribute
    public double getExpectedWritePercentage() {
