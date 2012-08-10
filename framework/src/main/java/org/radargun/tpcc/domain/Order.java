@@ -11,6 +11,8 @@ import java.util.Date;
  */
 public class Order implements Serializable, Comparable, DomainObject {
 
+   public static final String KEY_PREFIX = "ORDER";
+   
    private long o_id;
 
    private long o_d_id;
@@ -108,7 +110,7 @@ public class Order implements Serializable, Comparable, DomainObject {
    }
 
    private String getKey() {
-      return "ORDER_" + this.o_w_id + "_" + this.o_d_id + "_" + this.o_id;
+      return KEY_PREFIX + ID_SEPARATOR + o_w_id + ID_SEPARATOR + o_d_id + ID_SEPARATOR + o_id;
    }
 
    @Override

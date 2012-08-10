@@ -10,6 +10,8 @@ import java.io.Serializable;
  */
 public class District implements Serializable, DomainObject {
 
+   public static final String KEY_PREFIX = "DISTRICT";
+   
    private long d_id;
 
    /* warehouse id */
@@ -147,7 +149,7 @@ public class District implements Serializable, DomainObject {
    }
 
    private String getKey() {
-      return "DISTRICT_" + this.d_w_id + "_" + this.d_id;
+      return KEY_PREFIX + ID_SEPARATOR + d_w_id + ID_SEPARATOR + d_id;
    }
 
    @Override

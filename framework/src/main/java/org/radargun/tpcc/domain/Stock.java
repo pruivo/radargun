@@ -10,6 +10,8 @@ import java.io.Serializable;
  */
 public class Stock implements Serializable, DomainObject {
 
+   public static final String KEY_PREFIX = "STOCK";   
+   
    private long s_i_id;
 
    private long s_w_id;
@@ -206,7 +208,7 @@ public class Stock implements Serializable, DomainObject {
    }
 
    private String getKey() {
-      return "STOCK_" + this.s_w_id + "_" + this.s_i_id;
+      return KEY_PREFIX + ID_SEPARATOR + s_w_id + ID_SEPARATOR + s_i_id;
    }
 
    @Override

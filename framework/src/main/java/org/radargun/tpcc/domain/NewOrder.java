@@ -10,6 +10,8 @@ import java.io.Serializable;
  */
 public class NewOrder implements Serializable, DomainObject {
 
+   public static final String KEY_PREFIX = "NEW-ORDER";
+   
    private long no_o_id;
 
    private long no_d_id;
@@ -53,7 +55,7 @@ public class NewOrder implements Serializable, DomainObject {
 
    private String getKey() {
 
-      return "NEWORDER_" + this.no_w_id + "_" + this.no_d_id + "_" + this.no_o_id;
+      return KEY_PREFIX + ID_SEPARATOR + no_w_id + ID_SEPARATOR + no_d_id + ID_SEPARATOR + no_o_id;
    }
 
    @Override

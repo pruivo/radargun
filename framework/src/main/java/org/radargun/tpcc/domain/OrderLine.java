@@ -11,6 +11,8 @@ import java.util.Date;
  */
 public class OrderLine implements Serializable, DomainObject {
 
+   public static final String KEY_PREFIX = "ORDER-LINE";   
+   
    private long ol_o_id;
 
    private long ol_d_id;
@@ -129,7 +131,7 @@ public class OrderLine implements Serializable, DomainObject {
    }
 
    private String getKey() {
-      return "ORDERLINE_" + this.ol_w_id + "_" + this.ol_d_id + "_" + this.ol_o_id + "_" + this.ol_number;
+      return KEY_PREFIX + ID_SEPARATOR + ol_w_id + ID_SEPARATOR + ol_d_id + ID_SEPARATOR + ol_o_id + ID_SEPARATOR + ol_number;
    }
 
    @Override

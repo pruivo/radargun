@@ -10,6 +10,8 @@ import org.radargun.CacheWrapper;
  */
 public interface DomainObject {
 
+   public static final String ID_SEPARATOR = "_";   
+   
    /**
     * it stores the domain object in the cache wrapper
     * @param wrapper the cache wrapper

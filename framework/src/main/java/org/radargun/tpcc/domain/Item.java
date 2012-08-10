@@ -10,6 +10,8 @@ import java.io.Serializable;
  */
 public class Item implements Serializable, DomainObject {
 
+   public static final String KEY_PREFIX = "ITEM";   
+   
    private long i_id;
 
    private long i_im_id;
@@ -74,7 +76,7 @@ public class Item implements Serializable, DomainObject {
 
    private String getKey() {
 
-      return "ITEM_" + this.i_id;
+      return KEY_PREFIX + ID_SEPARATOR + i_id;
    }
 
    @Override

@@ -11,6 +11,8 @@ import java.util.Date;
  */
 public class Customer implements Serializable, Comparable, DomainObject {
 
+   public static final String KEY_PREFIX = "CUSTOMER";   
+   
    /* district id */
    private long c_d_id;
 
@@ -252,7 +254,7 @@ public class Customer implements Serializable, Comparable, DomainObject {
    }
 
    private String getKey() {
-      return "CUSTOMER_" + this.c_w_id + "_" + this.c_d_id + "_" + this.c_id;
+      return KEY_PREFIX + ID_SEPARATOR + c_w_id + ID_SEPARATOR + c_d_id + ID_SEPARATOR + c_id;
    }
 
    @Override
