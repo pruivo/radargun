@@ -122,37 +122,13 @@ public class TpccKeyFeaturesManager implements KeyFeatureManager {
 
    private class TpccFeature extends AbstractFeature {
 
-      private String featureName;
-
       private TpccFeature(String featureName) {
-         super(FeatureType.NUMBER);
-         this.featureName = featureName;
-      }
-
-      @Override
-      public boolean equals(Object o) {
-         if (this == o) return true;
-         if (o == null || getClass() != o.getClass()) return false;
-
-         TpccFeature that = (TpccFeature) o;
-
-         return !(featureName != null ? !featureName.equals(that.featureName) : that.featureName != null);
-
-      }
-
-      @Override
-      public int hashCode() {
-         return featureName != null ? featureName.hashCode() : 0;
+         super(featureName, FeatureType.NUMBER);
       }
 
       @Override
       public List<String> getListOfNames() {
          return null;
-      }
-
-      @Override
-      public String getFeatureName() {
-         return featureName;
       }
    }
 }
