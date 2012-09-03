@@ -111,6 +111,18 @@
       <priority value="TRACE"/>
    </category>
 
+    <category name="org.infinispan.dataplacement">
+        <priority value="INFO"/>
+    </category>
+
+    <category name="org.infinispan.cacheviews">
+        <priority value="INFO"/>
+    </category>
+
+    <category name="org.infinispan.statetransfer">
+        <priority value="INFO"/>
+    </category>
+
    <!-- Here goes the root -->
    <root>
       <priority value="INFO"/>

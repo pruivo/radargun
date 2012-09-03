@@ -44,7 +44,7 @@
          <sync
                replTimeout="15000" />
          <stateTransfer
-               fetchInMemoryState="false"
+               fetchInMemoryState="true "
                chunkSize="100"
                timeout="240000"/>
          <hash
@@ -52,14 +52,14 @@
                numVirtualNodes="1"
                />
       </clustering>
-      <!--customInterceptors>
-          <interceptor
+      <customInterceptors>
+          <!--interceptor
                   after="org.infinispan.interceptors.InvocationContextInterceptor"
-                  class="org.infinispan.distribution.wrappers.ReplCustomStatsInterceptor"/>
+                  class="org.infinispan.distribution.wrappers.ReplCustomStatsInterceptor"/-->
           <interceptor
                   before="org.infinispan.interceptors.NotificationInterceptor"
-                  class="org.infinispan.stats.topK.StreamLibInterceptor"/>
-      </customInterceptors-->
+                  class="org.infinispan.stats.topK.DistributedStreamLibInterceptor"/>
+      </customInterceptors>
       <dataPlacement
             enabled="true"
             objectLookupFactory="org.infinispan.dataplacement.c50.C50MLObjectLookupFactory">

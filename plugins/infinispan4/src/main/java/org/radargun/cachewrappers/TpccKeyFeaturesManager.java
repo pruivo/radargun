@@ -17,7 +17,6 @@ import org.radargun.tpcc.domain.Warehouse;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -80,7 +79,7 @@ public class TpccKeyFeaturesManager implements KeyFeatureManager {
       featureMap = new EnumMap<Feature, AbstractFeature>(Feature.class);
 
       for (Feature feature : Feature.values()) {
-         featureMap.put(feature, new TpccFeature(feature.featureName));
+         featureMap.put(feature, new TpccKeyFeature(feature.featureName));
       }
 
       features = featureMap.values().toArray(new AbstractFeature[featureMap.size()]);
@@ -118,17 +117,5 @@ public class TpccKeyFeaturesManager implements KeyFeatureManager {
    private void set(Map<AbstractFeature, FeatureValue> features, Feature feature, String value) {
       features.put(featureMap.get(feature), featureMap.get(feature).createFeatureValue(Integer.parseInt(value)));
 
-   }
-
-   private class TpccFeature extends AbstractFeature {
-
-      private TpccFeature(String featureName) {
-         super(featureName, FeatureType.NUMBER);
-      }
-
-      @Override
-      public List<String> getListOfNames() {
-         return null;
-      }
    }
 }

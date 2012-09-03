@@ -14,25 +14,25 @@
             delayBetweenStartingSlaves="1000"/>
       <ClusterValidation
             passiveReplication="false"
-            partialReplication="false"/>
+            partialReplication="true"/>
       <TpccPopulation
             preloadedFromDB="false"
-            numWarehouses="1"
+            numWarehouses="2"
             cLastMask="0"
             olIdMask="0"
             cIdMask="0"
             threadParallelLoad="true"
-            batchLevel="100"
+            batchLevel="50"
             numLoaderThreads="2"/>
       <ResetStats />
       <CacheSize
             statName="CACHE_SIZE_BEFORE_BENCH" />
       <TpccBenchmark
-            statsSamplingInterval="5000"
+            statsSamplingInterval="0"
             numOfThreads="2"
-            perThreadSimulTime="30"
+            perThreadSimulTime="300"
             arrivalRate="0"
-            accessSameWarehouse="false"
+            accessSameWarehouse="true"
             paymentWeight="45"
             orderStatusWeight="5"/>
       <CacheSize
