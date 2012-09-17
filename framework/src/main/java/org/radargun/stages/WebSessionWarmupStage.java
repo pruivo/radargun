@@ -10,13 +10,13 @@ import java.util.List;
 /**
  * Performs a warmup in the cache, initializing all the keys used by benchmarking  
  *
- * @author pruivo
+ * @author Pedro Ruivo
  * @since 1.1
  */
 public class WebSessionWarmupStage extends AbstractDistStage {
 
    //allows execution without contention
-   private boolean noContentionEnabled = false;
+   private boolean noContention = false;
 
    //for each there will be created fixed number of keys. All the GETs and PUTs are performed on these keys only.
    private int numberOfKeys = 1000;
@@ -43,9 +43,10 @@ public class WebSessionWarmupStage extends AbstractDistStage {
          log.info("Not executing any test as the wrapper is not set up on this slave ");
          return ack;
       }
+
       PutGetWarmupStressor putGetWarmupStressor = new PutGetWarmupStressor();
-      putGetWarmupStressor.setSlaveIdx(this.slaveIndex);
-      putGetWarmupStressor.setNoContentionEnabled(noContentionEnabled);
+      putGetWarmupStressor.setNodeIndex(this.slaveIndex);
+      putGetWarmupStressor.setNoContention(noContention);
       putGetWarmupStressor.setNumberOfKeys(numberOfKeys);
       putGetWarmupStressor.setSizeOfValue(sizeOfValue);
       putGetWarmupStressor.setNumOfThreads(numOfThreads);
@@ -78,7 +79,7 @@ public class WebSessionWarmupStage extends AbstractDistStage {
    @Override
    public String toString() {
       return "WebSessionWarmupStage{" +
-            "noContentionEnabled=" + noContentionEnabled +
+            "noContention=" + noContention +
             ", numberOfKeys=" + numberOfKeys +
             ", sizeOfValue=" + sizeOfValue +
             ", numOfThreads=" + numOfThreads +
@@ -87,8 +88,8 @@ public class WebSessionWarmupStage extends AbstractDistStage {
             '}';
    }
 
-   public void setNoContentionEnabled(boolean noContentionEnabled) {
-      this.noContentionEnabled = noContentionEnabled;
+   public void setNoContention(boolean noContention) {
+      this.noContention = noContention;
    }
 
    public void setNumberOfKeys(int numberOfKeys) {

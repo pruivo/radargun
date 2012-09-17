@@ -133,7 +133,7 @@ echo "      <ClearCluster />" >> ${DEST_FILE}
 
 echo "      <WebSessionWarmup" >> ${DEST_FILE}
 echo "            passiveReplication=\"${PASSIVE_REPLICATION}\"" >> ${DEST_FILE}
-echo "            noContentionEnabled=\"${NO_CONTENTION}\"" >> ${DEST_FILE}
+echo "            noContention=\"${NO_CONTENTION}\"" >> ${DEST_FILE}
 echo "            transactionSize=\"${WARMUP_TX_SIZE}\"" >> ${DEST_FILE}
 echo "            numberOfKeys=\"${NUMBER_OF_KEYS}\"" >> ${DEST_FILE}
 echo "            sizeOfValue=\"${SIZE_OF_VALUE}\"" >> ${DEST_FILE}
@@ -153,7 +153,7 @@ echo "            writeTransactionPercentage=\"${WRITE_TX_PERCENTAGE}\"" >> ${DE
 echo "            lowerBoundOp=\"${LOWER_BOUND_OPERATIONS}\"" >> ${DEST_FILE}
 echo "            upperBoundOp=\"${UPPER_BOUND_OPERATIONS}\"" >> ${DEST_FILE}
 echo "            coordinatorParticipation=\"${COORDINATION_EXEC_TX}\"" >> ${DEST_FILE}
-echo "            noContentionEnabled=\"${NO_CONTENTION}\"/>" >> ${DEST_FILE}
+echo "            noContention=\"${NO_CONTENTION}\"/>" >> ${DEST_FILE}
 
 echo "      <CacheSize" >> ${DEST_FILE}
 echo "            statName=\"CACHE_SIZE\" />" >> ${DEST_FILE}

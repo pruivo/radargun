@@ -126,10 +126,10 @@ public class WorkloadJmxRequest {
       String[] stringArg = new String[] {"String"};
 
       if (wrtOpsWrtTx != null) {
-         mBeanServerConnection.invoke(benchmarkComponent, "setWrtOpsPerWriteTx", new Object[] {wrtOpsWrtTx}, stringArg);
+         mBeanServerConnection.invoke(benchmarkComponent, "setWriteTxWorkload", new Object[] {wrtOpsWrtTx}, stringArg);
       }
       if (rdOpsWrtTx != null) {
-         mBeanServerConnection.invoke(benchmarkComponent, "setRdOpsPerWriteTx", new Object[] {rdOpsWrtTx}, stringArg);
+         mBeanServerConnection.invoke(benchmarkComponent, "setReadTxWorkload", new Object[] {rdOpsWrtTx}, stringArg);
       }
       if (rdOpsRdTx != null) {
          mBeanServerConnection.invoke(benchmarkComponent, "setRdOpsPerReadTx", new Object[] {rdOpsRdTx}, stringArg);

@@ -5,7 +5,7 @@ import org.radargun.DistStageAck;
 import org.radargun.jmx.annotations.MBean;
 import org.radargun.jmx.annotations.ManagedAttribute;
 import org.radargun.jmx.annotations.ManagedOperation;
-import org.radargun.keygenerator.KeyGenerator.KeyGeneratorFactory;
+import org.radargun.keygen2.KeyGeneratorFactory;
 import org.radargun.state.MasterState;
 import org.radargun.stressors.PutGetStressor;
 
@@ -43,25 +43,20 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
    //indicates that the coordinator executes transactions or not
    private boolean coordinatorParticipation = true;
 
-   private String wrtOpsPerWriteTx = "100";
+   private String writeTxWorkload = "50;50";
 
-   private String rdOpsPerWriteTx = "100";
-
-   private String rdOpsPerReadTx = "100";
+   private String readTxWorkload = "100";   
+   
+   private String bucketPrefix = null;
 
    //simulation time (in seconds)
    private long perThreadSimulTime;
 
    //allows execution without contention
-   private boolean noContentionEnabled = false;
+   private boolean noContention = false;
 
-   private CacheWrapper cacheWrapper;
-   private int opsCountStatusLog = 5000;
-   private boolean reportNanos = false;
-
-   private long statsSamplingInterval = 0;
-
-   private transient PutGetStressor stressor;
+   private CacheWrapper cacheWrapper;   
+   private boolean reportNanos = false;   
 
    @Override
    public void initOnMaster(MasterState masterState, int slaveIndex) {
@@ -91,25 +86,23 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
          return result;
       }
 
+      KeyGeneratorFactory factory = (KeyGeneratorFactory) slaveState.get("key_gen_factory");
+      factory.setBucketPrefix(bucketPrefix);
+      factory.setValueSize(sizeOfValue);
+      factory.setNoContention(noContention);
+      factory.setNumberOfKeys(numberOfKeys);
+      factory.setNumberOfNodes(getActiveSlaveCount());
+      factory.setNumberOfThreads(numOfThreads);      
+
       log.info("Starting WebSessionBenchmarkStage: " + this.toString());
 
-      stressor = new PutGetStressor();
-      stressor.setSlaveIdx(getSlaveIndex());
-      stressor.setNumberOfNodes(getActiveSlaveCount());
-      stressor.setWrtOpsPerWriteTx(wrtOpsPerWriteTx);
-      stressor.setRdOpsPerWriteTx(rdOpsPerWriteTx);
-      stressor.setRdOpsPerReadTx(rdOpsPerReadTx);
+      PutGetStressor stressor = new PutGetStressor(factory);
+      stressor.setNodeIndex(getSlaveIndex());      
       stressor.setSimulationTime(perThreadSimulTime);
-      stressor.setBucketPrefix(getSlaveIndex() + "");
-      stressor.setNumberOfKeys(numberOfKeys);
-      stressor.setNumOfThreads(numOfThreads);
-      stressor.setOpsCountStatusLog(opsCountStatusLog);
-      stressor.setSizeOfValue(sizeOfValue);
       stressor.setWriteTransactionPercentage(writeTransactionPercentage);
       stressor.setCoordinatorParticipation(coordinatorParticipation);
-      stressor.setNoContentionEnabled(noContentionEnabled);
-      stressor.setStatsSamplingInterval(statsSamplingInterval);
-      stressor.setFactory((KeyGeneratorFactory) slaveState.get("key_gen_factory"));
+      stressor.setWriteTxWorkload(writeTxWorkload);
+      stressor.setReadTxWorkload(readTxWorkload);
 
       try {
          Map<String, String> results = stressor.stress(cacheWrapper);
@@ -175,54 +168,29 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
 
    @Override
    public String toString() {
-      return "WebSessionBenchmarkStage {" +
-            "opsCountStatusLog=" + opsCountStatusLog +
-            ", numberOfKeys=" + numberOfKeys +
+      return "WebSessionBenchmarkStage {" +            
+            "numberOfKeys=" + numberOfKeys +
             ", sizeOfValue=" + sizeOfValue +
             ", writeTransactionPercentage=" + writeTransactionPercentage +
             ", numOfThreads=" + numOfThreads +
             ", reportNanos=" + reportNanos +
             ", coordinatorParticipation=" + coordinatorParticipation +
-            ", wrtOpsPerWriteTx=" + wrtOpsPerWriteTx +
-            ", rdOpsPerWriteTx=" + rdOpsPerWriteTx +
-            ", rdOpsPerReadTx=" + rdOpsPerReadTx +
+            ", writeTxWorkload=" + writeTxWorkload +
+            ", readTxWorkload=" + readTxWorkload +            
             ", perThreadSimulTime=" + perThreadSimulTime +
-            ", noContentionEnabled=" + noContentionEnabled +
+            ", noContention=" + noContention +
             ", cacheWrapper=" + cacheWrapper +
             ", " + super.toString();
    }
 
    @ManagedOperation
-   public void setWrtOpsPerWriteTx(String wrtOpsPerWriteTx) {
-      if (!validate(wrtOpsPerWriteTx)) {
-         return;
-      }
-      this.wrtOpsPerWriteTx = wrtOpsPerWriteTx;
-      if (stressor != null) {
-         stressor.setWrtOpsPerWriteTx(wrtOpsPerWriteTx);
-      }
+   public void setWriteTxWorkload(String writeTxWorkload) {
+      this.writeTxWorkload = writeTxWorkload;
    }
 
    @ManagedOperation
-   public void setRdOpsPerWriteTx(String rdOpsPerWriteTx) {
-      if (!validate(rdOpsPerWriteTx)) {
-         return;
-      }
-      this.rdOpsPerWriteTx = rdOpsPerWriteTx;
-      if (stressor != null) {
-         stressor.setRdOpsPerWriteTx(rdOpsPerWriteTx);
-      }
-   }
-
-   @ManagedOperation
-   public void setRdOpsPerReadTx(String rdOpsPerReadTx) {
-      if (!validate(rdOpsPerReadTx)) {
-         return;
-      }
-      this.rdOpsPerReadTx = rdOpsPerReadTx;
-      if (stressor != null) {
-         stressor.setRdOpsPerReadTx(rdOpsPerReadTx);
-      }
+   public void setReadTxWorkload(String readTxWorkload) {
+      this.readTxWorkload = readTxWorkload;
    }
 
    public void setPerThreadSimulTime(long perThreadSimulTime){
@@ -232,9 +200,6 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
    @ManagedOperation
    public void setNumberOfKeys(int numberOfKeys) {
       this.numberOfKeys = numberOfKeys;
-      if (stressor != null) {
-         stressor.setNumberOfKeys(numberOfKeys);
-      }
    }
 
    public void setSizeOfValue(int sizeOfValue) {
@@ -247,36 +212,20 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
 
    public void setReportNanos(boolean reportNanos) {
       this.reportNanos = reportNanos;
-   }
-
-   public void setOpsCountStatusLog(int opsCountStatusLog) {
-      this.opsCountStatusLog = opsCountStatusLog;
-   }
+   }   
 
    public void setCoordinatorParticipation(boolean coordinatorParticipation) {
       this.coordinatorParticipation = coordinatorParticipation;
    }
 
-   public void setNoContentionEnabled(boolean noContentionEnabled) {
-      this.noContentionEnabled = noContentionEnabled;
+   public void setNoContention(boolean noContention) {
+      this.noContention = noContention;
    }
 
    @ManagedOperation
    public void setWriteTransactionPercentage(int writeTransactionPercentage) {
       this.writeTransactionPercentage = writeTransactionPercentage;
-      if (stressor != null) {
-         stressor.setWriteTransactionPercentage(writeTransactionPercentage);
-      }
-   }
-
-   public void setStatsSamplingInterval(long interval){
-      this.statsSamplingInterval = interval;
-   }
-
-   @ManagedOperation
-   public void stop() {
-      stressor.stopBenchmark();
-   }
+   }   
 
    @ManagedAttribute
    public double getExpectedWritePercentage() {
@@ -284,18 +233,13 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
    }
 
    @ManagedAttribute
-   public String getWrtOpsPerWriteTx() {
-      return wrtOpsPerWriteTx;
+   public String getWriteTxWorkload() {
+      return writeTxWorkload;
    }
 
    @ManagedAttribute
-   public String getRdOpsPerWriteTx() {
-      return rdOpsPerWriteTx;
-   }
-
-   @ManagedAttribute
-   public String getRdOpsPerReadTx() {
-      return rdOpsPerReadTx;
+   public String getReadTxWorkload() {
+      return readTxWorkload;
    }
 
    @ManagedAttribute

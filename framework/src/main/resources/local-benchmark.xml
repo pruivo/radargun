@@ -14,7 +14,7 @@
                 upperBoundOp="10"
                 coordinatorParticipation="true"
                 readOnlyTransactionsEnabled="false"
-                noContentionEnabled="false"/>
+                noContention="false"/>
     </benchmark>
 
     <products>

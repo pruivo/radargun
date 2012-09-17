@@ -4,16 +4,11 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.radargun.CacheWrapper;
 import org.radargun.CacheWrapperStressor;
-import org.radargun.keygenerator.KeyGenerator.KeyGeneratorFactory;
-import org.radargun.utils.BucketsKeysTreeSet;
-import org.radargun.utils.StatSampler;
-import org.radargun.utils.TransactionSelector;
+import org.radargun.keygen2.KeyGenerator;
+import org.radargun.keygen2.KeyGeneratorFactory;
+import org.radargun.utils.TransactionWorkload;
 import org.radargun.utils.Utils;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -24,6 +19,7 @@ import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.radargun.utils.TransactionWorkload.OperationIterator;
 import static org.radargun.utils.Utils.convertNanosToMillis;
 
 /**
@@ -38,44 +34,14 @@ public class PutGetStressor implements CacheWrapperStressor {
    private static Log log = LogFactory.getLog(PutGetStressor.class);
 
    private CacheWrapper cacheWrapper;
-   //private static Random r = new Random();
+   
    private long startTime;
+   
    private volatile CountDownLatch startPoint;
-   private String bucketPrefix = null;
-   private int opsCountStatusLog = 5000;
-   private int slaveIdx = 0;
-   private int numberOfNodes = 1;
-   private KeyGeneratorFactory factory;
+   
+   private int nodeIndex = 0;
 
-   //for each there will be created fixed number of keys. All the GETs and PUTs are performed on these keys only.
-   private int numberOfKeys = 1000;
-
-   //Each key will be a byte[] of this size.
-   private int sizeOfValue = 1000;   
-
-   //The percentage of write transactions generated
-   private volatile int writeTransactionPercentage = 100;
-
-   //the number of threads that will work on this cache wrapper.
-   private int numOfThreads = 1;
-
-   //indicates that the coordinator execute or not txs -- PEDRO
-   private boolean coordinatorParticipation = true;
-
-   private String wrtOpsPerWriteTx = "100";
-
-   private String rdOpsPerWriteTx = "100";
-
-   private String rdOpsPerReadTx = "100";
-
-   //simulation time (default: 30 seconds)
-   private long simulationTime = 30L;
-
-   //allows execution without contention
-   private boolean noContentionEnabled = false;
-
-   private StatSampler statSampler;
-   private long statsSamplingInterval = 0;
+   private final KeyGeneratorFactory factory;
 
    private final Timer stopBenchmarkTimer = new Timer("stop-benchmark-timer");
 
@@ -83,7 +49,26 @@ public class PutGetStressor implements CacheWrapperStressor {
 
    private final List<Stresser> stresserList = new LinkedList<Stresser>();
 
-   public PutGetStressor() {}
+   private final TransactionWorkload transactionWorkload;
+
+   //the number of threads that will work on this cache wrapper.
+   private int numOfThreads = 1;
+
+   //indicates that the coordinator execute or not txs -- PEDRO
+   private boolean coordinatorParticipation = true;
+
+   //simulation time (default: 30 seconds)
+   private long simulationTime = 30L;
+
+   public PutGetStressor(KeyGeneratorFactory factory) {
+      this.factory = factory;
+      transactionWorkload = new TransactionWorkload();
+   }
+
+   public PutGetStressor() {
+      factory = new KeyGeneratorFactory();
+      transactionWorkload = new TransactionWorkload();
+   }
 
    public Map<String, String> stress(CacheWrapper wrapper) {
       this.cacheWrapper = wrapper;
@@ -94,9 +79,6 @@ public class PutGetStressor implements CacheWrapperStressor {
       try {
          log.warn("Resetting statistics before the PutGetStressors start executing");
          wrapper.resetAdditionalStats();
-         if(this.statsSamplingInterval > 0) {
-            this.statSampler = new StatSampler(this.statsSamplingInterval);
-         }
          executeOperations();
       } catch (Exception e) {
          log.warn("exception when stressing the cache wrapper", e);
@@ -283,26 +265,13 @@ public class PutGetStressor implements CacheWrapperStressor {
    private void executeOperations() throws Exception {
       startPoint = new CountDownLatch(1);
 
-      if (factory != null) {
-         factory.checkAndUpdate(numberOfNodes, numOfThreads, numberOfKeys, sizeOfValue, !noContentionEnabled,
-                                bucketPrefix);
-      } else {
-         factory = new KeyGeneratorFactory(numberOfNodes, numOfThreads, numberOfKeys, sizeOfValue, !noContentionEnabled,
-                                           bucketPrefix);
-      }
-
       for (int threadIndex = 0; threadIndex < numOfThreads; threadIndex++) {
          Stresser stresser = new Stresser(threadIndex);
          stresserList.add(stresser);
 
          try{
-            if (statSampler != null) {
-               statSampler.reset();
-               statSampler.start();
-            }
             stresser.start();
-         }
-         catch (Throwable t){
+         } catch (Throwable t){
             log.warn("Error starting all the stressers", t);
          }
       }
@@ -320,27 +289,21 @@ public class PutGetStressor implements CacheWrapperStressor {
          log.info("stresser[" + stresser.getName() + "] finished");
       }
       log.info("All stressers have finished their execution");
-      if (statSampler != null) {
-         statSampler.cancel();
-      }
 
 
-      BucketsKeysTreeSet bucketsKeysTreeSet = new BucketsKeysTreeSet();
-      for(Stresser s : stresserList) {
-         bucketsKeysTreeSet.addKeySet(s.keyGenerator.getBucketPrefix(), s.keyGenerator.getAllKeys());
-      }
-      cacheWrapper.saveKeysStressed(bucketsKeysTreeSet);
-      log.info("Keys stressed saved");
-
-      saveSamples();
+      /*BucketsKeysTreeSet bucketsKeysTreeSet = new BucketsKeysTreeSet();
+    for(Stresser s : stresserList) {
+       bucketsKeysTreeSet.addKeySet(s.keyGenerator.getBucket(), s.keyGenerator.getAllKeys());
+    }
+    cacheWrapper.saveKeysStressed(bucketsKeysTreeSet);
+    log.info("Keys stressed saved");*/
    }
 
    private class Stresser extends Thread {
 
       private int threadIndex;
-      private org.radargun.keygenerator.KeyGenerator keyGenerator;
-      private final Random privateRandomGenerator;
-      private final TransactionSelector transactionSelector;
+      private KeyGenerator keyGenerator;
+      private final Random random;
 
       private long delta = 0;
       private long startTime = 0;
@@ -384,13 +347,8 @@ public class PutGetStressor implements CacheWrapperStressor {
       public Stresser(int threadIndex) {
          super("Stresser-" + threadIndex);
          this.threadIndex = threadIndex;
-         this.privateRandomGenerator = new Random(System.nanoTime());
-         this.transactionSelector = new TransactionSelector(privateRandomGenerator);
-         this.transactionSelector.setReadOperationsForReadTx(rdOpsPerReadTx);
-         this.transactionSelector.setReadOperationsForWriteTx(rdOpsPerWriteTx);
-         this.transactionSelector.setWriteOperationsForWriteTx(wrtOpsPerWriteTx);         
-         this.transactionSelector.setWriteTxPercentage(writeTransactionPercentage);
-         this.keyGenerator = factory.constructForBenchmark(slaveIdx, threadIndex);
+         this.random = new Random(System.nanoTime());
+         this.keyGenerator = factory.createKeyGenerator(nodeIndex, threadIndex);
       }
 
       @Override
@@ -400,7 +358,7 @@ public class PutGetStressor implements CacheWrapperStressor {
          boolean commitSuccessful;
          long startTx;
          long startCommit = 0;
-         Object lastReadValue;         
+         Object lastReadValue;
 
          try {
             startPoint.await();
@@ -414,7 +372,7 @@ public class PutGetStressor implements CacheWrapperStressor {
 
             while(running.get()){
 
-               TransactionSelector.OperationIterator operationIterator = transactionSelector.chooseTransaction(cacheWrapper);
+               OperationIterator operationIterator = transactionWorkload.chooseTransaction(cacheWrapper, random);
 
                startTx = System.nanoTime();
 
@@ -507,16 +465,16 @@ public class PutGetStressor implements CacheWrapperStressor {
          }
       }
 
-      private Object executeTransaction(TransactionSelector.OperationIterator operationIterator)
+      private Object executeTransaction(OperationIterator operationIterator)
             throws TransactionExecutionFailedException {
          Object lastReadValue = null;
 
          while(operationIterator.hasNext()){
-            String key = keyGenerator.getRandomKey();
+            Object key = keyGenerator.getRandomKey();
 
             if (operationIterator.isNextOperationARead()) {
                try {
-                  lastReadValue = cacheWrapper.get(null, key);
+                  lastReadValue = cacheWrapper.get(keyGenerator.getBucket(), key);
                } catch (Throwable e) {
                   TransactionExecutionFailedException tefe = new TransactionExecutionFailedException(
                         "Error while reading " + key, e);
@@ -524,10 +482,10 @@ public class PutGetStressor implements CacheWrapperStressor {
                   throw tefe;
                }
             } else {
-               String payload = keyGenerator.getRandomValue();
+               Object payload = keyGenerator.getRandomValue();
 
                try {
-                  cacheWrapper.put(null, key, payload);
+                  cacheWrapper.put(keyGenerator.getBucket(), key, payload);
                } catch (Throwable e) {
                   TransactionExecutionFailedException tefe = new TransactionExecutionFailedException(
                         "Error while writing " + key, e);
@@ -541,6 +499,7 @@ public class PutGetStressor implements CacheWrapperStressor {
       }
 
       private void logProgress(int i, Object result) {
+         int opsCountStatusLog = 5000;
          if ((i + 1) % opsCountStatusLog == 0) {
             long elapsedTime = System.nanoTime() - startTime;
             //this is printed here just to make sure JIT doesn't
@@ -556,31 +515,6 @@ public class PutGetStressor implements CacheWrapperStressor {
       return String.valueOf(o);
    }
 
-   private void saveSamples() {
-      if (statSampler == null) {
-         return;
-      }
-      log.info("Saving samples in the file sample-" + slaveIdx);
-      File f = new File("sample-" + slaveIdx);
-      try {
-         BufferedWriter bw = new BufferedWriter(new FileWriter(f));
-         List<Long> mem = statSampler.getMemoryUsageHistory();
-         List<Double> cpu = statSampler.getCpuUsageHistory();
-
-         int size = Math.min(mem.size(), cpu.size());
-         bw.write("#Time (milliseconds)\tCPU(%)\tMemory(bytes)");
-         bw.newLine();
-         for (int i = 0; i < size; ++i) {
-            bw.write((i * statsSamplingInterval) + "\t" + cpu.get(i) + "\t" + mem.get(i));
-            bw.newLine();
-         }
-         bw.flush();
-         bw.close();
-      } catch (IOException e) {
-         log.warn("IOException caught while saving sampling: " + e.getMessage());
-      }
-   }
-
    private void finishBenchmark() {
       running.set(false);
    }
@@ -593,18 +527,10 @@ public class PutGetStressor implements CacheWrapperStressor {
    @Override
    public String toString() {
       return "PutGetStressor{" +
-            "opsCountStatusLog=" + opsCountStatusLog +
-            ", numberOfKeys=" + numberOfKeys +
-            ", sizeOfValue=" + sizeOfValue +            
-            ", writeTransactionPercentage=" + writeTransactionPercentage +
-            ", numOfThreads=" + numOfThreads +
-            ", bucketPrefix=" + bucketPrefix +
+            "keyGeneratorFactory=" + factory +
+            "transactionWorkload=" + transactionWorkload +
             ", coordinatorParticipation=" + coordinatorParticipation +
-            ", wrtOpsPerWriteTx=" + wrtOpsPerWriteTx + 
-            ", rdOpsPerWriteTx=" + rdOpsPerWriteTx +
-            ", rdOpsPerReadTx=" + rdOpsPerReadTx +            
             ", simulationTime=" + simulationTime +
-            ", noContentionEnabled=" + noContentionEnabled +
             ", cacheWrapper=" + cacheWrapper.getInfo() +
             "}";
    }
@@ -615,33 +541,20 @@ public class PutGetStressor implements CacheWrapperStressor {
    * -----------------------------------------------------------------------------------
    */
 
-   public void setWrtOpsPerWriteTx(String wrtOpsPerWriteTx) {
-      this.wrtOpsPerWriteTx = wrtOpsPerWriteTx;
-      for (Stresser stresser : stresserList) {
-         stresser.transactionSelector.setWriteOperationsForWriteTx(wrtOpsPerWriteTx);
-      }
+   public void setWriteTxWorkload(String writeTxWorkload) {
+      transactionWorkload.writeTx(writeTxWorkload);
    }
 
-   public void setRdOpsPerWriteTx(String rdOpsPerWriteTx) {
-      this.rdOpsPerWriteTx = rdOpsPerWriteTx;
-      for (Stresser stresser : stresserList) {
-         stresser.transactionSelector.setReadOperationsForWriteTx(rdOpsPerWriteTx);
-      }
+   public void setReadTxWorkload(String readTxWorkload) {
+      transactionWorkload.readTx(readTxWorkload);
    }
 
-   public void setRdOpsPerReadTx(String rdOpsPerReadTx) {
-      this.rdOpsPerReadTx = rdOpsPerReadTx;
-      for (Stresser stresser : stresserList) {
-         stresser.transactionSelector.setReadOperationsForReadTx(rdOpsPerReadTx);
-      }
-   }   
-
-   public void setSlaveIdx(int slaveIdx) {
-      this.slaveIdx = slaveIdx;
+   public void setNodeIndex(int nodeIndex) {
+      this.nodeIndex = nodeIndex;
    }
 
    public void setNumberOfNodes(int numberOfNodes) {
-      this.numberOfNodes = numberOfNodes;
+      factory.setNumberOfNodes(numberOfNodes);
    }
 
    //NOTE this time is in seconds!
@@ -649,31 +562,24 @@ public class PutGetStressor implements CacheWrapperStressor {
       this.simulationTime = simulationTime;
    }
 
-   public void setNoContentionEnabled(boolean noContentionEnabled) {
-      this.noContentionEnabled = noContentionEnabled;
+   public void setNoContention(boolean noContention) {
+      factory.setNoContention(noContention);
    }
 
    public void setBucketPrefix(String bucketPrefix) {
-      this.bucketPrefix = bucketPrefix;
+      factory.setBucketPrefix(bucketPrefix);
    }
 
    public void setNumberOfKeys(int numberOfKeys) {
-      this.numberOfKeys = numberOfKeys;
-      for (Stresser stresser : stresserList) {
-         stresser.keyGenerator.setNumberOfKeys(numberOfKeys);
-      }
+      factory.setNumberOfKeys(numberOfKeys);
    }
 
    public void setSizeOfValue(int sizeOfValue) {
-      this.sizeOfValue = sizeOfValue;
+      factory.setValueSize(sizeOfValue);
    }
 
    public void setNumOfThreads(int numOfThreads) {
-      this.numOfThreads = numOfThreads;
-   }   
-
-   public void setOpsCountStatusLog(int opsCountStatusLog) {
-      this.opsCountStatusLog = opsCountStatusLog;
+      factory.setNumberOfThreads(numOfThreads);
    }
 
    public void setCoordinatorParticipation(boolean coordinatorParticipation) {
@@ -681,18 +587,7 @@ public class PutGetStressor implements CacheWrapperStressor {
    }
 
    public void setWriteTransactionPercentage(int writeTransactionPercentage) {
-      this.writeTransactionPercentage = writeTransactionPercentage;
-      for (Stresser stresser : stresserList) {
-         stresser.transactionSelector.setWriteTxPercentage(writeTransactionPercentage);
-      }
-   }
-
-   public void setStatsSamplingInterval(long l){
-      this.statsSamplingInterval = l;
-   }
-
-   public void setFactory(org.radargun.keygenerator.KeyGenerator.KeyGeneratorFactory factory) {
-      this.factory = factory;
+      transactionWorkload.setWriteTxPercentage(writeTransactionPercentage);
    }
 }
 
