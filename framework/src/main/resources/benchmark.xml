@@ -3,8 +3,8 @@
          bindAddress="${127.0.0.1:master.address}"
          port="${21031:master.port}"/>
    <benchmark
-         initSize="${1:Islaves}"
-         maxSize="${1:slaves}"
+         initSize="${2:Islaves}"
+         maxSize="${2:slaves}"
          increment="1">
       <DestroyWrapper
             runOnAllSlaves="true"/>
@@ -19,22 +19,22 @@
       <WebSessionWarmup
             passiveReplication="false"
             noContentionEnabled="false"
-            transactionSize="100"
+            transactionSize="50"
             numberOfKeys="1000"
             sizeOfValue="1000"
             numOfThreads="2"/>
       <ResetStats />
       <WebSessionBenchmark
             perThreadSimulTime="300"
-            opsCountStatusLog="5000"
+            opsCountStatusLog="500000"
             numberOfKeys="1000"
             sizeOfValue="1000"
-            statsSamplingInterval="5000"
-            numOfThreads="2"
-            writeOperationPercentage="50"
-            writeTransactionPercentage="100"
-            lowerBoundOp="10"
-            upperBoundOp="10"
+            wrtOpsPerWriteTx="50"
+            rdOpsPerWriteTx="50"
+            rdOpsPerReadTx="100"
+            statsSamplingInterval="0"
+            numOfThreads="2"            
+            writeTransactionPercentage="100"            
             coordinatorParticipation="true"
             noContentionEnabled="false"/>
       <CacheSize
