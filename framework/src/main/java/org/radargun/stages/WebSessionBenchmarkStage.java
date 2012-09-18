@@ -2,9 +2,6 @@ package org.radargun.stages;
 
 import org.radargun.CacheWrapper;
 import org.radargun.DistStageAck;
-import org.radargun.jmx.annotations.MBean;
-import org.radargun.jmx.annotations.ManagedAttribute;
-import org.radargun.jmx.annotations.ManagedOperation;
 import org.radargun.keygen2.KeyGeneratorFactory;
 import org.radargun.state.MasterState;
 import org.radargun.stressors.PutGetStressor;
@@ -21,7 +18,6 @@ import static org.radargun.utils.Utils.numberFormat;
  *
  * @author Mircea.Markus@jboss.com
  */
-@MBean(objectName = "BenchmarkStage", description = "The benchmark stage")
 public class WebSessionBenchmarkStage extends AbstractDistStage {
 
    private static final String SCRIPT_LAUNCH = "_script_launch_";
@@ -45,8 +41,8 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
 
    private String writeTxWorkload = "50;50";
 
-   private String readTxWorkload = "100";   
-   
+   private String readTxWorkload = "100";
+
    private String bucketPrefix = null;
 
    //simulation time (in seconds)
@@ -55,8 +51,8 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
    //allows execution without contention
    private boolean noContention = false;
 
-   private CacheWrapper cacheWrapper;   
-   private boolean reportNanos = false;   
+   private CacheWrapper cacheWrapper;
+   private boolean reportNanos = false;
 
    @Override
    public void initOnMaster(MasterState masterState, int slaveIndex) {
@@ -92,14 +88,14 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
       factory.setNoContention(noContention);
       factory.setNumberOfKeys(numberOfKeys);
       factory.setNumberOfNodes(getActiveSlaveCount());
-      factory.setNumberOfThreads(numOfThreads);      
+      factory.setNumberOfThreads(numOfThreads);
 
       log.info("Starting WebSessionBenchmarkStage: " + this.toString());
 
       PutGetStressor stressor = new PutGetStressor(factory);
       stressor.setNodeIndex(getSlaveIndex());      
       stressor.setSimulationTime(perThreadSimulTime);
-      stressor.setWriteTransactionPercentage(writeTransactionPercentage);
+      stressor.setWriteTxPercentage(writeTransactionPercentage);
       stressor.setCoordinatorParticipation(coordinatorParticipation);
       stressor.setWriteTxWorkload(writeTxWorkload);
       stressor.setReadTxWorkload(readTxWorkload);
@@ -168,7 +164,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
 
    @Override
    public String toString() {
-      return "WebSessionBenchmarkStage {" +            
+      return "WebSessionBenchmarkStage {" +
             "numberOfKeys=" + numberOfKeys +
             ", sizeOfValue=" + sizeOfValue +
             ", writeTransactionPercentage=" + writeTransactionPercentage +
@@ -176,28 +172,17 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
             ", reportNanos=" + reportNanos +
             ", coordinatorParticipation=" + coordinatorParticipation +
             ", writeTxWorkload=" + writeTxWorkload +
-            ", readTxWorkload=" + readTxWorkload +            
+            ", readTxWorkload=" + readTxWorkload +
             ", perThreadSimulTime=" + perThreadSimulTime +
             ", noContention=" + noContention +
             ", cacheWrapper=" + cacheWrapper +
             ", " + super.toString();
    }
 
-   @ManagedOperation
-   public void setWriteTxWorkload(String writeTxWorkload) {
-      this.writeTxWorkload = writeTxWorkload;
-   }
-
-   @ManagedOperation
-   public void setReadTxWorkload(String readTxWorkload) {
-      this.readTxWorkload = readTxWorkload;
-   }
-
    public void setPerThreadSimulTime(long perThreadSimulTime){
       this.perThreadSimulTime = perThreadSimulTime;
    }
 
-   @ManagedOperation
    public void setNumberOfKeys(int numberOfKeys) {
       this.numberOfKeys = numberOfKeys;
    }
@@ -206,49 +191,31 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
       this.sizeOfValue = sizeOfValue;
    }
 
+   public void setWriteTxWorkload(String writeTxWorkload) {
+      this.writeTxWorkload = writeTxWorkload;
+   }
+
+   public void setReadTxWorkload(String readTxWorkload) {
+      this.readTxWorkload = readTxWorkload;
+   }
+
    public void setNumOfThreads(int numOfThreads) {
       this.numOfThreads = numOfThreads;
    }
 
    public void setReportNanos(boolean reportNanos) {
       this.reportNanos = reportNanos;
-   }   
+   }
 
-   public void setCoordinatorParticipation(boolean coordinatorParticipation) {
-      this.coordinatorParticipation = coordinatorParticipation;
+   public void setWriteTransactionPercentage(int writeTransactionPercentage) {
+      this.writeTransactionPercentage = writeTransactionPercentage;
    }
 
    public void setNoContention(boolean noContention) {
       this.noContention = noContention;
    }
 
-   @ManagedOperation
-   public void setWriteTransactionPercentage(int writeTransactionPercentage) {
-      this.writeTransactionPercentage = writeTransactionPercentage;
-   }   
-
-   @ManagedAttribute
-   public double getExpectedWritePercentage() {
-      return writeTransactionPercentage / 100.0;
-   }
-
-   @ManagedAttribute
-   public String getWriteTxWorkload() {
-      return writeTxWorkload;
-   }
-
-   @ManagedAttribute
-   public String getReadTxWorkload() {
-      return readTxWorkload;
-   }
-
-   @ManagedAttribute
-   public int getNumberOfActiveThreads() {
-      return numOfThreads;
-   }
-
-   @ManagedAttribute
-   public int getNumberOfKeys() {
-      return numberOfKeys;
+   public void setCoordinatorParticipation(boolean coordinatorParticipation) {
+      this.coordinatorParticipation = coordinatorParticipation;
    }
 }

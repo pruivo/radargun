@@ -99,6 +99,22 @@ public class KeyGeneratorFactory {
       return new InternalAllNodesIterator(currentWorkload.get());
    }
 
+   public int getNumberOfThreads() {
+      return numberOfThreads;
+   }
+
+   public boolean isNoContention() {
+      return noContention;
+   }
+
+   public int getValueSize() {
+      return valueSize;
+   }
+
+   public int getNumberOfKeys() {
+      return numberOfKeys;
+   }
+
    @Override
    public String toString() {
       return "KeyGeneratorFactory{" +
@@ -122,13 +138,7 @@ public class KeyGeneratorFactory {
    }
 
    private Object createKey(int nodeIdx, int threadIdx, int keyIdx) {
-      return new StringBuilder(keyPrefix)
-            .append(SEPARATOR)
-            .append(nodeIdx)
-            .append(SEPARATOR)
-            .append(threadIdx)
-            .append(SEPARATOR)
-            .append(keyIdx).toString();
+      return keyPrefix + SEPARATOR + nodeIdx + SEPARATOR + threadIdx + SEPARATOR + keyIdx;
    }
 
    private int maxKeyIdx(Workload workload, int nodeIdx, int threadIdx) {
@@ -136,9 +146,7 @@ public class KeyGeneratorFactory {
    }
 
    private String getBucket(int threadIdx) {
-      return new StringBuilder(bucketPrefix)
-            .append(SEPARATOR)
-            .append(threadIdx).toString();
+      return bucketPrefix + SEPARATOR + threadIdx;
    }
 
    private class InternalNodeIterator implements Iterator<WarmupEntry> {

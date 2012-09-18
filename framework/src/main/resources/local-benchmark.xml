@@ -1,20 +1,25 @@
 <local-bench-config>
 
     <benchmark>
-        <Warmup
-                operationCount="1000"/>
-        <PutGet
-                perThreadSimulTime="30000000000"
-                opsCountStatusLog="5000"
+        <PutGetWarmup
+                passiveReplication="false"
+                noContention="false"
                 numberOfKeys="1000"
                 sizeOfValue="1000"
-                numOfThreads="8"
-                writeOperationPercentage="50"
-                lowerBoundOp="10"
-                upperBoundOp="10"
+                numOfThreads="2"
+                transactionSize="50"
+                />
+        <PutGet
+                perThreadSimulTime="300"
+                writeTxWorkload="10,10;10,10"
+                readTxWorkload="20"
+                writeTransactionPercentage="50"
                 coordinatorParticipation="true"
-                readOnlyTransactionsEnabled="false"
-                noContention="false"/>
+                noContention="false"
+                numberOfKeys="1000"
+                sizeOfValue="1000"
+                numOfThreads="2"
+                />
     </benchmark>
 
     <products>

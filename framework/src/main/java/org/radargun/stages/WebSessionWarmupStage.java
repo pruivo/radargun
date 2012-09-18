@@ -13,10 +13,7 @@ import java.util.List;
  * @author Pedro Ruivo
  * @since 1.1
  */
-public class WebSessionWarmupStage extends AbstractDistStage {
-
-   //allows execution without contention
-   private boolean noContention = false;
+public class WebSessionWarmupStage extends AbstractDistStage {   
 
    //for each there will be created fixed number of keys. All the GETs and PUTs are performed on these keys only.
    private int numberOfKeys = 1000;
@@ -45,8 +42,7 @@ public class WebSessionWarmupStage extends AbstractDistStage {
       }
 
       PutGetWarmupStressor putGetWarmupStressor = new PutGetWarmupStressor();
-      putGetWarmupStressor.setNodeIndex(this.slaveIndex);
-      putGetWarmupStressor.setNoContention(noContention);
+      putGetWarmupStressor.setNodeIndex(this.slaveIndex);      
       putGetWarmupStressor.setNumberOfKeys(numberOfKeys);
       putGetWarmupStressor.setSizeOfValue(sizeOfValue);
       putGetWarmupStressor.setNumOfThreads(numOfThreads);
@@ -78,19 +74,14 @@ public class WebSessionWarmupStage extends AbstractDistStage {
 
    @Override
    public String toString() {
-      return "WebSessionWarmupStage{" +
-            "noContention=" + noContention +
+      return "WebSessionWarmupStage{" +            
             ", numberOfKeys=" + numberOfKeys +
             ", sizeOfValue=" + sizeOfValue +
             ", numOfThreads=" + numOfThreads +
             ", transactionSize=" + transactionSize +
             ", bucketPrefix='" + bucketPrefix + '\'' +
             '}';
-   }
-
-   public void setNoContention(boolean noContention) {
-      this.noContention = noContention;
-   }
+   }   
 
    public void setNumberOfKeys(int numberOfKeys) {
       this.numberOfKeys = numberOfKeys;

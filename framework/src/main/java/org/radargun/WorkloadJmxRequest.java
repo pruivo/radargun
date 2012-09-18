@@ -17,45 +17,42 @@ import java.util.Map;
  */
 public class WorkloadJmxRequest {
 
-   public static final int DON_NOT_MODIFY = -1;
-
    private enum Option {
-      WRT_OP_WRT_TX("-wrt-op-wrt-tx", false),
-      RD_OP_WRT_TX("-rd-op-wrt-tx", false),
-      RD_OP_RD_TX("-rd-op-rd-tx", false),
-      WRITE_PERCENTAGE("-write-percentage", false),
-      NR_KEYS("-nr-keys", false),
-      STOP("-stop", true),
-      JMX_COMPONENT("-jmx-component", false),
-      JMX_HOSTNAME("-hostname", false),
-      JMX_PORT("-port", false);
+      WRITE_PERCENTAGE("-writePercentage", false, "setWriteTxPercentage", "int"),
+      WRT_TX_WORKLOAD("-writeTxWorkload", false, "setWriteTxWorkload", "String"),
+      RD_TX_WORKLOAD("-readTxWorkload", false, "setReadTxWorkload", "String"),
+      VALUE_SIZE("-valueSize", false, "setSizeOfValue", "int"),
+      NR_THREADS("-nrThreads", false, "setNumberOfThreads", "int"),
+      NR_KEYS("-nrKeys", false, "setNumberOfKeys", "int"),
+      CONTENTION("-contention", false, "setNoContention", "boolean"),
+      STOP("-stop", true, "stopBenchmark", null),
+      JMX_COMPONENT("-jmxComponent", false, null, null),
+      JMX_HOSTNAME("-hostname", false, null, null),
+      JMX_PORT("-port", false, null, null),
+      HELP("-help", true, null, null);
 
-      private final String arg;
+      private final String argumentName;
       private final boolean isBoolean;
+      private final String methodName;
+      private final String[] types;
 
-      Option(String arg, boolean isBoolean) {
-         if (arg == null) {
-            throw new IllegalArgumentException("Null not allowed in Option name");
+      Option(String argumentName, boolean isBoolean, String methodName, String type) {
+         if (argumentName == null) {
+            throw new IllegalArgumentException("Null not allowed");
          }
-         this.arg = arg;
+         this.methodName = methodName;
+         this.types = new String[] {type};
+         this.argumentName = argumentName;
          this.isBoolean = isBoolean;
       }
 
-      public final String getArgName() {
-         return arg;
-      }
-
-      public final boolean isBoolean() {
-         return isBoolean;
-      }
-
       public final String toString() {
-         return arg;
+         return argumentName;
       }
 
       public static Option fromString(String optionName) {
          for (Option option : values()) {
-            if (option.getArgName().equalsIgnoreCase(optionName)) {
+            if (option.argumentName.equalsIgnoreCase(optionName)) {
                return option;
             }
          }
@@ -64,17 +61,13 @@ public class WorkloadJmxRequest {
    }
 
    private static final String COMPONENT_PREFIX = "org.radargun:stage=";
-   private static final String DEFAULT_COMPONENT = "BenchmarkStage";
+   private static final String DEFAULT_COMPONENT = "Benchmark";
    private static final String DEFAULT_JMX_PORT = "9998";
 
    private final ObjectName benchmarkComponent;
    private final MBeanServerConnection mBeanServerConnection;
-   private final String wrtOpsWrtTx;
-   private final String rdOpsWrtTx;
-   private final String rdOpsRdTx;
-   private final int txWritePercentage;
-   private final int numberOfKeys;
-   private final boolean stop;
+
+   private final EnumMap<Option, Object> optionValues;
 
    public static void main(String[] args) throws Exception {
       Arguments arguments = new Arguments();
@@ -82,67 +75,144 @@ public class WorkloadJmxRequest {
       arguments.validate();
 
       System.out.println("Options are " + arguments.printOptions());
+      
+      if (arguments.hasOption(Option.HELP)) {
+         System.out.println("Available options are:");
+         for (Option option : Option.values()) {
+            System.out.println("  " + option.argumentName + (option.isBoolean ? "" : " <value>"));
+         }
+         System.out.println();
+         System.exit(0);
+      }
 
-      new WorkloadJmxRequest(arguments.getValue(Option.JMX_COMPONENT),
-                             arguments.getValue(Option.JMX_HOSTNAME),
-                             arguments.getValue(Option.JMX_PORT),
-                             arguments.getValue(Option.WRT_OP_WRT_TX),
-                             arguments.getValue(Option.RD_OP_WRT_TX),
-                             arguments.getValue(Option.RD_OP_RD_TX),
-                             arguments.getValueAsInt(Option.WRITE_PERCENTAGE),
-                             arguments.getValueAsInt(Option.NR_KEYS),
-                             arguments.hasOption(Option.STOP))
-            .doRequest();
+      WorkloadJmxRequest request = new WorkloadJmxRequest(arguments.getValue(Option.JMX_COMPONENT),
+                                                          arguments.getValue(Option.JMX_HOSTNAME),
+                                                          arguments.getValue(Option.JMX_PORT));
 
+      for (Option option : Option.values()) {
+         if (!arguments.hasOption(option)) {
+            continue;
+         }
+         switch (option) {
+            case STOP:
+               request.setStop(arguments.getValueAsBoolean(option));
+               break;
+            case CONTENTION:
+               request.setContention(arguments.getValueAsBoolean(option));
+               break;
+            case NR_KEYS:
+               request.setNumberOfKeys(arguments.getValueAsInt(option));
+               break;
+            case NR_THREADS:
+               request.setNumberOfThreads(arguments.getValueAsInt(option));
+               break;
+            case RD_TX_WORKLOAD:
+               request.setReadTxWorkload(arguments.getValue(option));
+               break;
+            case VALUE_SIZE:
+               request.setValueSize(arguments.getValueAsInt(option));
+               break;
+            case WRITE_PERCENTAGE:
+               request.setWriteTxPercentage(arguments.getValueAsInt(option));
+               break;
+            case WRT_TX_WORKLOAD:
+               request.setWriteTxWorkload(arguments.getValue(option));
+               break;
+            default:
+               //no-op
+         }
+      }
+
+      request.doRequest();
 
    }
 
-   private WorkloadJmxRequest(String component, String hostname, String port, String wrtOps, String rdWrtTx,
-                              String rdRdTx, int txWritePercentage, int numberOfKeys, boolean stop) throws Exception {
+   private WorkloadJmxRequest(String component, String hostname, String port) throws Exception {
       String connectionUrl = "service:jmx:rmi:///jndi/rmi://" + hostname + ":" + port + "/jmxrmi";
 
       JMXConnector connector = JMXConnectorFactory.connect(new JMXServiceURL(connectionUrl));
       mBeanServerConnection = connector.getMBeanServerConnection();
       benchmarkComponent = new ObjectName(COMPONENT_PREFIX + component);
-      this.wrtOpsWrtTx = wrtOps;
-      this.rdOpsRdTx = rdRdTx;
-      this.rdOpsWrtTx = rdWrtTx;
-      this.txWritePercentage = txWritePercentage;
-      this.numberOfKeys = numberOfKeys;
-      this.stop = stop;
+      optionValues = new EnumMap<Option, Object>(Option.class);
    }
 
-   public void doRequest() throws Exception {
+   public void setWriteTxPercentage(int value) {
+      if (value >= 0 && value <= 100) {
+         optionValues.put(Option.WRITE_PERCENTAGE, value);
+      }
+   }
+
+   public void setWriteTxWorkload(String value) {
+      if (value == null || value.isEmpty()) {
+         return;
+      }
+      optionValues.put(Option.WRT_TX_WORKLOAD, value);
+   }
+
+   public void setReadTxWorkload(String value) {
+      if (value == null || value.isEmpty()) {
+         return;
+      }
+      optionValues.put(Option.RD_TX_WORKLOAD, value);
+   }
+
+   public void setValueSize(int value) {
+      if (value > 0) {
+         optionValues.put(Option.VALUE_SIZE, value);
+      }
+   }
+
+   public void setNumberOfThreads(int value) {
+      if (value > 0) {
+         optionValues.put(Option.NR_THREADS, value);
+      }
+   }
+
+   public void setNumberOfKeys(int value) {
+      if (value > 0) {
+         optionValues.put(Option.NR_KEYS, value);
+      }
+   }
+
+   public void setContention(boolean value) {
+      optionValues.put(Option.CONTENTION, value);
+   }
+
+   public void setStop(boolean value) {
+      optionValues.put(Option.STOP, value);
+   }
+
+   public void doRequest() {
       if (benchmarkComponent == null) {
          throw new NullPointerException("Component does not exists");
       }
 
-      if (stop) {
-         mBeanServerConnection.invoke(benchmarkComponent, "stop", new Object[0], new String[0]);
-         return;
+      for (Map.Entry<Option, Object> entry : optionValues.entrySet()) {
+         Option option = entry.getKey();
+         Object value = entry.getValue();
+         invoke(option, value);
       }
 
-      String[] intArg = new String[] {"int"};
-      String[] stringArg = new String[] {"String"};
+      try {
+         mBeanServerConnection.invoke(benchmarkComponent, "changeKeysWorkload", new Object[0], new String[0]);
+      } catch (Exception e) {
+         System.out.println("Failed to invoke changeKeysWorkload");
+      }
 
-      if (wrtOpsWrtTx != null) {
-         mBeanServerConnection.invoke(benchmarkComponent, "setWriteTxWorkload", new Object[] {wrtOpsWrtTx}, stringArg);
-      }
-      if (rdOpsWrtTx != null) {
-         mBeanServerConnection.invoke(benchmarkComponent, "setReadTxWorkload", new Object[] {rdOpsWrtTx}, stringArg);
-      }
-      if (rdOpsRdTx != null) {
-         mBeanServerConnection.invoke(benchmarkComponent, "setRdOpsPerReadTx", new Object[] {rdOpsRdTx}, stringArg);
-      }
-      if (txWritePercentage != DON_NOT_MODIFY && txWritePercentage >= 0 && txWritePercentage <= 100) {
-         mBeanServerConnection.invoke(benchmarkComponent, "setWriteTransactionPercentage",
-                                      new Object[] {txWritePercentage}, intArg);
-      }
-      if (numberOfKeys != DON_NOT_MODIFY && numberOfKeys > 0) {
-         mBeanServerConnection.invoke(benchmarkComponent, "setNumberOfKeys",
-                                      new Object[] {numberOfKeys}, intArg);
-      }
       System.out.println("done!");
+   }
+
+   private void invoke(Option option, Object value) {
+      System.out.println("Invoking " + option.methodName + " for " + option.argumentName + " with " + value);
+      try {
+         if (option.isBoolean) {
+            mBeanServerConnection.invoke(benchmarkComponent, option.methodName, new Object[0], new String[0]);
+         } else {
+            mBeanServerConnection.invoke(benchmarkComponent, option.methodName, new Object[] {value}, option.types);
+         }
+      } catch (Exception e) {
+         System.out.println("Failed to invoke " + option.argumentName);
+      }
    }
 
    private static class Arguments {
@@ -155,11 +225,6 @@ public class WorkloadJmxRequest {
          //set the default values
          argsValues.put(Option.JMX_COMPONENT, DEFAULT_COMPONENT);
          argsValues.put(Option.JMX_PORT, DEFAULT_JMX_PORT);
-
-         String doNotChange = Integer.toString(DON_NOT_MODIFY);
-
-         argsValues.put(Option.WRITE_PERCENTAGE, doNotChange);
-         argsValues.put(Option.NR_KEYS, doNotChange);
       }
 
       public final void parse(String[] args) {
@@ -171,8 +236,8 @@ public class WorkloadJmxRequest {
                                                         Arrays.asList(Option.values()));
             }
             idx++;
-            if (option.isBoolean()) {
-               argsValues.put(option, "true");
+            if (option.isBoolean) {
+               argsValues.put(option, Boolean.toString(true));
                continue;
             }
             if (idx >= args.length) {
@@ -183,20 +248,8 @@ public class WorkloadJmxRequest {
       }
 
       public final void validate() {
-         if (!hasOption(Option.JMX_HOSTNAME)) {
+         if (!hasOption(Option.JMX_HOSTNAME) && !hasOption(Option.HELP)) {
             throw new IllegalArgumentException("Option " + Option.JMX_HOSTNAME + " is required");
-         }
-
-         int value = getValueAsInt(Option.WRITE_PERCENTAGE);
-         if (value != DON_NOT_MODIFY && (value < 0 || value > 100)) {
-            throw new IllegalArgumentException("Option " + Option.WRITE_PERCENTAGE + " must be higher or equals than " +
-                                                     "zero and less or equals than 100. Value is " + value);
-         }
-
-         value = getValueAsInt(Option.NR_KEYS);
-         if (value != DON_NOT_MODIFY && value <= 0) {
-            throw new IllegalArgumentException("Option " + Option.NR_KEYS + " must be higher than " +
-                                                     "zero. Value is " + value);
          }
       }
 
@@ -206,6 +259,10 @@ public class WorkloadJmxRequest {
 
       public final int getValueAsInt(Option option) {
          return Integer.parseInt(argsValues.get(option));
+      }
+
+      public final boolean getValueAsBoolean(Option option) {
+         return Boolean.parseBoolean(argsValues.get(option));
       }
 
       public final boolean hasOption(Option option) {

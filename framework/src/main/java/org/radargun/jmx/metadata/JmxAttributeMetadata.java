@@ -21,8 +21,6 @@ package org.radargun.jmx.metadata;
 
 import org.radargun.jmx.annotations.ManagedAttribute;
 
-import java.io.Serializable;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 /**
@@ -30,36 +28,22 @@ import java.lang.reflect.Method;
  * @author Pedro Ruivo
  * @since 1.1
  */
-public class JmxAttributeMetadata implements Serializable {
+public class JmxAttributeMetadata {
    private String name;
    private String description;
-   private boolean writable;
-   private boolean useSetter;
-   private String type;
-   private boolean is;
+   private Method getter;
+   private Method setter;
 
-   private JmxAttributeMetadata(ManagedAttribute annotation) {
+   public JmxAttributeMetadata(Method getter) {
+      ManagedAttribute annotation = getter.getAnnotation(ManagedAttribute.class);
       description = annotation.description();
-      writable = annotation.writable();
-   }
-
-   public JmxAttributeMetadata(Field field) {
-      this(field.getAnnotation(ManagedAttribute.class));
-      name = field.getName();
-      type = field.getType().toString();
-   }
-
-   public JmxAttributeMetadata(Method method) {
-      this(method.getAnnotation(ManagedAttribute.class));
-      useSetter = true;
-      String methodName = method.getName();
-      name = extractFieldName(methodName);
-      is = methodName.startsWith("is");
-      if (methodName.startsWith("set")) {
-         type = method.getParameterTypes()[0].getName();
-      } else if (methodName.startsWith("get") || is) {
-         type = method.getReturnType().getName();
+      if (annotation.attributeName().equals("")) {
+         name = extractFieldName(getter.getName());
+      } else {
+         name = annotation.attributeName();
       }
+      this.getter = getter;
+
    }
 
    public String getName() {
@@ -70,34 +54,19 @@ public class JmxAttributeMetadata implements Serializable {
       return description;
    }
 
-   public boolean isWritable() {
-      return writable;
+   public Method getGetter() {
+      return getter;
    }
 
-   public boolean isUseSetter() {
-      return useSetter;
+   public Method getSetter() {
+      return setter;
    }
 
-   public String getType() {
-      return type;
+   public void setSetter(Method setter) {
+      this.setter = setter;
    }
 
-   public boolean isIs() {
-      return is;
-   }
-
-   @Override
-   public String toString() {
-      return "JmxAttributeMetadata{" +
-            "name='" + name + '\'' +
-            ", description='" + description + '\'' +
-            ", writable=" + writable +
-            ", type='" + type + '\'' +
-            ", is=" + is +
-            '}';
-   }
-
-   private String extractFieldName(String setterOrGetter) {
+   public static String extractFieldName(String setterOrGetter) {
       String field = null;
       if (setterOrGetter.startsWith("set") || setterOrGetter.startsWith("get"))
          field = setterOrGetter.substring(3);

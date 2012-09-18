@@ -45,5 +45,5 @@ public @interface ManagedAttribute {
    
    String description() default "";
 
-   boolean writable() default false;
+   String attributeName() default "";
 }

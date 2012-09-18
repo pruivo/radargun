@@ -1,8 +1,8 @@
 package org.radargun.jmx;
 
 import org.radargun.jmx.annotations.MBean;
-import org.radargun.jmx.annotations.ManagedAttribute;
 import org.radargun.jmx.annotations.ManagedOperation;
+import org.radargun.jmx.metadata.JmxAttributeMetadata;
 
 import javax.management.*;
 import java.lang.reflect.Method;
@@ -20,7 +20,7 @@ public class StageMBean implements DynamicMBean {
 
    private final Object obj;
 
-   private final Map<String, Method> attributes = new ConcurrentHashMap<String, Method>(64);
+   private final Map<String, JmxAttributeMetadata> attributes = new ConcurrentHashMap<String, JmxAttributeMetadata>(64);
    private final Map<String, Method> operations = new ConcurrentHashMap<String, Method>(64);
 
    private final MBeanInfo mBeanInfo;
@@ -32,26 +32,40 @@ public class StageMBean implements DynamicMBean {
       this.obj = instance;
       Class<?> objectClass = instance.getClass();
 
-      // Load up all fields.      
-      int i = 0;
-      MBeanAttributeInfo[] attInfos = new MBeanAttributeInfo[managedAttributeMethods.size()];
+      // Load up all fields.                  
       for (Method method : managedAttributeMethods) {
-         ManagedAttribute managedAttribute = method.getAnnotation(ManagedAttribute.class);
-         attInfos[i] = new MBeanAttributeInfo(method.getName(), managedAttribute.description(), method, null);
-         attributes.put(attInfos[i++].getName(), method);
+         JmxAttributeMetadata metadata = new JmxAttributeMetadata(method);
+         attributes.put(metadata.getName(), metadata);
       }
 
       // And operations      
       MBeanOperationInfo[] opInfos = new MBeanOperationInfo[managedOperationMethods.size()];
-      i = 0;
+      int i = 0;
       for (Method method : managedOperationMethods) {
+         String attributeName = JmxAttributeMetadata.extractFieldName(method.getName());
+         if (attributeName != null) {
+            //update attribute setter
+            JmxAttributeMetadata metadata = attributes.get(attributeName);
+            if (metadata != null) {
+               metadata.setSetter(method);
+            }
+         }
+
          ManagedOperation managedOperation = method.getAnnotation(ManagedOperation.class);
          opInfos[i] = new MBeanOperationInfo(managedOperation.description(), method);
          operations.put(opInfos[i++].getName(), method);
       }
 
+      MBeanAttributeInfo[] attributeInfoArray = new MBeanAttributeInfo[managedAttributeMethods.size()];
+      i = 0;
+      for (Map.Entry<String, JmxAttributeMetadata> attribute : attributes.entrySet()) {
+         JmxAttributeMetadata metadata = attribute.getValue();
+         attributeInfoArray[i++] = new MBeanAttributeInfo(metadata.getName(), metadata.getDescription(),
+                                                          metadata.getGetter(), metadata.getSetter());
+      }
+
       mBeanInfo = new MBeanInfo(objectClass.getSimpleName(), objectClass.getAnnotation(MBean.class).description(),
-                                attInfos, new MBeanConstructorInfo[0], opInfos, new MBeanNotificationInfo[0]);
+                                attributeInfoArray, new MBeanConstructorInfo[0], opInfos, new MBeanNotificationInfo[0]);
    }
 
    @Override
@@ -65,7 +79,7 @@ public class StageMBean implements DynamicMBean {
 
    @Override
    public void setAttribute(Attribute attribute) throws AttributeNotFoundException, InvalidAttributeValueException, MBeanException, ReflectionException {
-      throw new UnsupportedOperationException("Operation not supported");
+      setAttributeValue(attribute.getName(), attribute.getValue());
    }
 
    @Override
@@ -84,7 +98,16 @@ public class StageMBean implements DynamicMBean {
 
    @Override
    public AttributeList setAttributes(AttributeList objects) {
-      throw new UnsupportedOperationException("Operation not supported");
+      AttributeList list = new AttributeList(objects.size());
+
+      for (Attribute attribute : objects.asList()) {
+         Attribute ret = setAttributeValue(attribute.getName(), attribute.getValue());
+         if (ret != null) {
+            list.add(ret);
+         }
+      }
+
+      return list;
    }
 
    @Override
@@ -106,10 +129,11 @@ public class StageMBean implements DynamicMBean {
    }
 
    private Attribute getAttributeValue(String attribute) {
-      Method method = attributes.get(attribute);
-      if (method == null) {
+      JmxAttributeMetadata metadata = attributes.get(attribute);
+      if (metadata == null) {
          return null;
       }
+      Method method = metadata.getGetter();
       Object ret;
       try {
          ret = method.invoke(obj);
@@ -117,5 +141,19 @@ public class StageMBean implements DynamicMBean {
          return null;
       }
       return new Attribute(attribute, ret);
+   }
+
+   private Attribute setAttributeValue(String attribute, Object value) {
+      JmxAttributeMetadata metadata = attributes.get(attribute);
+      if (metadata == null) {
+         return null;
+      }
+      Method method = metadata.getSetter();
+      try {
+         method.invoke(obj, value);
+      } catch (Exception e) {
+         return null;
+      }
+      return new Attribute(attribute, value);
    }
 }

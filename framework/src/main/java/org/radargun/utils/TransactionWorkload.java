@@ -103,11 +103,14 @@ public class TransactionWorkload {
          }
       }
    }
-
-   //debug only
+   
    public final Map<Operation, Integer> getOperationBounds() {
       return Collections.unmodifiableMap(operationBounds);
    }
+   
+   public final int getWriteTxPercentage() {
+      return writeTxPercentage;
+   }   
 
    public final void readTx(String readTxWorkload) {
       EnumMap<Operation, Integer> updates = new EnumMap<Operation, Integer>(Operation.class);
@@ -154,6 +157,14 @@ public class TransactionWorkload {
                            operationBounds.get(Operation.WRITE_TX_UPPER_BOUND_READ),
                            random);
       }
+   }
+
+   @Override
+   public String toString() {
+      return "TransactionWorkload{" +
+            "writeTxPercentage=" + writeTxPercentage +
+            ", operationBounds=" + operationBounds +
+            '}';
    }
 
    private boolean parseReadTxReads(Matcher matcher, EnumMap<Operation, Integer> updates, ParserPattern parserPattern) {

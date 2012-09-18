@@ -4,6 +4,10 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.radargun.CacheWrapper;
 import org.radargun.CacheWrapperStressor;
+import org.radargun.jmx.JmxRegistration;
+import org.radargun.jmx.annotations.MBean;
+import org.radargun.jmx.annotations.ManagedAttribute;
+import org.radargun.jmx.annotations.ManagedOperation;
 import org.radargun.keygen2.KeyGenerator;
 import org.radargun.keygen2.KeyGeneratorFactory;
 import org.radargun.utils.TransactionWorkload;
@@ -19,26 +23,28 @@ import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.radargun.utils.TransactionWorkload.Operation;
 import static org.radargun.utils.TransactionWorkload.OperationIterator;
 import static org.radargun.utils.Utils.convertNanosToMillis;
 
 /**
  * On multiple threads executes put and get operations against the CacheWrapper, and returns the result as an Map.
  *
- * @author Mircea.Markus@jboss.com
- * changed by:
+ * @author Mircea.Markus@jboss.com 
  * @author Pedro Ruivo
+ * @since 1.0
  */
+@MBean(objectName = "Benchmark", description = "Executes a defined workload over a cache")
 public class PutGetStressor implements CacheWrapperStressor {
 
    private static Log log = LogFactory.getLog(PutGetStressor.class);
 
    private CacheWrapper cacheWrapper;
-   
+
    private long startTime;
-   
+
    private volatile CountDownLatch startPoint;
-   
+
    private int nodeIndex = 0;
 
    private final KeyGeneratorFactory factory;
@@ -51,8 +57,6 @@ public class PutGetStressor implements CacheWrapperStressor {
 
    private final TransactionWorkload transactionWorkload;
 
-   //the number of threads that will work on this cache wrapper.
-   private int numOfThreads = 1;
 
    //indicates that the coordinator execute or not txs -- PEDRO
    private boolean coordinatorParticipation = true;
@@ -63,11 +67,12 @@ public class PutGetStressor implements CacheWrapperStressor {
    public PutGetStressor(KeyGeneratorFactory factory) {
       this.factory = factory;
       transactionWorkload = new TransactionWorkload();
+      JmxRegistration.getInstance().processStage(this);
    }
 
+   @SuppressWarnings("UnusedDeclaration") //loaded dynamically
    public PutGetStressor() {
-      factory = new KeyGeneratorFactory();
-      transactionWorkload = new TransactionWorkload();
+      this(new KeyGeneratorFactory());
    }
 
    public Map<String, String> stress(CacheWrapper wrapper) {
@@ -156,11 +161,12 @@ public class PutGetStressor implements CacheWrapperStressor {
       }
 
       Map<String, String> results = new LinkedHashMap<String, String>();
+      int numOfThreads = stresserList.size();
 
       results.put("DURATION(msec)", str(convertNanosToMillis(totalDuration) / numOfThreads));
-      results.put("TX_PER_SEC", str(calculateTxPerSec(numberOfReadOnlyTx + numberOfWriteTx,convertNanosToMillis(totalDuration))));
-      results.put("RO_TX_PER_SEC", str(calculateTxPerSec(numberOfReadOnlyTx, convertNanosToMillis(totalDuration))));
-      results.put("WRT_TX_SEC", str(calculateTxPerSec(numberOfWriteTx, convertNanosToMillis(totalDuration))));
+      results.put("TX_PER_SEC", str(calculateTxPerSec(numberOfReadOnlyTx + numberOfWriteTx,convertNanosToMillis(totalDuration), numOfThreads)));
+      results.put("RO_TX_PER_SEC", str(calculateTxPerSec(numberOfReadOnlyTx, convertNanosToMillis(totalDuration), numOfThreads)));
+      results.put("WRT_TX_SEC", str(calculateTxPerSec(numberOfWriteTx, convertNanosToMillis(totalDuration), numOfThreads)));
 
       results.put("WRT_TX_DUR(msec)", str(convertNanosToMillis(writeTxDuration / numOfThreads)));
       results.put("RO_TX_DUR(msec)", str(convertNanosToMillis(readOnlyTxDuration / numOfThreads)));
@@ -255,7 +261,7 @@ public class PutGetStressor implements CacheWrapperStressor {
       return results;
    }
 
-   private double calculateTxPerSec(int txCount, double txDuration) {
+   private double calculateTxPerSec(int txCount, double txDuration, int numOfThreads) {
       if (txDuration <= 0) {
          return 0;
       }
@@ -265,7 +271,7 @@ public class PutGetStressor implements CacheWrapperStressor {
    private void executeOperations() throws Exception {
       startPoint = new CountDownLatch(1);
 
-      for (int threadIndex = 0; threadIndex < numOfThreads; threadIndex++) {
+      for (int threadIndex = 0; threadIndex < factory.getNumberOfThreads(); threadIndex++) {
          Stresser stresser = new Stresser(threadIndex);
          stresserList.add(stresser);
 
@@ -519,6 +525,7 @@ public class PutGetStressor implements CacheWrapperStressor {
       running.set(false);
    }
 
+   @ManagedOperation
    public void stopBenchmark() {
       stopBenchmarkTimer.cancel();
       running.set(false);
@@ -541,12 +548,38 @@ public class PutGetStressor implements CacheWrapperStressor {
    * -----------------------------------------------------------------------------------
    */
 
+   @ManagedOperation
    public void setWriteTxWorkload(String writeTxWorkload) {
       transactionWorkload.writeTx(writeTxWorkload);
    }
 
+   @ManagedAttribute
+   public String getWriteTxWorkload() {
+      Map<Operation, Integer> bounds = transactionWorkload.getOperationBounds();
+      StringBuilder stringBuilder = new StringBuilder();
+      stringBuilder.append(bounds.get(Operation.WRITE_TX_LOWER_BOUND_READ))
+            .append(":")
+            .append(bounds.get(Operation.WRITE_TX_UPPER_BOUND_READ));
+      stringBuilder.append(";");
+      stringBuilder.append(bounds.get(Operation.WRITE_TX_LOWER_BOUND_WRITE))
+            .append(":")
+            .append(bounds.get(Operation.WRITE_TX_UPPER_BOUND_WRITE));
+      return stringBuilder.toString();
+   }
+
+   @ManagedOperation
    public void setReadTxWorkload(String readTxWorkload) {
       transactionWorkload.readTx(readTxWorkload);
+   }
+
+   @ManagedAttribute
+   public String getReadTxWorkload() {
+      Map<Operation, Integer> bounds = transactionWorkload.getOperationBounds();
+      StringBuilder stringBuilder = new StringBuilder();
+      stringBuilder.append(bounds.get(Operation.READ_TX_LOWER_BOUND))
+            .append(":")
+            .append(bounds.get(Operation.READ_TX_UPPER_BOUND));
+      return stringBuilder.toString();
    }
 
    public void setNodeIndex(int nodeIndex) {
@@ -562,32 +595,67 @@ public class PutGetStressor implements CacheWrapperStressor {
       this.simulationTime = simulationTime;
    }
 
+   @ManagedOperation
    public void setNoContention(boolean noContention) {
       factory.setNoContention(noContention);
+   }
+
+   @ManagedAttribute
+   public boolean isNoContention() {
+      return factory.isNoContention();
    }
 
    public void setBucketPrefix(String bucketPrefix) {
       factory.setBucketPrefix(bucketPrefix);
    }
 
+   @ManagedOperation
    public void setNumberOfKeys(int numberOfKeys) {
       factory.setNumberOfKeys(numberOfKeys);
    }
 
+   @ManagedAttribute
+   public int getNumberOfKeys() {
+      return factory.getNumberOfKeys();
+   }
+
+   @ManagedOperation
    public void setSizeOfValue(int sizeOfValue) {
       factory.setValueSize(sizeOfValue);
    }
 
-   public void setNumOfThreads(int numOfThreads) {
+   @ManagedAttribute
+   public int getSizeOfValue() {
+      return factory.getValueSize();
+   }
+
+   @ManagedOperation
+   public void setNumberOfThreads(int numOfThreads) {
       factory.setNumberOfThreads(numOfThreads);
+   }
+
+   @ManagedAttribute
+   public int getNumberOfThreads() {
+      return factory.getNumberOfThreads();
    }
 
    public void setCoordinatorParticipation(boolean coordinatorParticipation) {
       this.coordinatorParticipation = coordinatorParticipation;
    }
 
-   public void setWriteTransactionPercentage(int writeTransactionPercentage) {
+   @ManagedOperation
+   public void setWriteTxPercentage(int writeTransactionPercentage) {
       transactionWorkload.setWriteTxPercentage(writeTransactionPercentage);
+   }
+
+   @ManagedAttribute
+   public int getWriteTxPercentage() {
+      return transactionWorkload.getWriteTxPercentage();
+   }
+
+   @ManagedOperation
+   public void changeKeysWorkload() {
+      factory.calculate();
    }
 }
 

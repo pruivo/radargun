@@ -256,7 +256,7 @@ public class InfinispanWrapper implements CacheWrapper {
          try {
             return "PB".equals(getAsStringAttribute(mBeanServer,
                                                     new ObjectName(cacheComponentString + "ReconfigurableReplicationManager"),
-                                                    "currentProtocolId"));
+                                                    "currentProtocolId", false));
          } catch (Exception e) {
             log.warn("Unable to check for Passive Replication protocol");
          }
@@ -378,7 +378,7 @@ public class InfinispanWrapper implements CacheWrapper {
          log.trace("Attributes to be reported are " + statisticComponent.getStats());
 
          for (Map.Entry<String, String> entry : statisticComponent.getStats()) {
-            results.put(entry.getKey(), getAsStringAttribute(mBeanServer, objectName, entry.getValue()));
+            results.put(entry.getKey(), getAsStringAttribute(mBeanServer, objectName, entry.getValue(), true));
          }
       } catch (Exception e) {
          log.warn("Unable to collect stats from Total Order Validator component");
@@ -396,12 +396,14 @@ public class InfinispanWrapper implements CacheWrapper {
       return Collections.emptyMap();
    }
 
-   private String getAsStringAttribute(MBeanServer mBeanServer, ObjectName component, String attr) {
+   private String getAsStringAttribute(MBeanServer mBeanServer, ObjectName component, String attr, boolean warningIfFailed) {
       try {
          return String.valueOf(mBeanServer.getAttribute(component, attr));
       } catch (Exception e) {
-         log.warn(String.format(GET_ATTRIBUTE_ERROR, attr, component));
-         log.debug(e);
+         if (warningIfFailed) {
+            log.warn(String.format(GET_ATTRIBUTE_ERROR, attr, component));
+            log.debug(e);
+         }
       }
       return "Not_Available";
    }

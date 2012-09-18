@@ -134,10 +134,6 @@ public class PutGetWarmupStressor implements CacheWrapperStressor {
       this.nodeIndex = nodeIndex;
    }
 
-   public void setNoContention(boolean noContention) {
-      factory.setNoContention(noContention);
-   }
-
    public void setNumberOfKeys(int numberOfKeys) {
       factory.setNumberOfKeys(numberOfKeys);
    }
