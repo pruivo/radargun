@@ -57,7 +57,7 @@ public class RadargunKeyFeatureManager implements KeyFeatureManager {
       int index = 1; //starts with a key prefix             
       for (Feature feature : Feature.values()) {
          AbstractFeature abstractFeature = features[feature.ordinal()];
-         featureValueMap.put(abstractFeature, abstractFeature.createFeatureValue(split[index++]));
+         featureValueMap.put(abstractFeature, abstractFeature.createFeatureValue(Integer.parseInt(split[index++])));
       }
 
       return featureValueMap;

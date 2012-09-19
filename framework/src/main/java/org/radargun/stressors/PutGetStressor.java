@@ -65,7 +65,7 @@ public class PutGetStressor implements CacheWrapperStressor {
    private long simulationTime = 30L;
 
    public PutGetStressor(KeyGeneratorFactory factory) {
-      this.factory = factory;
+      this.factory = factory == null ? new KeyGeneratorFactory() : factory;
       transactionWorkload = new TransactionWorkload();
       JmxRegistration.getInstance().processStage(this);
    }
@@ -77,6 +77,7 @@ public class PutGetStressor implements CacheWrapperStressor {
 
    public Map<String, String> stress(CacheWrapper wrapper) {
       this.cacheWrapper = wrapper;
+      factory.calculate();
 
       startTime = System.currentTimeMillis();
       log.info("Executing: " + this.toString());

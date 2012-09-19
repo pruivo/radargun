@@ -82,23 +82,21 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
          return result;
       }
 
-      KeyGeneratorFactory factory = (KeyGeneratorFactory) slaveState.get("key_gen_factory");
-      factory.setBucketPrefix(bucketPrefix);
-      factory.setValueSize(sizeOfValue);
-      factory.setNoContention(noContention);
-      factory.setNumberOfKeys(numberOfKeys);
-      factory.setNumberOfNodes(getActiveSlaveCount());
-      factory.setNumberOfThreads(numOfThreads);
-
       log.info("Starting WebSessionBenchmarkStage: " + this.toString());
 
-      PutGetStressor stressor = new PutGetStressor(factory);
-      stressor.setNodeIndex(getSlaveIndex());      
+      PutGetStressor stressor = new PutGetStressor((KeyGeneratorFactory) slaveState.get("k   ey_gen_factory"));
+      stressor.setNodeIndex(getSlaveIndex());
       stressor.setSimulationTime(perThreadSimulTime);
       stressor.setWriteTxPercentage(writeTransactionPercentage);
       stressor.setCoordinatorParticipation(coordinatorParticipation);
       stressor.setWriteTxWorkload(writeTxWorkload);
       stressor.setReadTxWorkload(readTxWorkload);
+      stressor.setBucketPrefix(bucketPrefix);
+      stressor.setSizeOfValue(sizeOfValue);
+      stressor.setNoContention(noContention);
+      stressor.setNumberOfKeys(numberOfKeys);
+      stressor.setNumberOfNodes(getActiveSlaveCount());
+      stressor.setNumberOfThreads(numOfThreads);
 
       try {
          Map<String, String> results = stressor.stress(cacheWrapper);

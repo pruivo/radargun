@@ -249,7 +249,7 @@ public class KeyGeneratorFactory {
       public Object[] getUniqueRandomKeys(int size) {
          Set<Object> keys = new HashSet<Object>();
          Workload workload = currentWorkload.get();
-         if (noContention) {
+         if (workload.noContention) {
             for (int i = 0; i < size; ++i) {
                int keyIdx = random.nextInt(maxKeyIdx(workload, nodeIdx, threadIdx));
 
