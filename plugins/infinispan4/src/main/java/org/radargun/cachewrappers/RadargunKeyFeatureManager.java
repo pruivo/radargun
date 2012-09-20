@@ -1,8 +1,9 @@
 package org.radargun.cachewrappers;
 
-import org.infinispan.dataplacement.keyfeature.AbstractFeature;
-import org.infinispan.dataplacement.keyfeature.FeatureValue;
-import org.infinispan.dataplacement.keyfeature.KeyFeatureManager;
+import org.infinispan.dataplacement.c50.keyfeature.Feature;
+import org.infinispan.dataplacement.c50.keyfeature.FeatureValue;
+import org.infinispan.dataplacement.c50.keyfeature.KeyFeatureManager;
+import org.infinispan.dataplacement.c50.keyfeature.NumericFeature;
 import org.radargun.keygen2.KeyGeneratorFactory;
 
 import java.util.Collections;
@@ -17,47 +18,47 @@ import java.util.Map;
  */
 public class RadargunKeyFeatureManager implements KeyFeatureManager {
 
-   private static enum Feature {
+   private static enum RadargunFeature {
       NODE_INDEX("node_index"),
       THREAD_INDEX("thread_index"),
       KEY_INDEX("key_index");
 
       final String featureName;
 
-      private Feature(String featureName) {
+      private RadargunFeature(String featureName) {
          this.featureName = featureName;
       }
    }
 
-   private final AbstractFeature[] features;
+   private final Feature[] features;
 
    @SuppressWarnings("UnusedDeclaration") //loaded dynamically
    public RadargunKeyFeatureManager() {
-      features = new AbstractFeature[Feature.values().length];
-      for (Feature feature : Feature.values()) {
-         features[feature.ordinal()] = new RadargunKeyFeature(feature.featureName);
+      features = new Feature[RadargunFeature.values().length];
+      for (RadargunFeature feature : RadargunFeature.values()) {
+         features[feature.ordinal()] = new NumericFeature(feature.featureName);
       }
    }
 
    @Override
-   public AbstractFeature[] getAllKeyFeatures() {
+   public Feature[] getAllKeyFeatures() {
       return features;
    }
 
    @Override
-   public Map<AbstractFeature, FeatureValue> getFeatures(Object key) {
+   public Map<Feature, FeatureValue> getFeatures(Object key) {
       if (!(key instanceof String)) {
          return Collections.emptyMap();
       }
 
-      Map<AbstractFeature, FeatureValue> featureValueMap = new HashMap<AbstractFeature, FeatureValue>();
+      Map<Feature, FeatureValue> featureValueMap = new HashMap<Feature, FeatureValue>();
 
       String[] split = ((String) key).split(KeyGeneratorFactory.SEPARATOR);
 
       int index = 1; //starts with a key prefix             
-      for (Feature feature : Feature.values()) {
-         AbstractFeature abstractFeature = features[feature.ordinal()];
-         featureValueMap.put(abstractFeature, abstractFeature.createFeatureValue(Integer.parseInt(split[index++])));
+      for (RadargunFeature radargunFeature : RadargunFeature.values()) {
+         Feature feature = features[radargunFeature.ordinal()];
+         featureValueMap.put(feature, feature.createFeatureValue(Integer.parseInt(split[index++])));
       }
 
       return featureValueMap;

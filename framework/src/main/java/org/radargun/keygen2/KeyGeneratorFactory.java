@@ -68,7 +68,9 @@ public class KeyGeneratorFactory {
    }
 
    public void setBucketPrefix(String bucketPrefix) {
-      this.bucketPrefix = bucketPrefix == null ? "BUCKET" : bucketPrefix.replaceAll(SEPARATOR, "");
+      if (bucketPrefix != null) {
+         this.bucketPrefix = bucketPrefix;
+      }      
    }
 
    public void setNumberOfThreads(int numberOfThreads) {

@@ -25,16 +25,13 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
 
    //for each session there will be created fixed number of attributes. On those attributes all the GETs and PUTs are
    // performed (for PUT is overwrite)
-   private int numberOfKeys = 10000;
+   private int numberOfKeys = -1;
 
    //Each attribute will be a byte[] of this size
-   private int sizeOfValue = 1000;
-
-   //The percentage of write transactions generated
-   private int writeTransactionPercentage = 100;
+   private int sizeOfValue = -1;   
 
    //the number of threads that will work on this slave
-   private int numOfThreads = 10;
+   private int numOfThreads = -1;
 
    //indicates that the coordinator executes transactions or not
    private boolean coordinatorParticipation = true;
@@ -43,10 +40,13 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
 
    private String readTxWorkload = "100";
 
+   //The percentage of write transactions generated
+   private int writeTransactionPercentage = 100;
+
    private String bucketPrefix = null;
 
    //simulation time (in seconds)
-   private long perThreadSimulTime;
+   private long perThreadSimulTime = -1;
 
    //allows execution without contention
    private boolean noContention = false;
@@ -138,26 +138,6 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
          }
       }
       return success;
-   }
-
-   private boolean validate(String string) {
-      if (string == null || string.equals("")) {
-         return false;
-      }
-      String[] split = string.split(":");
-      if (split.length == 0 || split.length > 2) {
-         return false;
-      }
-
-      for (String s : split) {
-         try {
-            Integer.parseInt(s);
-         } catch (NumberFormatException nfe) {
-            log.warn("Error validating " + string + ". " + nfe.getMessage());
-            return false;
-         }
-      }
-      return true;
    }
 
    @Override
