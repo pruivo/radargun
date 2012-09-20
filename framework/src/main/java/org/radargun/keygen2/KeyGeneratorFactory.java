@@ -46,10 +46,6 @@ public class KeyGeneratorFactory {
       setValueSize(valueSize);
    }
 
-   public void setValueSize(int valueSize) {
-      this.valueSize = valueSize;
-   }
-
    public void calculate() {
       synchronized (calculateLock) {
          int nodeIdx = numberOfKeys % numberOfNodes;
@@ -58,6 +54,12 @@ public class KeyGeneratorFactory {
          int numberOfKeysPerThread = (numberOfKeysPerNode - threadIdx) / numberOfThreads;
          currentWorkload.set(new Workload(numberOfNodes, numberOfThreads, numberOfKeysPerThread, nodeIdx, threadIdx,
                                           noContention));
+      }
+   }
+
+   public void setValueSize(int valueSize) {
+      if (valueSize > 0) {
+         this.valueSize = valueSize;
       }
    }
 
@@ -70,7 +72,7 @@ public class KeyGeneratorFactory {
    public void setBucketPrefix(String bucketPrefix) {
       if (bucketPrefix != null) {
          this.bucketPrefix = bucketPrefix;
-      }      
+      }
    }
 
    public void setNumberOfThreads(int numberOfThreads) {
@@ -263,8 +265,8 @@ public class KeyGeneratorFactory {
             for (int i = 0; i < size; ++i) {
                int nodeIdx = random.nextInt(workload.numberOfNodes);
                int threadIdx = random.nextInt(workload.numberOfThreads);
-               int keyIdx = random.nextInt(maxKeyIdx(workload, nodeIdx, threadIdx));               
-               
+               int keyIdx = random.nextInt(maxKeyIdx(workload, nodeIdx, threadIdx));
+
                if (!findNextUnique(keys, workload, nodeIdx, threadIdx, keyIdx)) {
                   break;
                }

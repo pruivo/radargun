@@ -28,7 +28,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
    private int numberOfKeys = -1;
 
    //Each attribute will be a byte[] of this size
-   private int sizeOfValue = -1;   
+   private int sizeOfValue = -1;
 
    //the number of threads that will work on this slave
    private int numOfThreads = -1;
@@ -84,7 +84,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
 
       log.info("Starting WebSessionBenchmarkStage: " + this.toString());
 
-      PutGetStressor stressor = new PutGetStressor((KeyGeneratorFactory) slaveState.get("k   ey_gen_factory"));
+      PutGetStressor stressor = new PutGetStressor((KeyGeneratorFactory) slaveState.get("key_gen_factory"));
       stressor.setNodeIndex(getSlaveIndex());
       stressor.setSimulationTime(perThreadSimulTime);
       stressor.setWriteTxPercentage(writeTransactionPercentage);

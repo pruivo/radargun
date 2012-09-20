@@ -22,7 +22,7 @@ echo ""
 echo "    -gossip-host <address>    sets the initial host (used when you have -no-ipmcast)"
 echo "                              Default: ${INITIAL_HOST}"
 echo ""
-echo "    -tpc                      sets the transport protocol as TCP"
+echo "    -tcp                      sets the transport protocol as TCP"
 echo "                              Default: uses UDP"
 echo ""
 echo "    -h                        show this message"
@@ -141,7 +141,6 @@ echo "         />" >> ${DEST_FILE}
 #TCP uses unicast2 and UDP uses unicast
 if [ "${TCP}" == "true" ]; then
 echo "   <UNICAST2" >> ${DEST_FILE}
-echo "         exponential_backoff=\"500\"" >> ${DEST_FILE}
 echo "         max_stable_msgs=\"100\"" >> ${DEST_FILE}
 echo "         xmit_interval=\"1000\"" >> ${DEST_FILE}
 echo "         conn_expiry_timeout=\"0\"" >> ${DEST_FILE}

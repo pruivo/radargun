@@ -13,7 +13,7 @@ import java.util.List;
  * @author Pedro Ruivo
  * @since 1.1
  */
-public class WebSessionWarmupStage extends AbstractDistStage {   
+public class WebSessionWarmupStage extends AbstractDistStage {
 
    //for each there will be created fixed number of keys. All the GETs and PUTs are performed on these keys only.
    private int numberOfKeys = 1000;
@@ -42,7 +42,7 @@ public class WebSessionWarmupStage extends AbstractDistStage {
       }
 
       PutGetWarmupStressor putGetWarmupStressor = new PutGetWarmupStressor();
-      putGetWarmupStressor.setNodeIndex(this.slaveIndex);      
+      putGetWarmupStressor.setNodeIndex(this.slaveIndex);
       putGetWarmupStressor.setNumberOfKeys(numberOfKeys);
       putGetWarmupStressor.setSizeOfValue(sizeOfValue);
       putGetWarmupStressor.setNumOfThreads(numOfThreads);
@@ -74,14 +74,14 @@ public class WebSessionWarmupStage extends AbstractDistStage {
 
    @Override
    public String toString() {
-      return "WebSessionWarmupStage{" +            
-            ", numberOfKeys=" + numberOfKeys +
+      return "WebSessionWarmupStage{" +
+            "numberOfKeys=" + numberOfKeys +
             ", sizeOfValue=" + sizeOfValue +
             ", numOfThreads=" + numOfThreads +
             ", transactionSize=" + transactionSize +
             ", bucketPrefix='" + bucketPrefix + '\'' +
             '}';
-   }   
+   }
 
    public void setNumberOfKeys(int numberOfKeys) {
       this.numberOfKeys = numberOfKeys;
