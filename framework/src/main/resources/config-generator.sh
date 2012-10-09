@@ -11,16 +11,15 @@ SIZE_OF_VALUE="1000"
 NUMBER_OF_THREADS="2"
 #in seconds
 SIMULATION_TIME="300"
-WRITE_OP_PERCENTAGE="50"
 WRITE_TX_PERCENTAGE="100"
-LOWER_BOUND_OPERATIONS="10"
-UPPER_BOUND_OPERATIONS="10"
 COORDINATION_EXEC_TX="true"
 CACHE_CONFIG_FILE="ispn.xml"
 GET_KEYS=""
 PASSIVE_REPLICATION="false"
-STAT_SAMPLE_INTERVAL="0"
 WARMUP_TX_SIZE="100"
+WRITE_OP_WRITE_TX="10"
+READ_OP_WRITE_TX="10"
+READ_OP_READ_TX="20"
 
 help_and_exit(){
 echo "usage: ${0} <options>"
@@ -40,23 +39,20 @@ echo ""
 echo "  -nr-thread <value>               the number of threads executing transactions in each node"
 echo "                                   default: ${NUMBER_OF_THREADS}"
 echo ""
-echo "  -write-op-percentage <value>     percentage of write operation in a write transactions (0 to 100)"
-echo "                                   default: ${WRITE_OP_PERCENTAGE}"
 echo "  -write-tx-percentage <value>     percentage of write transactions (0 to 100)"
 echo "                                   default: ${WRITE_TX_PERCENTAGE}"
 echo ""
+echo "  -wrt-op-wrt-tx <value>           the number of write operations per write transaction in the format min:max"
+echo "                                   default: ${WRITE_OP_WRITE_TX}"
+echo ""
+echo "  -rd-op-wrt-tx <value>            the number of read operations per write transaction in the format min:max"
+echo "                                   default: ${READ_OP_WRITE_TX}"
+echo ""
+echo "  -rd-op-rd-tx <value>             the number of read operations per read-only transaction in the format min:max"
+echo "                                   default: ${READ_OP_READ_TX}"
+echo ""
 echo "  -config <value>                  the path for the configuration of the cache"
 echo "                                   default: ${CACHE_CONFIG_FILE}"
-echo ""
-echo "  -min-op <value>                  minimum number of operations to be executed per transaction"
-echo "                                   default: ${LOWER_BOUND_OPERATIONS}"
-echo ""
-echo "  -max-op <value>                  maximum number of operations to be executed per transaction"
-echo "                                   default: ${UPPER_BOUND_OPERATIONS}"
-echo ""
-echo "  -stat-sample-interval <value>    the period (in milliseconds) in which the CPU and memory usage is collected"
-echo "                                   A value less or equals than 0 disables the collection"
-echo "                                   default: ${STAT_SAMPLE_INTERVAL}"
 echo ""
 echo "  -warmup-tx-size <value>          the write set size of the transaction used in warmup phase"
 echo "                                   default: ${WARMUP_TX_SIZE}"
@@ -86,18 +82,17 @@ case $1 in
   -simul-time) SIMULATION_TIME=$2; shift 2;;
   -nr-keys) NUMBER_OF_KEYS=$2; shift 2;;
   -value-size) SIZE_OF_VALUE=$2; shift 2;;
-  -nr-thread) NUMBER_OF_THREADS=$2; shift 2;;
-  -write-op-percentage) WRITE_OP_PERCENTAGE=$2; shift 2;;
+  -nr-thread) NUMBER_OF_THREADS=$2; shift 2;;  
   -write-tx-percentage) WRITE_TX_PERCENTAGE=$2; shift 2;;
-  -config) CACHE_CONFIG_FILE=$2; shift 2;;
-  -min-op) LOWER_BOUND_OPERATIONS=$2; shift 2;;
-  -max-op) UPPER_BOUND_OPERATIONS=$2; shift 2;;
+  -wrt-op-wrt-tx) WRITE_OP_WRITE_TX=$2; shift 2;;
+  -rd-op-wrt-tx) READ_OP_WRITE_TX=$2; shift 2;;
+  -rd-op-rd-tx) READ_OP_READ_TX=$2; shift 2;;
+  -config) CACHE_CONFIG_FILE=$2; shift 2;;  
   -no-coordinator-participation) COORDINATION_EXEC_TX="false"; shift 1;;
   -no-contention) NO_CONTENTION="true"; shift 1;;
   -distributed) PARTIAL_REPLICATION="true"; shift 1;;
   -passive-replication) PASSIVE_REPLICATION="true"; shift 1;;
   -get-keys) GET_KEYS=1; shift 1;;
-  -stat-sample-interval) STAT_SAMPLE_INTERVAL=$2; shift 2;;
   -warmup-tx-size) WARMUP_TX_SIZE=$2; shift 2;;
   -*) echo "WARNING: unknown option '$1'. It will be ignored" >&2; shift 1;;
   *) break;;
@@ -143,15 +138,13 @@ echo "      <ResetStats />" >> ${DEST_FILE}
 
 echo "      <WebSessionBenchmark" >> ${DEST_FILE}
 echo "            perThreadSimulTime=\"${SIMULATION_TIME}\"" >> ${DEST_FILE}
-echo "            opsCountStatusLog=\"5000\"" >> ${DEST_FILE}
 echo "            numberOfKeys=\"${NUMBER_OF_KEYS}\"" >> ${DEST_FILE}
 echo "            sizeOfValue=\"${SIZE_OF_VALUE}\"" >> ${DEST_FILE}
-echo "            statsSamplingInterval=\"${STAT_SAMPLE_INTERVAL}\"" >> ${DEST_FILE}
 echo "            numOfThreads=\"${NUMBER_OF_THREADS}\"" >> ${DEST_FILE}
-echo "            writeOperationPercentage=\"${WRITE_OP_PERCENTAGE}\"" >> ${DEST_FILE}
 echo "            writeTransactionPercentage=\"${WRITE_TX_PERCENTAGE}\"" >> ${DEST_FILE}
-echo "            lowerBoundOp=\"${LOWER_BOUND_OPERATIONS}\"" >> ${DEST_FILE}
-echo "            upperBoundOp=\"${UPPER_BOUND_OPERATIONS}\"" >> ${DEST_FILE}
+echo "            wrtOpsPerWriteTx=\"${WRITE_OP_WRITE_TX}\"" >> ${DEST_FILE}
+echo "            rdOpsPerWriteTx=\"${READ_OP_WRITE_TX}\"" >> ${DEST_FILE}
+echo "            rdOpsPerReadTx=\"${READ_OP_READ_TX}\"" >> ${DEST_FILE}
 echo "            coordinatorParticipation=\"${COORDINATION_EXEC_TX}\"" >> ${DEST_FILE}
 echo "            noContentionEnabled=\"${NO_CONTENTION}\"/>" >> ${DEST_FILE}
 
