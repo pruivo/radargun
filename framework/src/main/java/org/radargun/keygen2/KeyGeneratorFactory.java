@@ -24,6 +24,7 @@ public class KeyGeneratorFactory {
    private int numberOfThreads;
    private int numberOfKeys;
    private int valueSize;
+   private int localityProbability;
    private boolean noContention;
    private final String keyPrefix;
    private String bucketPrefix;
@@ -31,11 +32,11 @@ public class KeyGeneratorFactory {
    private final AtomicReference<Workload> currentWorkload;
 
    public KeyGeneratorFactory() {
-      this(1000, 1, 1, 1000, false, "KEY", "BUCKET");
+      this(1000, 1, 1, 1000, 0, false, "KEY", "BUCKET");
    }
 
-   private KeyGeneratorFactory(int numberOfKeys, int numberOfThreads, int numberOfNodes, int valueSize, boolean noContention,
-                               String keyPrefix, String bucketPrefix) {
+   private KeyGeneratorFactory(int numberOfKeys, int numberOfThreads, int numberOfNodes, int valueSize, int localityProbability, 
+                               boolean noContention, String keyPrefix, String bucketPrefix) {
       this.keyPrefix = keyPrefix.replaceAll(SEPARATOR, "");
       currentWorkload = new AtomicReference<Workload>();
       setBucketPrefix(bucketPrefix);
@@ -44,6 +45,7 @@ public class KeyGeneratorFactory {
       setNumberOfThreads(numberOfThreads);
       setNoContention(noContention);
       setValueSize(valueSize);
+      setLocalityProbability(localityProbability);
    }
 
    public void calculate() {
@@ -53,7 +55,7 @@ public class KeyGeneratorFactory {
          int threadIdx = numberOfKeysPerNode % numberOfThreads;
          int numberOfKeysPerThread = (numberOfKeysPerNode - threadIdx) / numberOfThreads;
          currentWorkload.set(new Workload(numberOfNodes, numberOfThreads, numberOfKeysPerThread, nodeIdx, threadIdx,
-                                          noContention));
+                                          localityProbability, noContention));
       }
    }
 
@@ -87,6 +89,12 @@ public class KeyGeneratorFactory {
       }
    }
 
+   public void setLocalityProbability(int localityProbability) {
+      if (localityProbability <= 100) {
+         this.localityProbability = localityProbability;
+      }
+   }
+
    public void setNoContention(boolean noContention) {
       this.noContention = noContention;
    }
@@ -117,6 +125,10 @@ public class KeyGeneratorFactory {
 
    public int getNumberOfKeys() {
       return numberOfKeys;
+   }
+
+   public int getLocalityProbability() {
+      return localityProbability;
    }
 
    @Override
@@ -241,8 +253,19 @@ public class KeyGeneratorFactory {
          if (workload.noContention) {
             int keyIdx = random.nextInt(maxKeyIdx(workload, nodeIdx, threadIdx));
             return createKey(nodeIdx, threadIdx, keyIdx);
-         } else {
+         } else if (workload.localityProbability < 0) {
             int nodeIdx = random.nextInt(workload.numberOfNodes);
+            int threadIdx = random.nextInt(workload.numberOfThreads);
+            int keyIdx = random.nextInt(maxKeyIdx(workload, nodeIdx, threadIdx));
+            return createKey(nodeIdx, threadIdx, keyIdx);
+         } else {
+            int nodeIdx;
+            if (workload.localityProbability < random.nextInt(100)) {
+               nodeIdx = this.nodeIdx;
+            } else {
+               nodeIdx = random.nextInt(workload.numberOfNodes);
+               nodeIdx = nodeIdx == this.nodeIdx ? (++nodeIdx % workload.numberOfNodes) : nodeIdx;
+            }
             int threadIdx = random.nextInt(workload.numberOfThreads);
             int keyIdx = random.nextInt(maxKeyIdx(workload, nodeIdx, threadIdx));
             return createKey(nodeIdx, threadIdx, keyIdx);
@@ -333,14 +356,17 @@ public class KeyGeneratorFactory {
       private final int keyPerThread;
       private final int nodeIdx;
       private final int threadIdx;
+      private final int localityProbability;
       private final boolean noContention;
 
-      private Workload(int numberOfNodes, int numberOfThreads, int keyPerThread, int nodeIdx, int threadIdx, boolean noContention) {
+      private Workload(int numberOfNodes, int numberOfThreads, int keyPerThread, int nodeIdx, int threadIdx, 
+                       int localityProbability, boolean noContention) {
          this.numberOfNodes = numberOfNodes;
          this.numberOfThreads = numberOfThreads;
          this.keyPerThread = keyPerThread;
          this.nodeIdx = nodeIdx;
          this.threadIdx = threadIdx;
+         this.localityProbability = localityProbability;
          this.noContention = noContention;
       }
    }

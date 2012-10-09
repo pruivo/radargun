@@ -23,6 +23,7 @@ DIST_NUM_OWNERS="2"
 VERSIONS="false"
 VERSION_SCHEME="SIMPLE"
 CUSTOM_INTERCEPTOR_CHAIN="false"
+SYNC_COMMIT="true";
 
 help() {
 echo "usage: $0 <options>"
@@ -171,7 +172,7 @@ echo "                transactionMode=\"TRANSACTIONAL\"" >> ${DEST_FILE}
 echo "                syncRollbackPhase=\"false\"" >> ${DEST_FILE}
 echo "                cacheStopTimeout=\"30000\"" >> ${DEST_FILE}
 echo "                useSynchronization=\"${TO_1PC}\"" >> ${DEST_FILE}
-echo "                syncCommitPhase=\"false\"" >> ${DEST_FILE}
+echo "                syncCommitPhase=\"${SYNC_COMMIT}\"" >> ${DEST_FILE}
 echo "                lockingMode=\"${LOCKING_MODE}\"" >> ${DEST_FILE}
 echo "                eagerLockSingleNode=\"false\"" >> ${DEST_FILE}
 echo "                use1PcForAutoCommitTransactions=\"false\"" >> ${DEST_FILE}
@@ -206,13 +207,13 @@ echo "                    replQueueInterval=\"5000\"" >> ${DEST_FILE}
 echo "                    asyncMarshalling=\"false\" />" >> ${DEST_FILE}
 else
 echo "            <sync" >> ${DEST_FILE}
-echo "                    replTimeout=\"150000\" />" >> ${DEST_FILE}
+echo "                    replTimeout=\"15000\" />" >> ${DEST_FILE}
 fi
 
 #replicated mode or invalidation
 if [ "${CLUSTERING_MODE}" == "r" -o "${CLUSTERING_MODE}" == "i" ]; then
 echo "            <stateTransfer" >> ${DEST_FILE}
-echo "                    fetchInMemoryState=\"false\"" >> ${DEST_FILE}
+echo "                    fetchInMemoryState=\"true\"" >> ${DEST_FILE}
 echo "                    chunkSize=\"100\"" >> ${DEST_FILE}
 echo "                    timeout=\"240000\"/>" >> ${DEST_FILE}
 fi
@@ -220,11 +221,9 @@ fi
 #distributed mode
 if [ "${CLUSTERING_MODE}" == "d" ]; then
 echo "            <hash" >> ${DEST_FILE}
-echo "                    numVirtualNodes=\"1\"" >> ${DEST_FILE}
+echo "                    numVirtualNodes=\"100\"" >> ${DEST_FILE}
 echo "                    numOwners=\"${DIST_NUM_OWNERS}\"" >> ${DEST_FILE}
-echo "                    rehashEnabled=\"false\"" >> ${DEST_FILE}
-echo "                    rehashRpcTimeout=\"600000\"" >> ${DEST_FILE}
-echo "                    rehashWait=\"60000\" />" >> ${DEST_FILE}
+echo "                    />" >> ${DEST_FILE}
 
 echo "            <l1" >> ${DEST_FILE}
 echo "                    enabled=\"false\"" >> ${DEST_FILE}
@@ -265,6 +264,25 @@ echo "        <versioning" >> ${DEST_FILE}
 echo "                enabled=\"${VERSIONS}\"" >> ${DEST_FILE}
 echo "                versioningScheme=\"${VERSION_SCHEME}\" />" >> ${DEST_FILE}
 fi
+
+#echo "        <dataPlacement" >> ${DEST_FILE}
+#echo "                enabled="true"" >> ${DEST_FILE}
+#echo "                objectLookupFactory="org.infinispan.dataplacement.c50.C50MLObjectLookupFactory">" >> ${DEST_FILE}
+#echo "            <properties>" >> ${DEST_FILE}
+#echo "                <property" >> ${DEST_FILE}
+#echo "                        name="keyFeatureManager"" >> ${DEST_FILE}
+#echo "                        value="org.radargun.cachewrappers.RadargunKeyFeatureManager"" >> ${DEST_FILE}
+#echo "                        />" >> ${DEST_FILE}
+#echo "                <property" >> ${DEST_FILE}
+#echo "                        name="location"" >> ${DEST_FILE}
+#echo "                        value="/tmp/ml"" >> ${DEST_FILE}
+#echo "                        />" >> ${DEST_FILE}
+#echo "                <property" >> ${DEST_FILE}
+#echo "                        name="bfFalsePositiveProb"" >> ${DEST_FILE}
+#echo "                        value="0.001"" >> ${DEST_FILE}
+#echo "                        />" >> ${DEST_FILE}
+#echo "            </properties>" >> ${DEST_FILE}
+#echo "        </dataPlacement>" >> ${DEST_FILE}
 
 echo "    </default>" >> ${DEST_FILE}
 echo "    <namedCache" >> ${DEST_FILE}

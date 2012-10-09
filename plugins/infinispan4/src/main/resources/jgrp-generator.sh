@@ -155,18 +155,11 @@ echo "         xmit_interval=\"1000\"" >> ${DEST_FILE}
 echo "         />" >> ${DEST_FILE}
 fi
 
-echo "   <RSVP" >> ${DEST_FILE}
-echo "         ack_on_delivery=\"false\"" >> ${DEST_FILE}
-echo "         resend_interval=\"1000\"" >> ${DEST_FILE}
-echo "         throw_exception_on_timeout=\"false\"" >> ${DEST_FILE}
-echo "         timeout=\"60000\"" >> ${DEST_FILE}
-echo "         />" >> ${DEST_FILE}
-
 echo "   <pbcast.STABLE" >> ${DEST_FILE}
 echo "         stability_delay=\"2000\"" >> ${DEST_FILE}
 echo "         desired_avg_gossip=\"10000\"" >> ${DEST_FILE}
 echo "         max_bytes=\"10M\"" >> ${DEST_FILE}
-echo "         cap=\"0.1\"" >> ${DEST_FILE}
+echo "         cap=\"0.001\"" >> ${DEST_FILE}
 echo "         />" >> ${DEST_FILE}
 echo "   <pbcast.GMS" >> ${DEST_FILE}
 echo "         print_local_addr=\"true\"" >> ${DEST_FILE}

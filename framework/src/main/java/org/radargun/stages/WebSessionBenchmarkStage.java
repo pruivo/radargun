@@ -50,6 +50,9 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
 
    //allows execution without contention
    private boolean noContention = false;
+   
+   //the probability of the key to be local, assuming key_x_?? is store in node x
+   private int localityProbability = -1;
 
    private CacheWrapper cacheWrapper;
    private boolean reportNanos = false;
@@ -97,6 +100,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
       stressor.setNumberOfKeys(numberOfKeys);
       stressor.setNumberOfNodes(getActiveSlaveCount());
       stressor.setNumberOfThreads(numOfThreads);
+      stressor.setLocalityProbability(localityProbability);
 
       try {
          Map<String, String> results = stressor.stress(cacheWrapper);
@@ -195,5 +199,9 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
 
    public void setCoordinatorParticipation(boolean coordinatorParticipation) {
       this.coordinatorParticipation = coordinatorParticipation;
+   }
+
+   public void setLocalityProbability(int localityProbability) {
+      this.localityProbability = localityProbability;
    }
 }
