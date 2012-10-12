@@ -24,6 +24,8 @@ VERSIONS="false"
 VERSION_SCHEME="SIMPLE"
 CUSTOM_INTERCEPTOR_CHAIN="false"
 SYNC_COMMIT="true";
+DP_BF_FP="0.01"
+DP_MAX_KEYS="1000"
 
 help() {
 echo "usage: $0 <options>"
@@ -77,6 +79,16 @@ echo "    -to-1pc                       enable one phase commit in Total Order p
 echo ""
 echo "    -extended-stats               enable the extended statistics reports and collection"
 echo ""
+echo "    -c50-data-placement           enable the data placement algorithm with C5.0 ML and BF based"
+echo ""
+echo "    -hm-data-placement            enable the data placement algorithm with Hash Map based"
+echo ""
+echo "    -dp-bf-fp                     sets the Bloom Filter false positive probability (from 0 to 1)"
+echo "                                  default: ${DP_BF_FP}"
+echo ""
+echo "    -dp-max-keys                  sets the max number of keys to request in the data placement algorithm"
+echo "                                  default: ${DP_MAX_KEYS}"
+echo ""
 echo "    -h                            show this message"
 }
 
@@ -102,6 +114,10 @@ case $1 in
   -to-queue-size) TO_QUEUE_SIZE=$2; shift 2;;
   -to-1pc) TO_1PC="true"; shift 1;;
   -extended-stats) CUSTOM_INTERCEPTOR_CHAIN="true"; shift 1;;  
+  -c50-data-placement) DATA_PLACEMENT="org.infinispan.dataplacement.c50.C50MLObjectLookupFactory"; shift 1;;
+  -hm-data-placement) DATA_PLACEMENT="org.infinispan.dataplacement.hm.HashMapObjectLookupFactory"; shift 1;;
+  -dp-bf-fp) DP_BF_FP=$2; shift 2;;
+  -dp-max-keys) DP_MAX_KEYS=$2; shift 2;;
   -*) echo "WARNING: unknown option '$1'. It will be ignored" >&2; shift 1;;
   *) echo "WARNING: unknown argument '$1'. It will be ignored" >&2; shift 1;;
   esac
@@ -265,24 +281,27 @@ echo "                enabled=\"${VERSIONS}\"" >> ${DEST_FILE}
 echo "                versioningScheme=\"${VERSION_SCHEME}\" />" >> ${DEST_FILE}
 fi
 
-#echo "        <dataPlacement" >> ${DEST_FILE}
-#echo "                enabled="true"" >> ${DEST_FILE}
-#echo "                objectLookupFactory="org.infinispan.dataplacement.c50.C50MLObjectLookupFactory">" >> ${DEST_FILE}
-#echo "            <properties>" >> ${DEST_FILE}
-#echo "                <property" >> ${DEST_FILE}
-#echo "                        name="keyFeatureManager"" >> ${DEST_FILE}
-#echo "                        value="org.radargun.cachewrappers.RadargunKeyFeatureManager"" >> ${DEST_FILE}
-#echo "                        />" >> ${DEST_FILE}
-#echo "                <property" >> ${DEST_FILE}
-#echo "                        name="location"" >> ${DEST_FILE}
-#echo "                        value="/tmp/ml"" >> ${DEST_FILE}
-#echo "                        />" >> ${DEST_FILE}
-#echo "                <property" >> ${DEST_FILE}
-#echo "                        name="bfFalsePositiveProb"" >> ${DEST_FILE}
-#echo "                        value="0.001"" >> ${DEST_FILE}
-#echo "                        />" >> ${DEST_FILE}
-#echo "            </properties>" >> ${DEST_FILE}
-#echo "        </dataPlacement>" >> ${DEST_FILE}
+if [ -n "${DATA_PLACEMENT}" ]; then
+echo "        <dataPlacement" >> ${DEST_FILE}
+echo "                enabled=\"true\"" >> ${DEST_FILE}
+echo "                objectLookupFactory=\"${DATA_PLACEMENT}\">" >> ${DEST_FILE}
+echo "                maxNumberOfKeysToRequest=\"${DP_MAX_KEYS}\">" >> ${DEST_FILE}
+echo "            <properties>" >> ${DEST_FILE}
+echo "                <property" >> ${DEST_FILE}
+echo "                        name=\"keyFeatureManager\"" >> ${DEST_FILE}
+echo "                        value=\"org.radargun.cachewrappers.RadargunKeyFeatureManager\"" >> ${DEST_FILE}
+echo "                        />" >> ${DEST_FILE}
+echo "                <property" >> ${DEST_FILE}
+echo "                        name=\"location\"" >> ${DEST_FILE}
+echo "                        value=\"/tmp/ml\"" >> ${DEST_FILE}
+echo "                        />" >> ${DEST_FILE}
+echo "                <property" >> ${DEST_FILE}
+echo "                        name=\"bfFalsePositiveProb\"" >> ${DEST_FILE}
+echo "                        value=\"${DP_BF_FP}\"" >> ${DEST_FILE}
+echo "                        />" >> ${DEST_FILE}
+echo "            </properties>" >> ${DEST_FILE}
+echo "        </dataPlacement>" >> ${DEST_FILE}
+fi
 
 echo "    </default>" >> ${DEST_FILE}
 echo "    <namedCache" >> ${DEST_FILE}
