@@ -35,7 +35,7 @@ public class KeyGeneratorFactory {
       this(1000, 1, 1, 1000, 0, false, "KEY", "BUCKET");
    }
 
-   private KeyGeneratorFactory(int numberOfKeys, int numberOfThreads, int numberOfNodes, int valueSize, int localityProbability, 
+   private KeyGeneratorFactory(int numberOfKeys, int numberOfThreads, int numberOfNodes, int valueSize, int localityProbability,
                                boolean noContention, String keyPrefix, String bucketPrefix) {
       this.keyPrefix = keyPrefix.replaceAll(SEPARATOR, "");
       currentWorkload = new AtomicReference<Workload>();
@@ -260,7 +260,7 @@ public class KeyGeneratorFactory {
             return createKey(nodeIdx, threadIdx, keyIdx);
          } else {
             int nodeIdx;
-            if (workload.localityProbability < random.nextInt(100)) {
+            if (workload.localityProbability > random.nextInt(100)) {
                nodeIdx = this.nodeIdx;
             } else {
                nodeIdx = random.nextInt(workload.numberOfNodes);
@@ -359,7 +359,7 @@ public class KeyGeneratorFactory {
       private final int localityProbability;
       private final boolean noContention;
 
-      private Workload(int numberOfNodes, int numberOfThreads, int keyPerThread, int nodeIdx, int threadIdx, 
+      private Workload(int numberOfNodes, int numberOfThreads, int keyPerThread, int nodeIdx, int threadIdx,
                        int localityProbability, boolean noContention) {
          this.numberOfNodes = numberOfNodes;
          this.numberOfThreads = numberOfThreads;

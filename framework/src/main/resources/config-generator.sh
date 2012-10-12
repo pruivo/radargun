@@ -77,7 +77,7 @@ echo "  -h                               show this message and exit"
 exit 0
 }
 
-while [ -n $1 ]; do
+while [ -n "$1" ]; do
 case $1 in
   -h) help_and_exit;;
   -dest-file) DEST_FILE=$2; shift 2;;
@@ -96,9 +96,8 @@ case $1 in
   -passive-replication) PASSIVE_REPLICATION="true"; shift 1;;
   -get-keys) GET_KEYS=1; shift 1;;
   -stat-sample-interval) STAT_SAMPLE_INTERVAL=$2; shift 2;;
-  -warmup-tx-size) WARMUP_TX_SIZE=$2; shift 2;;
-  -*) echo "WARNING: unknown option '$1'. It will be ignored" >&2; shift 1;;
-  *) break;;
+  -warmup-tx-size) WARMUP_TX_SIZE=$2; shift 2;;  
+  *) echo "WARNING: unknown option '$1'. It will be ignored" >&2; shift 1;;
 esac
 done
 

@@ -7,10 +7,14 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.text.NumberFormat;
 import java.text.ParseException;
+import java.util.Collection;
 import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -28,6 +32,9 @@ public class ProcessCsv {
    private enum Option {
       SUM("-sum", false),
       AVG("-avg", false),
+      MAX("-min", false),
+      MIN("-max", false),
+      CSV("-csv", true),
       HELP("-help", true);
 
       private final String argumentName;
@@ -65,44 +72,115 @@ public class ProcessCsv {
       arguments.validate();
 
       if (arguments.hasOption(Option.HELP)) {
-         System.out.println("usage: java " + ProcessCsv.class.getSimpleName() + " -sum=attr1,...,attrN -avg=attr1,...,attrN file1 ... fileN");
+         StringBuilder stringBuilder = new StringBuilder("usage: java ")
+               .append(ProcessCsv.class.getCanonicalName())
+               .append(" -sum=attr1,...,attrN")
+               .append(" -avg=attr1,...,attrN")
+               .append(" -min=attr1,...,attrN")
+               .append(" -max=attr1,...,attrN")
+               .append(" file1 ... fileN");
+         System.out.println(stringBuilder);
          System.exit(0);
       }
 
-      String[] sumArray = arguments.hasOption(Option.SUM) ? arguments.getValue(Option.SUM).split(",") : new String[0];
-      String[] avgArray = arguments.hasOption(Option.AVG) ? arguments.getValue(Option.AVG).split(",") : new String[0];
+      System.out.println("Start processing CSV with options " + arguments.printOptions());
+
       List<CsvFileProcessor> processorList = new LinkedList<CsvFileProcessor>();
 
+      Set<String> attributesName = new HashSet<String>();
+
+      CsvHeaderResult[] headers = getCsvHeaders(arguments, attributesName);
+      String[] attributesNamesArray = attributesName.toArray(new String[attributesName.size()]);
+
       for (String filePath : arguments.getFilePaths()) {
-         processorList.add(new CsvFileProcessor(getCsvHeaders(sumArray, avgArray), filePath));
+         processorList.add(new CsvFileProcessor(attributesNamesArray, filePath));
       }
 
-      ExecutorService executor = Executors.newFixedThreadPool(4);
-      List<Future<Object>> futureList = executor.invokeAll(processorList);
+      StringBuilder csvFormat = new StringBuilder();
+      csvFormat.append("filePath");
+      for (CsvHeaderResult header : headers) {
+         csvFormat.append(",").append(header.getHeader());
+      }
+      csvFormat.append("\n");
 
-      for (Future<Object> future : futureList) {
+      ExecutorService executor = Executors.newFixedThreadPool(4);
+      List<Future<FileResult>> futureList = executor.invokeAll(processorList);
+
+      for (Future<FileResult> future : futureList) {
          try {
-            future.get();
+            FileResult fileResult = future.get();
+            printResults(fileResult, headers, csvFormat, arguments.hasOption(Option.CSV));
          } catch (ExecutionException e) {
             e.printStackTrace();
          }
       }
       executor.shutdown();
+
+      if (arguments.hasOption(Option.CSV)) {
+         System.out.println("== CSV OUTPUT ==");
+         System.out.println(csvFormat);
+         System.out.println("================");
+      }
+
       System.exit(0);
    }
 
-   private static CsvHeaderResult[] getCsvHeaders(String[] sumArray, String[] avgArray) {
-      CsvHeaderResult[] array = new CsvHeaderResult[sumArray.length + avgArray.length];
+   private static CsvHeaderResult[] getCsvHeaders(Arguments arguments, Set<String> attributesName) {
+      String[] sumArray = arguments.hasOption(Option.SUM) ? arguments.getValue(Option.SUM).split(",") : new String[0];
+      String[] avgArray = arguments.hasOption(Option.AVG) ? arguments.getValue(Option.AVG).split(",") : new String[0];
+      String[] minArray = arguments.hasOption(Option.MIN) ? arguments.getValue(Option.MIN).split(",") : new String[0];
+      String[] maxArray = arguments.hasOption(Option.MAX) ? arguments.getValue(Option.MAX).split(",") : new String[0];
+
+      CsvHeaderResult[] array = new CsvHeaderResult[sumArray.length + avgArray.length + minArray.length + maxArray.length];
 
       int i = 0;
       for (String s : sumArray) {
+         attributesName.add(s);
          array[i++] = new SumCsvHeaderResult(s);
       }
+      for (String s : minArray) {
+         attributesName.add(s);
+         array[i++] = new MinCsvHeaderResult(s);
+      }
       for (String s : avgArray) {
+         attributesName.add(s);
          array[i++] = new AvgCsvHeaderResult(s);
+      }
+      for (String s : maxArray) {
+         attributesName.add(s);
+         array[i++] = new MaxCsvHeaderResult(s);
       }
 
       return array;
+   }
+
+   private static void printResults(FileResult fileResult, CsvHeaderResult[] headers, StringBuilder csvFormat, boolean csv) {
+
+      if (fileResult == null) {
+         return;
+      }
+
+      StringBuilder stringBuilder = new StringBuilder();
+      stringBuilder.append("File: ").append(fileResult.getFilePath()).append("\n");
+
+      if (csv) {
+         csvFormat.append(fileResult.getFilePath());
+      }
+
+      for (CsvHeaderResult header : headers) {
+         double value = header.get(fileResult);
+         stringBuilder
+               .append(header.getHeader()).append("=").append(value).append("\n");
+
+         if (csv) {
+            csvFormat.append(",").append(value);
+         }
+      }
+
+      if (csv) {
+         csvFormat.append("\n");
+      }
+      System.out.println(stringBuilder);
    }
 
    private static BufferedReader getReader(String filePath) {
@@ -122,19 +200,23 @@ public class ProcessCsv {
       }
    }
 
-   private static class CsvFileProcessor implements Callable<Object>, Runnable {
+   private static class CsvFileProcessor implements Callable<FileResult>, Runnable {
 
       private final int[] positions;
-      private final CsvHeaderResult[] results;
+      private final String[] attributesName;
       private final String filePath;
+      private final Map<String, List<Double>> results;
+      private boolean hasResults;
 
-      private CsvFileProcessor(CsvHeaderResult[] results, String filePath) {
+      private CsvFileProcessor(String[] attributesName, String filePath) {
          this.filePath = filePath;
-         this.positions = new int[results.length];
-         this.results = results;
+         this.positions = new int[attributesName.length];
+         this.attributesName = attributesName;
+         results = new HashMap<String, List<Double>>();
 
          for (int i = 0; i < positions.length; ++i) {
             positions[i] = -1;
+            results.put(attributesName[i], new LinkedList<Double>());
          }
       }
 
@@ -144,23 +226,26 @@ public class ProcessCsv {
 
          if (reader == null) {
             System.err.println("File " + filePath + " not found!");
+            hasResults = false;
             return;
          }
 
          if (!populateHeaders(reader)) {
             System.err.println("File " + filePath + ": headers not found!");
             close(reader);
+            hasResults = false;
             return;
          }
 
          if (!process(reader)) {
             System.err.println("File " + filePath + ": error processing lines!");
             close(reader);
+            hasResults = false;
             return;
          }
 
          close(reader);
-         printResults();
+         hasResults = true;
       }
 
       private boolean populateHeaders(BufferedReader reader) {
@@ -175,10 +260,9 @@ public class ProcessCsv {
          }
          String[] headerArray = headers.split(",");
 
-         for (int i = 0; i < results.length; ++i) {
-            CsvHeaderResult result = results[i];
+         for (int i = 0; i < attributesName.length; ++i) {
             for (int j = 0; j < headerArray.length; ++j) {
-               if (result.header.equals(headerArray[j])) {
+               if (attributesName[i].equals(headerArray[j])) {
                   positions[i] = j;
                   break;
                }
@@ -194,7 +278,7 @@ public class ProcessCsv {
             while ((line = reader.readLine()) != null) {
                String[] values = line.split(",");
 
-               for (int i = 0; i < results.length; ++i) {
+               for (int i = 0; i < positions.length; ++i) {
                   int index = positions[i];
 
                   if (index < 0) {
@@ -203,7 +287,7 @@ public class ProcessCsv {
 
                   try {
                      Number number = NumberFormat.getNumberInstance().parse(values[index]);
-                     results[i].add(number.doubleValue());
+                     results.get(attributesName[i]).add(number.doubleValue());
                   } catch (ParseException e) {
                      //no-op
                   }
@@ -216,21 +300,10 @@ public class ProcessCsv {
          return true;
       }
 
-      private void printResults() {
-         StringBuilder stringBuilder = new StringBuilder();
-         stringBuilder.append("File: ").append(filePath).append("\n");
-
-         for (CsvHeaderResult result : results) {
-            stringBuilder.append(result.header).append("=").append(result.get()).append("\n");
-         }
-
-         System.out.println(stringBuilder);
-      }
-
       @Override
-      public Object call() throws Exception {
+      public FileResult call() throws Exception {
          run();
-         return null;
+         return hasResults ? new FileResult(filePath, results) : null;
       }
    }
 
@@ -238,20 +311,18 @@ public class ProcessCsv {
    private static abstract class CsvHeaderResult {
 
       protected final String header;
-      protected double sum;
 
       protected CsvHeaderResult(String header) {
          this.header = header;
-         sum = 0;
       }
 
-      public void add(double value) {
-         if (value > 0) {
-            sum += value;
-         }
+      public final String getHeader() {
+         return getType() + "(" + header + ")";
       }
 
-      abstract double get();
+      abstract String getType();
+
+      abstract double get(FileResult values);
    }
 
    private static class SumCsvHeaderResult extends CsvHeaderResult {
@@ -261,31 +332,102 @@ public class ProcessCsv {
       }
 
       @Override
-      double get() {
+      String getType() {
+         return "sum";
+      }
+
+      @Override
+      double get(FileResult result) {
+         Collection<Double> values = result.getResults(header);
+         double sum = 0;
+         for (double value : values) {
+            sum += value;
+         }
          return sum;
       }
    }
 
-   private static class AvgCsvHeaderResult extends CsvHeaderResult {
-
-      private int counter;
+   private static class AvgCsvHeaderResult extends SumCsvHeaderResult {
 
       protected AvgCsvHeaderResult(String header) {
          super(header);
-         counter = 0;
       }
 
       @Override
-      public void add(double value) {
-         if (value >= 0) {
-            counter++;
+      String getType() {
+         return "avg";
+      }
+
+      @Override
+      double get(FileResult result) {
+         Collection<Double> values = result.getResults(header);
+         double sum = super.get(result);
+         return values.size() > 0 ? sum / values.size() : 0;
+      }
+   }
+
+   private static class MinCsvHeaderResult extends CsvHeaderResult {
+
+      protected MinCsvHeaderResult(String header) {
+         super(header);
+      }
+
+      @Override
+      String getType() {
+         return "min";
+      }
+
+      @Override
+      double get(FileResult result) {
+         double min = 0;
+         boolean first = true;
+         Collection<Double> values = result.getResults(header);
+
+         for (double value : values) {
+            min = first ? value : calculate(min, value);
+            first = false;
          }
-         super.add(value);
+
+         return min;
+      }
+
+      protected double calculate(double actual, double value) {
+         return Math.min(actual, value);
+      }
+   }
+
+   private static class MaxCsvHeaderResult extends MinCsvHeaderResult {
+
+      protected MaxCsvHeaderResult(String header) {
+         super(header);
       }
 
       @Override
-      double get() {
-         return counter > 0 ? sum / counter : -1;
+      String getType() {
+         return "max";
+      }
+
+      @Override
+      protected double calculate(double actual, double value) {
+         return Math.max(actual, value);
+      }
+   }
+
+   private static class FileResult {
+      private final String filePath;
+      private final Map<String, List<Double>> results;
+
+      private FileResult(String filePath, Map<String, List<Double>> results) {
+         this.filePath = filePath;
+         this.results = results;
+      }
+
+      public String getFilePath() {
+         return filePath;
+      }
+
+      public List<Double> getResults(String attributeName) {
+         return results.get(attributeName);
       }
    }
 
