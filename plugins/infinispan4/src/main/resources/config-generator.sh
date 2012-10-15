@@ -284,7 +284,7 @@ fi
 if [ -n "${DATA_PLACEMENT}" ]; then
 echo "        <dataPlacement" >> ${DEST_FILE}
 echo "                enabled=\"true\"" >> ${DEST_FILE}
-echo "                objectLookupFactory=\"${DATA_PLACEMENT}\">" >> ${DEST_FILE}
+echo "                objectLookupFactory=\"${DATA_PLACEMENT}\"" >> ${DEST_FILE}
 echo "                maxNumberOfKeysToRequest=\"${DP_MAX_KEYS}\">" >> ${DEST_FILE}
 echo "            <properties>" >> ${DEST_FILE}
 echo "                <property" >> ${DEST_FILE}
