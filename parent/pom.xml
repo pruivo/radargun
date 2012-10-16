@@ -181,6 +181,10 @@
          <id>snapshots.jboss.org</id>
          <url>http://snapshots.jboss.org/maven2</url>
       </repository>
+      <repository>
+         <id>pruivo-gsd-repository</id>
+         <url>http://homepages.gsd.inesc-id.pt/~pruivo/maven-repo/</url>
+      </repository>
    </repositories>
 
    <pluginRepositories>
@@ -199,6 +203,10 @@
       <pluginRepository>
          <id>snapshots.jboss.org</id>
          <url>http://snapshots.jboss.org/maven2</url>
+      </pluginRepository>
+      <pluginRepository>
+         <id>pruivo-gsd-plugin-repository</id>
+         <url>http://homepages.gsd.inesc-id.pt/~pruivo/maven-repo/</url>
       </pluginRepository>
    </pluginRepositories>
 
