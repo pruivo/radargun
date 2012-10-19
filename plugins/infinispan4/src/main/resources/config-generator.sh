@@ -26,6 +26,11 @@ CUSTOM_INTERCEPTOR_CHAIN="false"
 SYNC_COMMIT="true";
 DP_BF_FP="0.01"
 DP_MAX_KEYS="1000"
+L1_ENABLED="false"
+L1_REHASH="false"
+L1_LIFESPAN="600000"
+L1_CLEANUP="600000"
+L1_THRESHOLD="-1"
 
 help() {
 echo "usage: $0 <options>"
@@ -89,6 +94,22 @@ echo ""
 echo "    -dp-max-keys                  sets the max number of keys to request in the data placement algorithm"
 echo "                                  default: ${DP_MAX_KEYS}"
 echo ""
+echo "    -l1                           enables the L1 cache with the default values. Only in Distributed mode"
+echo ""
+echo "    -l1-rehash                    entries removed due to a rehash will be moved to L1 rather than" 
+echo "                                  being removed altogether"
+echo "                                  default: disabled"
+echo ""
+echo "    -l1-lifespan <value>          maximum lifespan of an entry placed in the L1 cache"
+echo "                                  default: ${L1_LIFESPAN}"
+echo ""
+echo "    -l1-cleanup <value>           how often the L1 requestors map is cleaned up of stale items"
+echo "                                  default: ${L1_CLEANUP}"
+echo ""
+echo "    -l1-threshold <value>         determines whether a multicast or a web of unicasts are used when performing"
+echo "                                  L1 invalidations. -1 sets to unicast. 0 sets to multicast."
+echo "                                  default: ${L1_THRESHOLD}"
+echo ""
 echo "    -h                            show this message"
 }
 
@@ -118,7 +139,11 @@ case $1 in
   -hm-data-placement) DATA_PLACEMENT="org.infinispan.dataplacement.hm.HashMapObjectLookupFactory"; shift 1;;
   -dp-bf-fp) DP_BF_FP=$2; shift 2;;
   -dp-max-keys) DP_MAX_KEYS=$2; shift 2;;
-  -*) echo "WARNING: unknown option '$1'. It will be ignored" >&2; shift 1;;
+  -l1) L1_ENABLED="true"; shift 1;;
+  -l1-rehash) L1_ENABLED="true"; L1_REHASH="true"; shift 1;;
+  -l1-lifespan) L1_ENABLED="true"; L1_LIFESPAN=$2; shift 2;;
+  -l1-cleanup) L1_ENABLED="true"; L1_CLEANUP=$2; shift 2;;
+  -l1-threshold) L1_ENABLED="true"; L1_THRESHOLD=$2; shift 2;;    
   *) echo "WARNING: unknown argument '$1'. It will be ignored" >&2; shift 1;;
   esac
 done
@@ -241,11 +266,15 @@ echo "                    numVirtualNodes=\"100\"" >> ${DEST_FILE}
 echo "                    numOwners=\"${DIST_NUM_OWNERS}\"" >> ${DEST_FILE}
 echo "                    />" >> ${DEST_FILE}
 
+if [ "${L1_ENABLED}" == "true" ]; then
 echo "            <l1" >> ${DEST_FILE}
-echo "                    enabled=\"false\"" >> ${DEST_FILE}
-echo "                    onRehash=\"false\"" >> ${DEST_FILE}
-echo "                    lifespan=\"600000\"" >> ${DEST_FILE}
-echo "                    invalidationThreshold=\"0\" />" >> ${DEST_FILE}
+echo "                    enabled=\"true\"" >> ${DEST_FILE}
+echo "                    onRehash=\"${L1_REHASH}\"" >> ${DEST_FILE}
+echo "                    lifespan=\"${L1_LIFESPAN}\"" >> ${DEST_FILE}
+echo "                    invalidationThreshold=\"${L1_THRESHOLD}\"" >> ${DEST_FILE}
+echo "                    cleanupTaskFrequency=\"${L1_CLEANUP}\" />" >> ${DEST_FILE}
+fi
+
 fi
 
 echo "        </clustering>" >> ${DEST_FILE}
