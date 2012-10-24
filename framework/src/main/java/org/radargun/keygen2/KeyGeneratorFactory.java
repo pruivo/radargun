@@ -26,18 +26,16 @@ public class KeyGeneratorFactory {
    private int valueSize;
    private int localityProbability;
    private boolean noContention;
-   private final String keyPrefix;
    private String bucketPrefix;
 
    private final AtomicReference<Workload> currentWorkload;
 
    public KeyGeneratorFactory() {
-      this(1000, 1, 1, 1000, 0, false, "KEY", "BUCKET");
+      this(1000, 1, 1, 1000, 0, false, "BUCKET");
    }
 
    private KeyGeneratorFactory(int numberOfKeys, int numberOfThreads, int numberOfNodes, int valueSize, int localityProbability,
-                               boolean noContention, String keyPrefix, String bucketPrefix) {
-      this.keyPrefix = keyPrefix.replaceAll(SEPARATOR, "");
+                               boolean noContention, String bucketPrefix) {
       currentWorkload = new AtomicReference<Workload>();
       setBucketPrefix(bucketPrefix);
       setNumberOfKeys(numberOfKeys);
@@ -139,7 +137,6 @@ public class KeyGeneratorFactory {
             ", numberOfKeys=" + numberOfKeys +
             ", valueSize=" + valueSize +
             ", noContention=" + noContention +
-            ", keyPrefix='" + keyPrefix + '\'' +
             ", bucketPrefix='" + bucketPrefix + '\'' +
             '}';
    }
@@ -154,7 +151,7 @@ public class KeyGeneratorFactory {
    }
 
    private Object createKey(int nodeIdx, int threadIdx, int keyIdx) {
-      return keyPrefix + SEPARATOR + nodeIdx + SEPARATOR + threadIdx + SEPARATOR + keyIdx;
+      return new RadargunKey(nodeIdx, threadIdx, keyIdx);
    }
 
    private int maxKeyIdx(Workload workload, int nodeIdx, int threadIdx) {
