@@ -10,11 +10,8 @@ import java.io.ObjectOutput;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
-public class CustomerLookup implements Externalizable, DomainObject {
-
-   public static final String KEY_PREFIX = "CUSTOMER-LOOKUP";
+public class CustomerLookup extends DomainObject<CustomerLookup> implements Externalizable {
 
    private long c_w_id;
 
@@ -24,8 +21,7 @@ public class CustomerLookup implements Externalizable, DomainObject {
 
    private List<Long> ids;
 
-   public CustomerLookup(){
-
+   public CustomerLookup() {
       this.ids = null;
       this.c_d_id = -1;
       this.c_w_id = -1;
@@ -81,36 +77,6 @@ public class CustomerLookup implements Externalizable, DomainObject {
       }
 
       this.ids.add(newId);
-   }
-
-   private String getKey(){
-      return KEY_PREFIX + ID_SEPARATOR + c_w_id + ID_SEPARATOR + c_d_id + ID_SEPARATOR + c_last;
-   }
-
-   @Override
-   public void store(CacheWrapper wrapper)throws Throwable{
-      wrapper.put(null,this.getKey(), this);
-   }
-
-   @Override
-   public void store(CacheWrapper wrapper, int nodeIndex) throws Throwable {
-      store(wrapper);
-   }
-
-   @Override
-   public boolean load(CacheWrapper wrapper)throws Throwable{
-
-      CustomerLookup loaded=(CustomerLookup)wrapper.get(null,this.getKey());
-
-      if(loaded==null) return false;
-
-      this.c_w_id = loaded.c_w_id;
-      this.c_d_id = loaded.c_d_id;
-      this.c_last = loaded.c_last;
-      this.ids = loaded.ids;
-
-
-      return true;
    }
 
    @Override
@@ -190,16 +156,55 @@ public class CustomerLookup implements Externalizable, DomainObject {
 
    }
 
-   //Pedro
-   public void save(Map<String, CustomerLookup> map) {
-      if (!map.containsKey(getKey())) {
-         map.put(getKey(), this);
-      }
+   @Override
+   public boolean load(CacheWrapper wrapper)throws Throwable{
+
+      CustomerLookup loaded = internalLoad(wrapper);
+
+      if(loaded == null) return false;
+
+      this.c_w_id = loaded.c_w_id;
+      this.c_d_id = loaded.c_d_id;
+      this.c_last = loaded.c_last;
+      this.ids = loaded.ids;
+
+      return true;
    }
 
-   public CustomerLookup load(Map<String, CustomerLookup> map) {
-      CustomerLookup customerLookup = map.get(getKey());
-      return customerLookup != null ? customerLookup : this;
+   @Override
+   protected TpccKey createTpccKey() {
+      return new CustomerLookupKey(c_w_id, c_d_id, c_last);
+   }
+
+   public static class CustomerLookupKey extends TpccKey {
+      private final long warehouseId;
+      private final long districtId;
+      private final String cLast;
+
+      public CustomerLookupKey(long warehouseId, long districtId, String cLast) {
+         this.warehouseId = warehouseId;
+         this.districtId = districtId;
+         this.cLast = cLast;
+      }
+
+      @Override
+      public Number getWarehouseId() {
+         return warehouseId;
+      }
+
+      @Override
+      public Number getDistrictId() {
+         return districtId;
+      }
+
+      @Override
+      public String toString() {
+         return "CustomerLookupKey{" +
+               "warehouseId=" + warehouseId +
+               ", districtId=" + districtId +
+               ", cLast='" + cLast + '\'' +
+               '}';
+      }
    }
 }
 

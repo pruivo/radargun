@@ -3,15 +3,11 @@ package org.radargun.tpcc.domain;
 import org.radargun.CacheWrapper;
 import org.radargun.tpcc.DomainObject;
 
-import java.io.Serializable;
-
 /**
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
  */
-public class Item implements Serializable, DomainObject {
+public class Item extends DomainObject<Item> {
 
-   public static final String KEY_PREFIX = "ITEM";   
-   
    private long i_id;
 
    private long i_im_id;
@@ -22,9 +18,7 @@ public class Item implements Serializable, DomainObject {
 
    private String i_data;
 
-   public Item() {
-
-   }
+   public Item() {}
 
    public Item(long i_id, long i_im_id, String i_name, double i_price, String i_data) {
       this.i_id = i_id;
@@ -74,35 +68,8 @@ public class Item implements Serializable, DomainObject {
       this.i_data = i_data;
    }
 
-   private String getKey() {
-
-      return KEY_PREFIX + ID_SEPARATOR + i_id;
-   }
-
-   @Override
-   public void store(CacheWrapper wrapper) throws Throwable {
-      wrapper.put(null, this.getKey(), this);
-   }
-
-   @Override
-   public void store(CacheWrapper wrapper, int nodeIndex) throws Throwable {
-      store(wrapper);
-   }
-
-   @Override
-   public boolean load(CacheWrapper wrapper) throws Throwable {
-
-      Item loaded = (Item) wrapper.get(null, this.getKey());
-
-      if (loaded == null) return false;
-
-      this.i_data = loaded.i_data;
-      this.i_im_id = loaded.i_im_id;
-      this.i_name = loaded.i_name;
-      this.i_price = loaded.i_price;
-
-
-      return true;
+   private TpccKey getKey() {
+      return new ItemKey(i_id);
    }
 
    @Override
@@ -134,4 +101,45 @@ public class Item implements Serializable, DomainObject {
       return result;
    }
 
+   @Override
+   public boolean load(CacheWrapper wrapper) throws Throwable {
+
+      Item loaded = internalLoad(wrapper);
+
+      if (loaded == null) return false;
+
+      this.i_data = loaded.i_data;
+      this.i_im_id = loaded.i_im_id;
+      this.i_name = loaded.i_name;
+      this.i_price = loaded.i_price;
+
+
+      return true;
+   }
+
+   @Override
+   protected TpccKey createTpccKey() {
+      return new ItemKey(i_id);
+   }
+
+   public static class ItemKey extends TpccKey {
+
+      private final long itemId;
+
+      public ItemKey(long itemId) {
+         this.itemId = itemId;
+      }
+
+      @Override
+      public Number getItemId() {
+         return itemId;
+      }
+
+      @Override
+      public String toString() {
+         return "ItemKey{" +
+               "itemId=" + itemId +
+               '}';
+      }
+   }
 }

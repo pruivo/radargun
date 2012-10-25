@@ -3,16 +3,13 @@ package org.radargun.tpcc.domain;
 import org.radargun.CacheWrapper;
 import org.radargun.tpcc.DomainObject;
 
-import java.io.Serializable;
 import java.util.Date;
 
 /**
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
  */
-public class OrderLine implements Serializable, DomainObject {
+public class OrderLine extends DomainObject<OrderLine> {
 
-   public static final String KEY_PREFIX = "ORDER-LINE";   
-   
    private long ol_o_id;
 
    private long ol_d_id;
@@ -130,38 +127,6 @@ public class OrderLine implements Serializable, DomainObject {
       this.ol_dist_info = ol_dist_info;
    }
 
-   private String getKey() {
-      return KEY_PREFIX + ID_SEPARATOR + ol_w_id + ID_SEPARATOR + ol_d_id + ID_SEPARATOR + ol_o_id + ID_SEPARATOR + ol_number;
-   }
-
-   @Override
-   public void store(CacheWrapper wrapper) throws Throwable {
-      wrapper.put(null, this.getKey(), this);
-   }
-
-   @Override
-   public void store(CacheWrapper wrapper, int nodeIndex) throws Throwable {
-      store(wrapper);
-   }
-
-   @Override
-   public boolean load(CacheWrapper wrapper) throws Throwable {
-
-      OrderLine loaded = (OrderLine) wrapper.get(null, this.getKey());
-
-      if (loaded == null) return false;
-
-      this.ol_i_id = loaded.ol_i_id;
-      this.ol_supply_w_id = loaded.ol_supply_w_id;
-      this.ol_delivery_d = loaded.ol_delivery_d;
-      this.ol_quantity = loaded.ol_quantity;
-      this.ol_amount = loaded.ol_amount;
-      this.ol_dist_info = loaded.ol_dist_info;
-
-
-      return true;
-   }
-
    @Override
    public boolean equals(Object o) {
       if (this == o) return true;
@@ -202,5 +167,71 @@ public class OrderLine implements Serializable, DomainObject {
       return result;
    }
 
+   @Override
+   public boolean load(CacheWrapper wrapper) throws Throwable {
 
+      OrderLine loaded = internalLoad(wrapper);
+
+      if (loaded == null) return false;
+
+      this.ol_i_id = loaded.ol_i_id;
+      this.ol_supply_w_id = loaded.ol_supply_w_id;
+      this.ol_delivery_d = loaded.ol_delivery_d;
+      this.ol_quantity = loaded.ol_quantity;
+      this.ol_amount = loaded.ol_amount;
+      this.ol_dist_info = loaded.ol_dist_info;
+
+
+      return true;
+   }
+
+   @Override
+   protected TpccKey createTpccKey() {
+      return new OrderLineKey(ol_number, ol_o_id, ol_d_id, ol_w_id);
+   }
+
+   public static class OrderLineKey extends TpccKey {
+
+      private final long orderLineId;
+      private final long orderId;
+      private final long districtId;
+      private final long warehouseId;
+
+      public OrderLineKey(long orderLineId, long orderId, long districtId, long warehouseId) {
+         this.orderLineId = orderLineId;
+         this.orderId = orderId;
+         this.districtId = districtId;
+         this.warehouseId = warehouseId;
+      }
+
+      @Override
+      public Number getWarehouseId() {
+         return warehouseId;
+      }
+
+      @Override
+      public Number getDistrictId() {
+         return districtId;
+      }
+
+      @Override
+      public Number getOrderId() {
+         return orderId;
+      }
+
+      @Override
+      public Number getOrderLineId() {
+         return orderLineId;
+      }
+
+      @Override
+      public String toString() {
+         return "OrderLineKey{" +
+               "orderLineId=" + orderLineId +
+               ", orderId=" + orderId +
+               ", districtId=" + districtId +
+               ", warehouseId=" + warehouseId +
+               '}';
+      }
+   }
 }

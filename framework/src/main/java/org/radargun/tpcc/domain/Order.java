@@ -3,16 +3,13 @@ package org.radargun.tpcc.domain;
 import org.radargun.CacheWrapper;
 import org.radargun.tpcc.DomainObject;
 
-import java.io.Serializable;
 import java.util.Date;
 
 /**
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
  */
-public class Order implements Serializable, Comparable, DomainObject {
+public class Order extends DomainObject<Order> implements Comparable {
 
-   public static final String KEY_PREFIX = "ORDER";
-   
    private long o_id;
 
    private long o_d_id;
@@ -109,39 +106,6 @@ public class Order implements Serializable, Comparable, DomainObject {
       this.o_all_local = o_all_local;
    }
 
-   private String getKey() {
-      return KEY_PREFIX + ID_SEPARATOR + o_w_id + ID_SEPARATOR + o_d_id + ID_SEPARATOR + o_id;
-   }
-
-   @Override
-   public void store(CacheWrapper wrapper) throws Throwable {
-      wrapper.put(null, this.getKey(), this);
-   }
-
-   @Override
-   public void store(CacheWrapper wrapper, int nodeIndex) throws Throwable {
-      store(wrapper);
-   }
-
-   @Override
-   public boolean load(CacheWrapper wrapper) throws Throwable {
-
-      Order loaded = (Order) wrapper.get(null, this.getKey());
-
-      if (loaded == null) return false;
-
-
-      this.o_c_id = loaded.o_c_id;
-      this.o_carrier_id = loaded.o_carrier_id;
-      this.o_entry_d = loaded.o_entry_d;
-      this.o_ol_cnt = loaded.o_ol_cnt;
-      this.o_all_local = loaded.o_all_local;
-
-
-      return true;
-   }
-
-
    //For a decreasing order in sort operation
    @Override
    public int compareTo(Object o) {
@@ -186,5 +150,63 @@ public class Order implements Serializable, Comparable, DomainObject {
       return result;
    }
 
+   @Override
+   public boolean load(CacheWrapper wrapper) throws Throwable {
 
+      Order loaded = internalLoad(wrapper);
+
+      if (loaded == null) return false;
+
+
+      this.o_c_id = loaded.o_c_id;
+      this.o_carrier_id = loaded.o_carrier_id;
+      this.o_entry_d = loaded.o_entry_d;
+      this.o_ol_cnt = loaded.o_ol_cnt;
+      this.o_all_local = loaded.o_all_local;
+
+
+      return true;
+   }
+
+   @Override
+   protected TpccKey createTpccKey() {
+      return new OrderKey(o_id, o_d_id, o_w_id);
+   }
+
+   public static class OrderKey extends TpccKey {
+
+      private final long orderId;
+      private final long districtId;
+      private final long warehouseId;
+
+      public OrderKey(long orderId, long districtId, long warehouseId) {
+         this.orderId = orderId;
+         this.districtId = districtId;
+         this.warehouseId = warehouseId;
+      }
+
+      @Override
+      public Number getWarehouseId() {
+         return warehouseId;
+      }
+
+      @Override
+      public Number getDistrictId() {
+         return districtId;
+      }
+
+      @Override
+      public Number getOrderId() {
+         return orderId;
+      }
+
+      @Override
+      public String toString() {
+         return "OrderKey{" +
+               "orderId=" + orderId +
+               ", districtId=" + districtId +
+               ", warehouseId=" + warehouseId +
+               '}';
+      }
+   }
 }

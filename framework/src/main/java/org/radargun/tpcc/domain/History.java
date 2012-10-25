@@ -3,14 +3,13 @@ package org.radargun.tpcc.domain;
 import org.radargun.CacheWrapper;
 import org.radargun.tpcc.DomainObject;
 
-import java.io.Serializable;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
  */
-public class History implements Serializable, DomainObject {
+public class History extends DomainObject<History> {
 
    private static final AtomicLong idGenerator = new AtomicLong(0L);
 
@@ -118,12 +117,6 @@ public class History implements Serializable, DomainObject {
    }
 
    @Override
-   public void store(CacheWrapper wrapper, int slaveIndex) throws Throwable {
-      String id = generateId(slaveIndex);
-      wrapper.put(null, id, this);
-   }
-
-   @Override
    public boolean equals(Object o) {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
@@ -158,6 +151,10 @@ public class History implements Serializable, DomainObject {
       return result;
    }
 
+   @Override
+   public void store(CacheWrapper wrapper, int slaveIndex) throws Throwable {
+      wrapper.put(null, new HistoryKey(slaveIndex, idGenerator.incrementAndGet()), this);
+   }
 
    @Override
    public void store(CacheWrapper wrapper) throws Throwable {
@@ -167,5 +164,28 @@ public class History implements Serializable, DomainObject {
    @Override
    public boolean load(CacheWrapper wrapper) throws Throwable {
       return true;
+   }
+
+   @Override
+   protected TpccKey createTpccKey() {
+      return null;
+   }
+
+   public static class HistoryKey extends TpccKey {
+      private final int nodeIdx;
+      private final long historyId;
+
+      public HistoryKey(int nodeIdx, long historyId) {
+         this.nodeIdx = nodeIdx;
+         this.historyId = historyId;
+      }
+
+      @Override
+      public String toString() {
+         return "HistoryKey{" +
+               "nodeIdx=" + nodeIdx +
+               ", historyId=" + historyId +
+               '}';
+      }
    }
 }

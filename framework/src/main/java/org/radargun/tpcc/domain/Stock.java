@@ -3,15 +3,11 @@ package org.radargun.tpcc.domain;
 import org.radargun.CacheWrapper;
 import org.radargun.tpcc.DomainObject;
 
-import java.io.Serializable;
-
 /**
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
  */
-public class Stock implements Serializable, DomainObject {
+public class Stock extends DomainObject<Stock> {
 
-   public static final String KEY_PREFIX = "STOCK";   
-   
    private long s_i_id;
 
    private long s_w_id;
@@ -207,47 +203,6 @@ public class Stock implements Serializable, DomainObject {
       this.s_data = s_data;
    }
 
-   private String getKey() {
-      return KEY_PREFIX + ID_SEPARATOR + s_w_id + ID_SEPARATOR + s_i_id;
-   }
-
-   @Override
-   public void store(CacheWrapper wrapper) throws Throwable {
-      wrapper.put(null, this.getKey(), this);
-   }
-
-   @Override
-   public void store(CacheWrapper wrapper, int nodeIndex) throws Throwable {
-      store(wrapper);
-   }
-
-   @Override
-   public boolean load(CacheWrapper wrapper) throws Throwable {
-
-      Stock loaded = (Stock) wrapper.get(null, this.getKey());
-
-      if (loaded == null) return false;
-
-      this.s_data = loaded.s_data;
-      this.s_dist_01 = loaded.s_dist_01;
-      this.s_dist_02 = loaded.s_dist_02;
-      this.s_dist_03 = loaded.s_dist_03;
-      this.s_dist_04 = loaded.s_dist_04;
-      this.s_dist_05 = loaded.s_dist_05;
-      this.s_dist_06 = loaded.s_dist_06;
-      this.s_dist_07 = loaded.s_dist_07;
-      this.s_dist_08 = loaded.s_dist_08;
-      this.s_dist_09 = loaded.s_dist_09;
-      this.s_dist_10 = loaded.s_dist_10;
-      this.s_order_cnt = loaded.s_order_cnt;
-      this.s_quantity = loaded.s_quantity;
-      this.s_remote_cnt = loaded.s_remote_cnt;
-      this.s_ytd = loaded.s_ytd;
-
-
-      return true;
-   }
-
    @Override
    public boolean equals(Object o) {
       if (this == o) return true;
@@ -298,5 +253,64 @@ public class Stock implements Serializable, DomainObject {
       return result;
    }
 
+   @Override
+   public boolean load(CacheWrapper wrapper) throws Throwable {
 
+      Stock loaded = internalLoad(wrapper);
+
+      if (loaded == null) return false;
+
+      this.s_data = loaded.s_data;
+      this.s_dist_01 = loaded.s_dist_01;
+      this.s_dist_02 = loaded.s_dist_02;
+      this.s_dist_03 = loaded.s_dist_03;
+      this.s_dist_04 = loaded.s_dist_04;
+      this.s_dist_05 = loaded.s_dist_05;
+      this.s_dist_06 = loaded.s_dist_06;
+      this.s_dist_07 = loaded.s_dist_07;
+      this.s_dist_08 = loaded.s_dist_08;
+      this.s_dist_09 = loaded.s_dist_09;
+      this.s_dist_10 = loaded.s_dist_10;
+      this.s_order_cnt = loaded.s_order_cnt;
+      this.s_quantity = loaded.s_quantity;
+      this.s_remote_cnt = loaded.s_remote_cnt;
+      this.s_ytd = loaded.s_ytd;
+
+
+      return true;
+   }
+
+   @Override
+   protected TpccKey createTpccKey() {
+      return new StockKey(s_w_id, s_i_id);
+   }
+
+   public static class StockKey extends TpccKey {
+
+      private final long warehouseId;
+      private final long itemId;
+
+      public StockKey(long warehouseId, long itemId) {
+         this.warehouseId = warehouseId;
+         this.itemId = itemId;
+      }
+
+      @Override
+      public Number getWarehouseId() {
+         return warehouseId;
+      }
+
+      @Override
+      public Number getItemId() {
+         return itemId;
+      }
+
+      @Override
+      public String toString() {
+         return "StockKey{" +
+               "warehouseId=" + warehouseId +
+               ", itemId=" + itemId +
+               '}';
+      }
+   }
 }

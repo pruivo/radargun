@@ -3,14 +3,10 @@ package org.radargun.tpcc.domain;
 import org.radargun.CacheWrapper;
 import org.radargun.tpcc.DomainObject;
 
-import java.io.Serializable;
-
 /**
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
  */
-public class Warehouse implements Serializable, DomainObject {
-
-   public static final String KEY_PREFIX = "WAREHOUSE";
+public class Warehouse extends DomainObject<Warehouse> {
 
    private long w_id;
 
@@ -118,40 +114,7 @@ public class Warehouse implements Serializable, DomainObject {
 
    public double getW_ytd() {
       return w_ytd;
-   }
-
-   private String getKey() {
-      return KEY_PREFIX + ID_SEPARATOR + w_id;
-   }
-
-   @Override
-   public void store(CacheWrapper wrapper) throws Throwable {
-      wrapper.put(null, this.getKey(), this);
-   }
-
-   @Override
-   public void store(CacheWrapper wrapper, int nodeIndex) throws Throwable {
-      store(wrapper);
-   }
-
-   @Override
-   public boolean load(CacheWrapper wrapper) throws Throwable {
-
-      Warehouse loaded = (Warehouse) wrapper.get(null, this.getKey());
-
-      if (loaded == null) return false;
-
-      this.w_city = loaded.w_city;
-      this.w_name = loaded.w_name;
-      this.w_state = loaded.w_state;
-      this.w_street1 = loaded.w_street1;
-      this.w_street2 = loaded.w_street2;
-      this.w_tax = loaded.w_tax;
-      this.w_ytd = loaded.w_ytd;
-      this.w_zip = loaded.w_zip;
-
-      return true;
-   }
+   }   
 
    @Override
    public boolean equals(Object o) {
@@ -191,4 +154,47 @@ public class Warehouse implements Serializable, DomainObject {
       return result;
    }
 
+   @Override
+   public boolean load(CacheWrapper wrapper) throws Throwable {
+      Warehouse loaded = internalLoad(wrapper);
+
+      if (loaded == null) return false;
+
+      this.w_city = loaded.w_city;
+      this.w_name = loaded.w_name;
+      this.w_state = loaded.w_state;
+      this.w_street1 = loaded.w_street1;
+      this.w_street2 = loaded.w_street2;
+      this.w_tax = loaded.w_tax;
+      this.w_ytd = loaded.w_ytd;
+      this.w_zip = loaded.w_zip;
+
+      return true;
+   }
+
+   @Override
+   protected TpccKey createTpccKey() {
+      return new WarehouseKey(w_id);
+   }
+
+   public static class WarehouseKey extends TpccKey {
+
+      private final long warehouseId;
+
+      public WarehouseKey(long warehouseId) {
+         this.warehouseId = warehouseId;
+      }
+
+      @Override
+      public Number getWarehouseId() {
+         return warehouseId;
+      }
+
+      @Override
+      public String toString() {
+         return "WarehouseKey{" +
+               "warehouseId=" + warehouseId +
+               '}';
+      }
+   }
 }

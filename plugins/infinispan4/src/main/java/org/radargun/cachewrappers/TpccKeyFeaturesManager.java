@@ -1,21 +1,12 @@
 package org.radargun.cachewrappers;
 
-import org.infinispan.dataplacement.keyfeature.AbstractFeature;
-import org.infinispan.dataplacement.keyfeature.FeatureValue;
-import org.infinispan.dataplacement.keyfeature.KeyFeatureManager;
-import org.radargun.tpcc.DomainObject;
-import org.radargun.tpcc.domain.Customer;
-import org.radargun.tpcc.domain.CustomerLookup;
-import org.radargun.tpcc.domain.District;
-import org.radargun.tpcc.domain.Item;
-import org.radargun.tpcc.domain.NewOrder;
-import org.radargun.tpcc.domain.Order;
-import org.radargun.tpcc.domain.OrderLine;
-import org.radargun.tpcc.domain.Stock;
-import org.radargun.tpcc.domain.Warehouse;
+import org.infinispan.dataplacement.c50.keyfeature.Feature;
+import org.infinispan.dataplacement.c50.keyfeature.FeatureValue;
+import org.infinispan.dataplacement.c50.keyfeature.KeyFeatureManager;
+import org.infinispan.dataplacement.c50.keyfeature.NumericFeature;
+import org.radargun.tpcc.domain.TpccKey;
 
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,95 +18,72 @@ import java.util.Map;
  */
 public class TpccKeyFeaturesManager implements KeyFeatureManager {
 
-   private static enum Feature {
-      WAREHOUSE_ID("warehouse_id"),
-      DISTRICT_ID("district_id"),
-      CUSTOMER_ID("customer_id"),
-      ITEM_ID("item_id"),
-      ORDER_ID("order_id"),
-      ORDER_LINE_ID("order_line_id");
+    private static enum TpccFeature {
+        WAREHOUSE_ID("warehouse_id"),
+        DISTRICT_ID("district_id"),
+        CUSTOMER_ID("customer_id"),
+        ITEM_ID("item_id"),
+        ORDER_ID("order_id"),
+        ORDER_LINE_ID("order_line_id");
 
-      final String featureName;
+        final Feature feature;
 
-      private Feature(String featureName) {
-         this.featureName = featureName;
-      }
-   }
+        private TpccFeature(String featureName) {
+            this.feature = new NumericFeature(featureName);
+        }
+    }
 
-   private static enum KeyType {
-      CUSTOMER(Customer.KEY_PREFIX, Feature.WAREHOUSE_ID, Feature.DISTRICT_ID, Feature.CUSTOMER_ID),
-      CUSTOMER_LOOKUP(CustomerLookup.KEY_PREFIX, Feature.WAREHOUSE_ID, Feature.DISTRICT_ID),
-      DISTRICT(District.KEY_PREFIX, Feature.WAREHOUSE_ID, Feature.DISTRICT_ID),
-      ITEM(Item.KEY_PREFIX, Feature.ITEM_ID),
-      NEW_ORDER(NewOrder.KEY_PREFIX, Feature.WAREHOUSE_ID, Feature.DISTRICT_ID, Feature.ORDER_ID),
-      ORDER(Order.KEY_PREFIX, Feature.WAREHOUSE_ID, Feature.DISTRICT_ID, Feature.ORDER_ID),
-      ORDER_LINE(OrderLine.KEY_PREFIX, Feature.WAREHOUSE_ID, Feature.DISTRICT_ID, Feature.ORDER_ID, Feature.ORDER_LINE_ID),
-      STOCK(Stock.KEY_PREFIX, Feature.WAREHOUSE_ID, Feature.ITEM_ID),
-      WAREHOUSE(Warehouse.KEY_PREFIX, Feature.WAREHOUSE_ID);
+    private final Feature[] features;
 
-      private final String prefix;
-      final Feature[] features;
+    public TpccKeyFeaturesManager() {
+        features = new Feature[TpccFeature.values().length];
+        int idx = 0;
+        for (TpccFeature tpccFeature : TpccFeature.values()) {
+            features[idx++] = tpccFeature.feature;
+        }
+    }
 
-      private KeyType(String prefix, Feature... features) {
-         this.prefix = prefix;
-         this.features = features;
-      }
+    @Override
+    public Feature[] getAllKeyFeatures() {
+        return features;
+    }
 
-      static KeyType fromString(String keyPrefix) {
-         for (KeyType keyType : values()) {
-            if (keyType.prefix.equals(keyPrefix)) {
-               return keyType;
+    @Override
+    public Map<Feature, FeatureValue> getFeatures(Object key) {
+        if (key instanceof TpccKey) {
+            Map<Feature, FeatureValue> featureValueMap = new HashMap<Feature, FeatureValue>();
+            TpccKey tpccKey = (TpccKey) key;
+            for (TpccFeature tpccFeature : TpccFeature.values()) {
+                add(featureValueMap, tpccFeature, tpccKey);
             }
-         }
-         return null;
-      }
-   }
+            return featureValueMap;
+        }
+        return Collections.emptyMap();
+    }
 
-   private final Map<Feature, AbstractFeature> featureMap;
-   private final AbstractFeature[] features;
+    private void add(Map<Feature, FeatureValue> map, TpccFeature tpccFeature, TpccKey key) {
+        Feature feature = tpccFeature.feature;
+        Number featureValue = valueOf(tpccFeature, key);
+        if (featureValue != null) {
+            map.put(feature, feature.createFeatureValue(featureValue));
+        }
+    }
 
-   @SuppressWarnings("UnusedDeclaration") //Loaded dynamically
-   public TpccKeyFeaturesManager() {
-      featureMap = new EnumMap<Feature, AbstractFeature>(Feature.class);
-
-      for (Feature feature : Feature.values()) {
-         featureMap.put(feature, new TpccKeyFeature(feature.featureName));
-      }
-
-      features = featureMap.values().toArray(new AbstractFeature[featureMap.size()]);
-   }
-
-   @Override
-   public AbstractFeature[] getAllKeyFeatures() {
-      return features;
-   }
-
-   @Override
-   public Map<AbstractFeature, FeatureValue> getFeatures(Object key) {
-      if (!(key instanceof String)) {
-         return Collections.emptyMap();
-      }
-
-      String[] tpccKeysIds = ((String) key).split(DomainObject.ID_SEPARATOR);
-
-      KeyType keyType = KeyType.fromString(tpccKeysIds[0]);
-
-      if (keyType == null) {
-         return Collections.emptyMap();
-      }
-
-      Map<AbstractFeature, FeatureValue> features = new HashMap<AbstractFeature, FeatureValue>();
-
-      int idx = 1;
-      for (Feature feature : keyType.features) {
-         set(features, feature, tpccKeysIds[idx++]);
-      }
-
-      return features;
-   }
-
-   private void set(Map<AbstractFeature, FeatureValue> features, Feature feature, String value) {
-      features.put(featureMap.get(feature), featureMap.get(feature).createFeatureValue(Integer.parseInt(value)));
-
-   }
+    private Number valueOf(TpccFeature tpccFeature, TpccKey key) {
+        switch (tpccFeature) {
+            case WAREHOUSE_ID:
+                return key.getWarehouseId();
+            case DISTRICT_ID:
+                return key.getDistrictId();
+            case CUSTOMER_ID:
+                return key.getCustomerId();
+            case ITEM_ID:
+                return key.getItemId();
+            case ORDER_ID:
+                return key.getOrderId();
+            case ORDER_LINE_ID:
+                return key.getOrderLineId();
+        }
+        return null;
+    }
 }
