@@ -10,27 +10,26 @@ import java.io.Serializable;
  */
 public abstract class TpccKey implements Serializable {
 
-    public Number getWarehouseId() {
-        return null;
-    }
+   public Number getWarehouseId() {
+      return null;
+   }
 
-    public Number getDistrictId() {
-        return null;
-    }
+   public Number getDistrictId() {
+      return null;
+   }
 
-    public Number getCustomerId() {
-        return null;
-    }
+   public Number getCustomerId() {
+      return null;
+   }
 
-    public Number getItemId() {
-        return null;
-    }
+   public Number getItemId() {
+      return null;
+   }
 
-    public Number getOrderId() {
-        return null;
-    }
+   public Number getOrderId() {
+      return null;
+   }
 
-    public Number getOrderLineId() {
-        return null;
-    }
-}
+   public Number getOrderLineId() {
+      return null;
+   }}

@@ -2,6 +2,7 @@ package org.radargun.tpcc.transaction;
 
 import org.radargun.CacheWrapper;
 import org.radargun.tpcc.ElementNotFoundException;
+import org.radargun.tpcc.TpccTerminal;
 import org.radargun.tpcc.TpccTools;
 import org.radargun.tpcc.domain.Customer;
 import org.radargun.tpcc.domain.District;
@@ -30,14 +31,8 @@ public class NewOrderTransaction implements TpccTransaction {
    private final long[] supplierWarehouseIDs;
    private final long[] orderQuantities;
 
-   public NewOrderTransaction(TpccTools tpccTools, int warehouseID) {
-
-      if (warehouseID <= 0) {
-         this.warehouseID = tpccTools.randomNumber(1, TpccTools.NB_WAREHOUSES);
-      } else {
-         this.warehouseID = warehouseID;
-      }
-
+   public NewOrderTransaction(TpccTools tpccTools, TpccTerminal tpccTerminal) {
+      this.warehouseID = tpccTerminal.chooseWarehouse();
       this.districtID = tpccTools.randomNumber(1, TpccTools.NB_MAX_DISTRICT);
       this.customerID = tpccTools.nonUniformRandom(TpccTools.C_C_ID, TpccTools.A_C_ID, 1, TpccTools.NB_MAX_CUSTOMER);
 

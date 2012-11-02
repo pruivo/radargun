@@ -31,14 +31,9 @@ public class OrderStatusTransaction implements TpccTransaction {
 
    private final boolean customerByName;
 
-   public OrderStatusTransaction(TpccTools tpccTools, int warehouseID) {
-
-      if (warehouseID <= 0) {
-         this.terminalWarehouseID = tpccTools.randomNumber(1, TpccTools.NB_WAREHOUSES);
-      } else {
-         this.terminalWarehouseID = warehouseID;
-      }
-
+   public OrderStatusTransaction(TpccTools tpccTools, TpccTerminal tpccTerminal) {      
+      this.terminalWarehouseID = tpccTerminal.chooseWarehouse();
+      
       // clause 2.6.1.2
       this.districtID = tpccTools.randomNumber(1, TpccTools.NB_MAX_DISTRICT);
 

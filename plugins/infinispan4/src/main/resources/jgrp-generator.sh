@@ -120,7 +120,7 @@ fi
 echo "         num_initial_members=\"5\"" >> ${DEST_FILE}
 echo "         break_on_coord_rsp=\"true\"" >> ${DEST_FILE}
 echo "         return_entire_cache=\"true\"" >> ${DEST_FILE}
-echo "         stagger_timeout=\"3000\"" >> ${DEST_FILE}
+echo "         stagger_timeout=\"2000\"" >> ${DEST_FILE}
 echo "         timeout=\"5000\"" >> ${DEST_FILE}
 echo "         />" >> ${DEST_FILE}
 
@@ -133,6 +133,7 @@ echo "   <BARRIER/>" >> ${DEST_FILE}
 echo "   <pbcast.NAKACK" >> ${DEST_FILE}
 echo "         exponential_backoff=\"500\"" >> ${DEST_FILE}
 echo "         use_mcast_xmit=\"${IP_MCAST}\"" >> ${DEST_FILE}
+echo "         use_mcast_xmit_req=\"${IP_MCAST}\"" >> ${DEST_FILE}
 echo "         xmit_stagger_timeout=\"5000\"" >> ${DEST_FILE}
 echo "         discard_delivered_msgs=\"true\"" >> ${DEST_FILE}
 echo "         />" >> ${DEST_FILE}
@@ -140,7 +141,6 @@ echo "         />" >> ${DEST_FILE}
 #TCP uses unicast2 and UDP uses unicast
 if [ "${TCP}" == "true" ]; then
 echo "   <UNICAST2" >> ${DEST_FILE}
-echo "         exponential_backoff=\"500\"" >> ${DEST_FILE}
 echo "         max_stable_msgs=\"100\"" >> ${DEST_FILE}
 echo "         xmit_interval=\"1000\"" >> ${DEST_FILE}
 echo "         conn_expiry_timeout=\"0\"" >> ${DEST_FILE}
@@ -190,11 +190,6 @@ echo "   <FRAG2" >> ${DEST_FILE}
 echo "         frag_size=\"60K\"" >> ${DEST_FILE}
 echo "         />" >> ${DEST_FILE}
 echo "   <pbcast.STATE_TRANSFER/>" >> ${DEST_FILE}
-echo "   <COMPRESS" >> ${DEST_FILE}
-echo "         compression_level=\"9\"" >> ${DEST_FILE}
-echo "         min_size=\"10K\"" >> ${DEST_FILE}
-echo "         />" >> ${DEST_FILE}
-
 echo "</config>" >> ${DEST_FILE}
 
 echo "Finished!"

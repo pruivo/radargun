@@ -39,16 +39,10 @@ public class PaymentTransaction implements TpccTransaction {
 
    private final int slaveIndex;
 
-   public PaymentTransaction(TpccTools tpccTools, int slaveIndex, int warehouseID) {
+   public PaymentTransaction(TpccTools tpccTools, int slaveIndex, TpccTerminal tpccTerminal) {
 
-      this.slaveIndex = slaveIndex;
-
-      if (warehouseID <= 0) {
-         this.terminalWarehouseID = tpccTools.randomNumber(1, TpccTools.NB_WAREHOUSES);
-      } else {
-         this.terminalWarehouseID = warehouseID;
-      }
-
+      this.slaveIndex = slaveIndex;      
+      this.terminalWarehouseID = tpccTerminal.chooseWarehouse();
       this.districtID = tpccTools.randomNumber(1, TpccTools.NB_MAX_DISTRICT);
 
       long x = tpccTools.randomNumber(1, 100);

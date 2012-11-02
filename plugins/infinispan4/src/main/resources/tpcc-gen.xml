@@ -10,9 +10,9 @@
     </global>
     <default>
         <locking
-                isolationLevel="READ_COMMITTED"
+                isolationLevel="REPEATABLE_READ"
                 concurrencyLevel="32"
-                writeSkewCheck="false"
+                writeSkewCheck="true"
                 useLockStriping="false"
                 lockAcquisitionTimeout="10000"/>
         <jmxStatistics
@@ -36,31 +36,32 @@
                 shared="false"
                 preload="false">
             <loader
-                    class="org.infinispan.loaders.jdbc.stringbased.JdbcStringBasedCacheStore"
+                    class="org.infinispan.loaders.jdbc.binary.JdbcBinaryCacheStore"
                     fetchPersistentState="false"
                     ignoreModifications="false"
                     purgeOnStartup="true">
                 <properties>
-                    <property
-                            name="stringsTableNamePrefix" value="ISPN_STRING_TABLE"/>
-                    <property name="idColumnName" value="ID_COLUMN"/>
-                    <property name="dataColumnName" value="DATA_COLUMN"/>
-                    <property name="timestampColumnName" value="TIMESTAMP_COLUMN"/>
-                    <property name="timestampColumnType" value="BIGINT"/>
+                    <property name="batchSize" value="100"/>
+                    <property name="bucketTableNamePrefix" value="BINARY_DATA_PLACEMENT"/>
                     <property name="connectionFactoryClass" value="org.infinispan.loaders.jdbc.connectionfactory.PooledConnectionFactory"/>
-                    <property name="connectionUrl" value="jdbc:postgresql://localhost:55555/tpcc-10-warehouses"/>
+                    <property name="connectionUrl" value="jdbc:postgresql://localhost:55555/tpcc-40w"/>
+                    <property name="createTableOnStart" value="true"/>
+                    <property name="dataColumnName" value="DATA_COLUMN"/>
+                    <property name="dataColumnType" value="BINARY"/>
+                    <property name="driverClass" value="org.postgresql.Driver"/>
+                    <property name="dropTableOnExit" value="false"/>
+                    <property name="fetchSize" value="100"/>
+                    <property name="idColumnName" value="ID_COLUMN"/>
+                    <property name="idColumnType" value="VARCHAR(255)"/>
                     <property name="userName" value="postgres"/>
                     <property name="password" value="postgres"/>
-                    <property name="driverClass" value="org.postgresql.Driver"/>
-                    <property name="idColumnType" value="VARCHAR(255)"/>
-                    <property name="dataColumnType" value="BYTEA"/>
-                    <property name="dropTableOnExit" value="false"/>
-                    <property name="createTableOnStart" value="true"/>
+                    <property name="timestampColumnName" value="TIMESTAMP_COLUMN"/>
+                    <property name="timestampColumnType" value="BIGINT"/>
                 </properties>
             </loader>
         </loaders>
         <eviction
-                maxEntries="50000"
+                maxEntries="500000"
                 strategy="UNORDERED"/>
     </default>
     <namedCache

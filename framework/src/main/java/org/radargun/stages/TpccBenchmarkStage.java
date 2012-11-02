@@ -79,6 +79,11 @@ public class TpccBenchmarkStage extends AbstractDistStage {
     */
    private long statsSamplingInterval = 0;
 
+   /**
+    * sets the probability of the workload access to the same warehouse 
+    */
+   private int localityProbability = -1;
+
    private transient CacheWrapper cacheWrapper;
 
    private transient TpccStressor tpccStressor;
@@ -206,6 +211,10 @@ public class TpccBenchmarkStage extends AbstractDistStage {
       this.statsSamplingInterval = statsSamplingInterval;
    }
 
+   public void setLocalityProbability(int localityProbability) {
+      this.localityProbability = localityProbability;
+   }
+
    @Override
    public String toString() {
       return "TpccBenchmarkStage {" +
@@ -217,6 +226,7 @@ public class TpccBenchmarkStage extends AbstractDistStage {
             ", accessSameWarehouse=" + accessSameWarehouse +
             ", numberOfItemsInterval=" + numberOfItemsInterval +
             ", statsSamplingInterval=" + statsSamplingInterval +
+            ", localityProbability=" + localityProbability +
             ", cacheWrapper=" + cacheWrapper +
             ", " + super.toString();
    }

@@ -30,27 +30,45 @@ public class TpccTerminal {
 
    private final TpccTools tpccTools;
 
+   private final int localityProbability;
 
-   public TpccTerminal(double paymentWeight, double orderStatusWeight, int indexNode, int localWarehouseID) {
+
+   public TpccTerminal(double paymentWeight, double orderStatusWeight, int indexNode, int localWarehouseID,int localityProbability) {
       this.paymentWeight = paymentWeight;
       this.orderStatusWeight = orderStatusWeight;
       this.indexNode = indexNode;
       this.localWarehouseID = localWarehouseID;
+      this.localityProbability = localityProbability;
       tpccTools = TpccTools.newInstance();
    }
 
    public synchronized final TpccTransaction createTransaction(int type) {
       switch (type) {
          case PAYMENT:
-            return new PaymentTransaction(tpccTools, indexNode, localWarehouseID);
+            return new PaymentTransaction(tpccTools, indexNode, this);
          case ORDER_STATUS:
-            return new OrderStatusTransaction(tpccTools, localWarehouseID);
+            return new OrderStatusTransaction(tpccTools, this);
          case NEW_ORDER:
-            return new NewOrderTransaction(tpccTools, localWarehouseID);
+            return new NewOrderTransaction(tpccTools, this);
          case DELIVERY:
          case STOCK_LEVEL:
          default:
             return null;
+      }
+   }
+
+   public synchronized final long chooseWarehouse() {
+      if (localityProbability < 0) {
+         return tpccTools.randomNumber(1, TpccTools.NB_WAREHOUSES);
+      } else if (tpccTools.randomNumber(0, 100) < localityProbability) {
+         return localWarehouseID;
+      } else {
+         long warehouseId;
+         do {
+            warehouseId = tpccTools.randomNumber(1, TpccTools.NB_WAREHOUSES);
+         }
+         while (warehouseId == localWarehouseID && TpccTools.NB_WAREHOUSES > 1);
+         return warehouseId;
       }
    }
 
@@ -106,7 +124,7 @@ public class TpccTerminal {
    public String toString() {
       return "TpccTerminal{" +
             "paymentWeight=" + paymentWeight +
-            ", orderStatusWeight=" + orderStatusWeight +            
+            ", orderStatusWeight=" + orderStatusWeight +
             ", localWarehouseID=" + (localWarehouseID == -1 ? "random" : localWarehouseID) +
             '}';
    }

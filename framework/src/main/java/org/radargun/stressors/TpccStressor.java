@@ -97,6 +97,11 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
     */
    private long statsSamplingInterval = 0;
 
+   /**
+    * sets the probability of the workload access to the same warehouse 
+    */
+   private int localityProbability = -1;
+
    private CacheWrapper cacheWrapper;
    private long startTime;
    private long endTime;
@@ -549,7 +554,7 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
          super("Stressor-" + threadIndex);
          this.threadIndex = threadIndex;
          this.arrivalRate = arrivalRate;
-         this.terminal = new TpccTerminal(paymentWeight, orderStatusWeight, nodeIndex, localWarehouseID);
+         this.terminal = new TpccTerminal(paymentWeight, orderStatusWeight, nodeIndex, localWarehouseID, localityProbability);
       }
 
       @Override
@@ -799,7 +804,7 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
          super("Producer-" + id);
          setDaemon(true);
          this.rate = rate;
-         this.terminal = new TpccTerminal(paymentWeight, orderStatusWeight, nodeIndex, 0);
+         this.terminal = new TpccTerminal(paymentWeight, orderStatusWeight, nodeIndex, 0, localityProbability);
       }
 
       public void run() {
@@ -1068,6 +1073,10 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
 
    public synchronized final int getOrderStatusWeight() {
       return orderStatusWeight;
+   }
+
+   public void setLocalityProbability(int localityProbability) {
+      this.localityProbability = localityProbability;
    }
 
    public synchronized final void stopBenchmark() {
