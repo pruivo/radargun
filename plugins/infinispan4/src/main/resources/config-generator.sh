@@ -322,7 +322,7 @@ echo "                maxNumberOfKeysToRequest=\"${DP_MAX_KEYS}\">" >> ${DEST_FI
 echo "            <properties>" >> ${DEST_FILE}
 echo "                <property" >> ${DEST_FILE}
 echo "                        name=\"keyFeatureManager\"" >> ${DEST_FILE}
-echo "                        value=\"org.radargun.cachewrappers.RadargunKeyFeatureManager\"" >> ${DEST_FILE}
+echo "                        value=\"org.radargun.cachewrappers.TpccKeyFeaturesManager\"" >> ${DEST_FILE}
 echo "                        />" >> ${DEST_FILE}
 echo "                <property" >> ${DEST_FILE}
 echo "                        name=\"location\"" >> ${DEST_FILE}
