@@ -26,6 +26,8 @@ CUSTOM_INTERCEPTOR_CHAIN="false"
 SYNC_COMMIT="true";
 DP_BF_FP="0.01"
 DP_MAX_KEYS="1000"
+DP_NUMBER_HASHES="10"
+DP_TIMEOUT="10000"
 L1_ENABLED="false"
 L1_REHASH="false"
 L1_LIFESPAN="600000"
@@ -59,7 +61,7 @@ echo ""
 echo "    -to-queue-size <value>        total order thread pool configuration"
 echo "                                  default: ${TO_QUEUE_SIZE}"
 echo ""
-echo "    -clustering-mode <value>      the clustering mode to use" 
+echo "    -clustering-mode <value>      the clustering mode to use"
 echo "                                  values (r -- replicated, d -- distributed, i -- invalidation, l -- local)"
 echo "                                  default: ${CLUSTERING_MODE}"
 echo ""
@@ -88,15 +90,23 @@ echo "    -c50-data-placement           enable the data placement algorithm with
 echo ""
 echo "    -hm-data-placement            enable the data placement algorithm with Hash Map based"
 echo ""
+echo "    -bf-data-placement            enable the data placement algorithm with Bloomier Filter based"
+echo ""
 echo "    -dp-bf-fp                     sets the Bloom Filter false positive probability (from 0 to 1)"
 echo "                                  default: ${DP_BF_FP}"
 echo ""
 echo "    -dp-max-keys                  sets the max number of keys to request in the data placement algorithm"
 echo "                                  default: ${DP_MAX_KEYS}"
 echo ""
+echo "    -dp-nr-hashes                 sets the number of hashes (for Bloomier Filter implementation)"
+echo "                                  default: ${DP_NUMBER_HASHES}"
+echo ""
+echo "    -dp-timeout                   sets the timeout (for Bloomier Filter implementation)"
+echo "                                  default: ${DP_TIMEOUT}"
+echo ""
 echo "    -l1                           enables the L1 cache with the default values. Only in Distributed mode"
 echo ""
-echo "    -l1-rehash                    entries removed due to a rehash will be moved to L1 rather than" 
+echo "    -l1-rehash                    entries removed due to a rehash will be moved to L1 rather than"
 echo "                                  being removed altogether"
 echo "                                  default: disabled"
 echo ""
@@ -115,7 +125,7 @@ echo "    -h                            show this message"
 
 while [ -n "$1" ]; do
 case $1 in
-  -h) help; exit 0;;  
+  -h) help; exit 0;;
   -jgr-config) JGR_CONFIG=$2; shift 2;;
   -isolation-level) ISOLATION_LEVEL=$2; shift 2;;
   -concurrency-level) CONCURRENCY_LEVEL=$2; shift 2;;
@@ -134,16 +144,19 @@ case $1 in
   -stats) STATS="true"; shift 1;;
   -to-queue-size) TO_QUEUE_SIZE=$2; shift 2;;
   -to-1pc) TO_1PC="true"; shift 1;;
-  -extended-stats) CUSTOM_INTERCEPTOR_CHAIN="true"; shift 1;;  
+  -extended-stats) CUSTOM_INTERCEPTOR_CHAIN="true"; shift 1;;
   -c50-data-placement) DATA_PLACEMENT="org.infinispan.dataplacement.c50.C50MLObjectLookupFactory"; shift 1;;
   -hm-data-placement) DATA_PLACEMENT="org.infinispan.dataplacement.hm.HashMapObjectLookupFactory"; shift 1;;
+  -bf-data-placement) DATA_PLACEMENT="org.infinispan.dataplacement.hm.BloomierFilterObjectLookupFactory"; shift 1;;
   -dp-bf-fp) DP_BF_FP=$2; shift 2;;
   -dp-max-keys) DP_MAX_KEYS=$2; shift 2;;
+  -dp-nr-hashes) DP_NUMBER_HASHES=$2; shift 2;;
+  -dp-timeout) DP_TIMEOUT=$2; shift 2;;
   -l1) L1_ENABLED="true"; shift 1;;
   -l1-rehash) L1_ENABLED="true"; L1_REHASH="true"; shift 1;;
   -l1-lifespan) L1_ENABLED="true"; L1_LIFESPAN=$2; shift 2;;
   -l1-cleanup) L1_ENABLED="true"; L1_CLEANUP=$2; shift 2;;
-  -l1-threshold) L1_ENABLED="true"; L1_THRESHOLD=$2; shift 2;;    
+  -l1-threshold) L1_ENABLED="true"; L1_THRESHOLD=$2; shift 2;;
   *) echo "WARNING: unknown argument '$1'. It will be ignored" >&2; shift 1;;
   esac
 done
@@ -283,11 +296,11 @@ echo "        </clustering>" >> ${DEST_FILE}
 if [ "${CUSTOM_INTERCEPTOR_CHAIN}" == "true" ]; then
 if [ "${CLUSTERING_MODE}" == "r" ]; then
 echo "        <customInterceptors>" >> ${DEST_FILE}
-echo "            <interceptor" >> ${DEST_FILE} 
+echo "            <interceptor" >> ${DEST_FILE}
 echo "                    after=\"org.infinispan.interceptors.InvocationContextInterceptor\"" >> ${DEST_FILE}
 echo "                    class=\"org.infinispan.distribution.wrappers.ReplCustomStatsInterceptor\"/>" >> ${DEST_FILE}
-echo "            <interceptor" >> ${DEST_FILE} 
-echo "                    before=\"org.infinispan.interceptors.NotificationInterceptor\"" >> ${DEST_FILE} 
+echo "            <interceptor" >> ${DEST_FILE}
+echo "                    before=\"org.infinispan.interceptors.NotificationInterceptor\"" >> ${DEST_FILE}
 echo "                    class=\"org.infinispan.stats.topK.StreamLibInterceptor\"/>" >> ${DEST_FILE}
 echo "        </customInterceptors>" >> ${DEST_FILE}
 else if [ "${CLUSTERING_MODE}" == "d" ]; then
@@ -327,6 +340,14 @@ echo "                        />" >> ${DEST_FILE}
 echo "                <property" >> ${DEST_FILE}
 echo "                        name=\"bfFalsePositiveProb\"" >> ${DEST_FILE}
 echo "                        value=\"${DP_BF_FP}\"" >> ${DEST_FILE}
+echo "                        />" >> ${DEST_FILE}
+echo "                <property" >> ${DEST_FILE}
+echo "                        name=\"numberOfHashes\"" >> ${DEST_FILE}
+echo "                        value=\"${DP_NUMBER_HASHES}\"" >> ${DEST_FILE}
+echo "                        />" >> ${DEST_FILE}
+echo "                <property" >> ${DEST_FILE}
+echo "                        name=\"timeout\"" >> ${DEST_FILE}
+echo "                        value=\"${DP_TIMEOUT}\"" >> ${DEST_FILE}
 echo "                        />" >> ${DEST_FILE}
 echo "            </properties>" >> ${DEST_FILE}
 echo "        </dataPlacement>" >> ${DEST_FILE}

@@ -21,7 +21,7 @@ import static org.radargun.utils.Utils.numberFormat;
 public class WebSessionBenchmarkStage extends AbstractDistStage {
 
    private static final String SCRIPT_LAUNCH = "_script_launch_";
-   private static final String SCRIPT_PATH = "/home/pruivo/beforeBenchmark.sh";
+   private static final String SCRIPT_PATH = System.getProperty("user.home") + "/beforeBenchmark.sh";
 
    //for each session there will be created fixed number of attributes. On those attributes all the GETs and PUTs are
    // performed (for PUT is overwrite)
@@ -50,7 +50,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
 
    //allows execution without contention
    private boolean noContention = false;
-   
+
    //the probability of the key to be local, assuming key_x_?? is store in node x
    private int localityProbability = -1;
 
