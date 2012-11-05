@@ -240,6 +240,24 @@ public class District extends DomainObject<District> {
                ", districtId=" + districtId +
                '}';
       }
+
+      @Override
+      public boolean equals(Object o) {
+         if (this == o) return true;
+         if (o == null || getClass() != o.getClass()) return false;
+
+         DistrictKey that = (DistrictKey) o;
+
+         return districtId == that.districtId && warehouseId == that.warehouseId;
+
+      }
+
+      @Override
+      public int hashCode() {
+         int result = (int) (warehouseId ^ (warehouseId >>> 32));
+         result = 31 * result + (int) (districtId ^ (districtId >>> 32));
+         return result;
+      }
    }
 
 }

@@ -233,5 +233,28 @@ public class OrderLine extends DomainObject<OrderLine> {
                ", warehouseId=" + warehouseId +
                '}';
       }
+
+      @Override
+      public boolean equals(Object o) {
+         if (this == o) return true;
+         if (o == null || getClass() != o.getClass()) return false;
+
+         OrderLineKey that = (OrderLineKey) o;
+
+         return districtId == that.districtId &&
+               orderId == that.orderId &&
+               orderLineId == that.orderLineId &&
+               warehouseId == that.warehouseId;
+
+      }
+
+      @Override
+      public int hashCode() {
+         int result = (int) (orderLineId ^ (orderLineId >>> 32));
+         result = 31 * result + (int) (orderId ^ (orderId >>> 32));
+         result = 31 * result + (int) (districtId ^ (districtId >>> 32));
+         result = 31 * result + (int) (warehouseId ^ (warehouseId >>> 32));
+         return result;
+      }
    }
 }

@@ -205,6 +205,27 @@ public class CustomerLookup extends DomainObject<CustomerLookup> implements Exte
                ", cLast='" + cLast + '\'' +
                '}';
       }
+
+      @Override
+      public boolean equals(Object o) {
+         if (this == o) return true;
+         if (o == null || getClass() != o.getClass()) return false;
+
+         CustomerLookupKey that = (CustomerLookupKey) o;
+
+         return districtId == that.districtId &&
+               warehouseId == that.warehouseId &&
+               !(cLast != null ? !cLast.equals(that.cLast) : that.cLast != null);
+
+      }
+
+      @Override
+      public int hashCode() {
+         int result = (int) (warehouseId ^ (warehouseId >>> 32));
+         result = 31 * result + (int) (districtId ^ (districtId >>> 32));
+         result = 31 * result + (cLast != null ? cLast.hashCode() : 0);
+         return result;
+      }
    }
 }
 

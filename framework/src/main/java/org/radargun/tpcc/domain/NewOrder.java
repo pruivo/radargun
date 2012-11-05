@@ -114,5 +114,25 @@ public class NewOrder extends DomainObject<NewOrder> {
                ", warehouseId=" + warehouseId +
                '}';
       }
+
+      @Override
+      public boolean equals(Object o) {
+         if (this == o) return true;
+         if (o == null || getClass() != o.getClass()) return false;
+
+         NewOrderKey that = (NewOrderKey) o;
+
+         return districtId == that.districtId &&
+               orderId == that.orderId &&
+               warehouseId == that.warehouseId;
+      }
+
+      @Override
+      public int hashCode() {
+         int result = (int) (orderId ^ (orderId >>> 32));
+         result = 31 * result + (int) (districtId ^ (districtId >>> 32));
+         result = 31 * result + (int) (warehouseId ^ (warehouseId >>> 32));
+         return result;
+      }
    }
 }

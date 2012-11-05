@@ -187,5 +187,22 @@ public class History extends DomainObject<History> {
                ", historyId=" + historyId +
                '}';
       }
+
+      @Override
+      public boolean equals(Object o) {
+         if (this == o) return true;
+         if (o == null || getClass() != o.getClass()) return false;
+
+         HistoryKey that = (HistoryKey) o;
+
+         return historyId == that.historyId && nodeIdx == that.nodeIdx;
+      }
+
+      @Override
+      public int hashCode() {
+         int result = nodeIdx;
+         result = 31 * result + (int) (historyId ^ (historyId >>> 32));
+         return result;
+      }
    }
 }

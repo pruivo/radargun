@@ -141,5 +141,20 @@ public class Item extends DomainObject<Item> {
                "itemId=" + itemId +
                '}';
       }
+
+      @Override
+      public boolean equals(Object o) {
+         if (this == o) return true;
+         if (o == null || getClass() != o.getClass()) return false;
+
+         ItemKey itemKey = (ItemKey) o;
+
+         return itemId == itemKey.itemId;
+      }
+
+      @Override
+      public int hashCode() {
+         return (int) (itemId ^ (itemId >>> 32));
+      }
    }
 }

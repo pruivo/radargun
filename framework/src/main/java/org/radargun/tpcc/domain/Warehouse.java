@@ -114,7 +114,7 @@ public class Warehouse extends DomainObject<Warehouse> {
 
    public double getW_ytd() {
       return w_ytd;
-   }   
+   }
 
    @Override
    public boolean equals(Object o) {
@@ -195,6 +195,21 @@ public class Warehouse extends DomainObject<Warehouse> {
          return "WarehouseKey{" +
                "warehouseId=" + warehouseId +
                '}';
+      }
+
+      @Override
+      public boolean equals(Object o) {
+         if (this == o) return true;
+         if (o == null || getClass() != o.getClass()) return false;
+
+         WarehouseKey that = (WarehouseKey) o;
+
+         return warehouseId == that.warehouseId;
+      }
+
+      @Override
+      public int hashCode() {
+         return (int) (warehouseId ^ (warehouseId >>> 32));
       }
    }
 }

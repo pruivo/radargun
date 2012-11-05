@@ -312,5 +312,22 @@ public class Stock extends DomainObject<Stock> {
                ", itemId=" + itemId +
                '}';
       }
+
+      @Override
+      public boolean equals(Object o) {
+         if (this == o) return true;
+         if (o == null || getClass() != o.getClass()) return false;
+
+         StockKey stockKey = (StockKey) o;
+
+         return itemId == stockKey.itemId && warehouseId == stockKey.warehouseId;
+      }
+
+      @Override
+      public int hashCode() {
+         int result = (int) (warehouseId ^ (warehouseId >>> 32));
+         result = 31 * result + (int) (itemId ^ (itemId >>> 32));
+         return result;
+      }
    }
 }

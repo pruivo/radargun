@@ -395,6 +395,27 @@ public class Customer extends DomainObject<Customer> implements Comparable {
                ", customerId=" + customerId +
                '}';
       }
+
+      @Override
+      public boolean equals(Object o) {
+         if (this == o) return true;
+         if (o == null || getClass() != o.getClass()) return false;
+
+         CustomerKey that = (CustomerKey) o;
+
+         return customerId == that.customerId &&
+               districtId == that.districtId &&
+               warehouseId == that.warehouseId;
+
+      }
+
+      @Override
+      public int hashCode() {
+         int result = (int) (warehouseId ^ (warehouseId >>> 32));
+         result = 31 * result + (int) (districtId ^ (districtId >>> 32));
+         result = 31 * result + (int) (customerId ^ (customerId >>> 32));
+         return result;
+      }
    }
 
 }

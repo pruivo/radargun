@@ -208,5 +208,26 @@ public class Order extends DomainObject<Order> implements Comparable {
                ", warehouseId=" + warehouseId +
                '}';
       }
+
+      @Override
+      public boolean equals(Object o) {
+         if (this == o) return true;
+         if (o == null || getClass() != o.getClass()) return false;
+
+         OrderKey orderKey = (OrderKey) o;
+
+         return districtId == orderKey.districtId &&
+               orderId == orderKey.orderId &&
+               warehouseId == orderKey.warehouseId;
+
+      }
+
+      @Override
+      public int hashCode() {
+         int result = (int) (orderId ^ (orderId >>> 32));
+         result = 31 * result + (int) (districtId ^ (districtId >>> 32));
+         result = 31 * result + (int) (warehouseId ^ (warehouseId >>> 32));
+         return result;
+      }
    }
 }
