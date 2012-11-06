@@ -25,6 +25,16 @@ echo ""
 echo "    -tcp                      sets the transport protocol as TCP"
 echo "                              Default: uses UDP"
 echo ""
+echo "    -bundle                   forces the bundling protocol. In UDP it is enabled by default"
+echo ""
+echo "    -flow-control             forces the flow control protocol. In UDP it is enabled by default"
+echo ""
+echo "    -frag                     forces the fragmentation protocol. In UDP it is enabled by default"
+echo ""
+echo "    -compress <level>         sets the compression protocol. The <level>, between 1 and 9, sets the"
+echo "                              compression level"
+echo "                              Disabled by default"
+echo ""
 echo "    -h                        show this message"
 }
 
@@ -36,7 +46,10 @@ case $1 in
   -no-ipmcast) IP_MCAST="false"; shift 1;;
   -gossip-host) INITIAL_HOST=$2; shift 2;;
   -tcp) TCP="true"; shift 1;;
-  -*) echo "WARNING: unknown option '$1'. It will be ignored" >&2; shift 1;;
+  -bundle) FORCE_BUNDLE="true"; shift 1;;
+  -flow-control) FORCE_FLOW_CONTROL="true"; shift 1;;
+  -frag) FORCE_FRAG="true"; shift 1;;
+  -compress) COMPRESS=$2; shift 2;;
   *) echo "WARNING: unknown argument '$1'. It will be ignored" >&2; shift 1;;
   esac
 done
@@ -46,7 +59,7 @@ echo "Writing configuration to ${DEST_FILE}"
 echo "<config" > ${DEST_FILE}
 echo "      xmlns=\"urn:org:jgroups\"" >> ${DEST_FILE}
 echo "      xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" >> ${DEST_FILE}
-echo "      xsi:schemaLocation=\"urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.0.xsd\">" >> ${DEST_FILE}
+echo "      xsi:schemaLocation=\"urn:org:jgroups http://www.jgroups.org/schema/JGroups-3.1.xsd\">" >> ${DEST_FILE}
 
 if [ "${TCP}" == "true" ]; then
 #TCP parameters!!
@@ -76,10 +89,15 @@ fi
 
 echo "         loopback=\"false\"" >> ${DEST_FILE}
 echo "         discard_incompatible_packets=\"true\"" >> ${DEST_FILE}
+if [ "${TCP}" == "false" -o "${FORCE_BUNDLE}" == "true" ]; then
 echo "         max_bundle_size=\"64K\"" >> ${DEST_FILE}
 echo "         max_bundle_timeout=\"2\"" >> ${DEST_FILE}
 echo "         enable_bundling=\"true\"" >> ${DEST_FILE}
 echo "         enable_unicast_bundling=\"true\"" >> ${DEST_FILE}
+else
+echo "         enable_bundling=\"false\"" >> ${DEST_FILE}
+echo "         enable_unicast_bundling=\"false\"" >> ${DEST_FILE}
+fi
 echo "         enable_diagnostics=\"true\"" >> ${DEST_FILE}
 echo "         thread_naming_pattern=\"cl\"" >> ${DEST_FILE}
 
@@ -104,7 +122,7 @@ if [ "${IP_MCAST}" == "true" ]; then
    if [ "${TCP}" == "true" ]; then
 #TPC discover
 echo "   <MPING" >> ${DEST_FILE}
-echo "         mcast_addr=\"\${jgroups.udp.mcast_addr:228.6.7.8}\"" >> ${DEST_FILE}
+echo "         mcast_addr=\"\${jgroups.udp.mcast_addr:228.10.10.10}\"" >> ${DEST_FILE}
 echo "         mcast_port=\"\${jgroups.udp.mcast_port:46655}\"" >> ${DEST_FILE}
 echo "         ip_ttl=\"\${jgroups.udp.ip_ttl:8}\"" >> ${DEST_FILE}
 else
@@ -119,22 +137,26 @@ fi
 #Discover common properties
 echo "         num_initial_members=\"5\"" >> ${DEST_FILE}
 echo "         break_on_coord_rsp=\"true\"" >> ${DEST_FILE}
-echo "         return_entire_cache=\"true\"" >> ${DEST_FILE}
-echo "         stagger_timeout=\"2000\"" >> ${DEST_FILE}
-echo "         timeout=\"5000\"" >> ${DEST_FILE}
+#echo "         return_entire_cache=\"true\"" >> ${DEST_FILE}
+echo "         stagger_timeout=\"3000\"" >> ${DEST_FILE}
+echo "         timeout=\"15000\"" >> ${DEST_FILE}
 echo "         />" >> ${DEST_FILE}
 
 echo "   <MERGE2" >> ${DEST_FILE}
 echo "         max_interval=\"30000\"" >> ${DEST_FILE}
 echo "         min_interval=\"10000\"" >> ${DEST_FILE}
 echo "         />" >> ${DEST_FILE}
+
 echo "   <FD_SOCK/>" >> ${DEST_FILE}
+
 echo "   <BARRIER/>" >> ${DEST_FILE}
-echo "   <pbcast.NAKACK" >> ${DEST_FILE}
-echo "         exponential_backoff=\"500\"" >> ${DEST_FILE}
-echo "         use_mcast_xmit=\"${IP_MCAST}\"" >> ${DEST_FILE}
-echo "         use_mcast_xmit_req=\"${IP_MCAST}\"" >> ${DEST_FILE}
-echo "         xmit_stagger_timeout=\"5000\"" >> ${DEST_FILE}
+
+echo "   <pbcast.NAKACK2" >> ${DEST_FILE}
+if [ "${TCP}" == "false" -a "${IP_MCAST}" == "true" ]; then
+echo "         use_mcast_xmit=\"true\"" >> ${DEST_FILE}
+else
+echo "         use_mcast_xmit=\"false\"" >> ${DEST_FILE}
+fi
 echo "         discard_delivered_msgs=\"true\"" >> ${DEST_FILE}
 echo "         />" >> ${DEST_FILE}
 
@@ -161,6 +183,7 @@ echo "         desired_avg_gossip=\"10000\"" >> ${DEST_FILE}
 echo "         max_bytes=\"10M\"" >> ${DEST_FILE}
 echo "         cap=\"0.001\"" >> ${DEST_FILE}
 echo "         />" >> ${DEST_FILE}
+
 echo "   <pbcast.GMS" >> ${DEST_FILE}
 echo "         print_local_addr=\"true\"" >> ${DEST_FILE}
 echo "         join_timeout=\"3000\"" >> ${DEST_FILE}
@@ -178,6 +201,7 @@ if [ "${TOA}" == "true" ]; then
 echo "   <tom.TOA/>" >> ${DEST_FILE}
 fi
 
+if [ "${TCP}" == "false" -o "${FORCE_FLOW_CONTROL}" == "true" ]; then
 echo "   <UFC" >> ${DEST_FILE}
 echo "         max_credits=\"4M\"" >> ${DEST_FILE}
 echo "         min_threshold=\"0.4\"" >> ${DEST_FILE}
@@ -186,10 +210,23 @@ echo "   <MFC" >> ${DEST_FILE}
 echo "         max_credits=\"4M\"" >> ${DEST_FILE}
 echo "         min_threshold=\"0.4\"" >> ${DEST_FILE}
 echo "         />" >> ${DEST_FILE}
+fi
+
+if [ "${TCP}" == "false" -o "${FORCE_FRAG}" == "true" ]; then
 echo "   <FRAG2" >> ${DEST_FILE}
 echo "         frag_size=\"60K\"" >> ${DEST_FILE}
 echo "         />" >> ${DEST_FILE}
+fi
+
 echo "   <pbcast.STATE_TRANSFER/>" >> ${DEST_FILE}
+
+if [ "${COMPRESS}" != "" ]; then
+echo "   <COMPRESS" >> ${DEST_FILE}
+echo "         compression_level=\"${COMPRESS}\"" >> ${DEST_FILE}
+echo "         min_size=\"10K\"" >> ${DEST_FILE}
+echo "         />" >> ${DEST_FILE}
+fi
+
 echo "</config>" >> ${DEST_FILE}
 
 echo "Finished!"
