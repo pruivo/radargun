@@ -37,8 +37,8 @@ public class TpccPopulation {
 
    protected final int numWarehouses;
 
-   protected final int slaveIndex;
-   protected final int numSlaves;
+   protected final int nodeIndex;
+   protected final int numberOfNodes;
 
    protected final long cLastMask;
    protected final long olIdMask;
@@ -52,8 +52,8 @@ public class TpccPopulation {
       this._seqIdCustomer = new int[TpccTools.NB_MAX_CUSTOMER];
       this.memoryBean = ManagementFactory.getMemoryMXBean();
       this.numWarehouses = numWarehouses;
-      this.slaveIndex = slaveIndex;
-      this.numSlaves = numSlaves;
+      this.nodeIndex = slaveIndex;
+      this.numberOfNodes = numSlaves;
       this.cLastMask = cLastMask;
       this.olIdMask = olIdMask;
       this.cIdMask = cIdMask;
@@ -81,7 +81,7 @@ public class TpccPopulation {
    protected void initializeToolsParameters() {
       initTpccTools();
 
-      if (this.slaveIndex == 0) {//Only one slave
+      if (this.nodeIndex == 0) {//Only one slave
          long c_c_last = tpccTools.randomNumber(0, TpccTools.A_C_LAST);
          long c_c_id = tpccTools.randomNumber(0, TpccTools.A_C_ID);
          long c_ol_i_id = tpccTools.randomNumber(0, TpccTools.A_OL_I_ID);
@@ -159,13 +159,13 @@ public class TpccPopulation {
       long init_id_item = 1;
       long num_of_items = TpccTools.NB_MAX_ITEM;
 
-      if (numSlaves > 1) {
-         num_of_items = TpccTools.NB_MAX_ITEM / numSlaves;
-         long remainder = TpccTools.NB_MAX_ITEM % numSlaves;
+      if (numberOfNodes > 1) {
+         num_of_items = TpccTools.NB_MAX_ITEM / numberOfNodes;
+         long remainder = TpccTools.NB_MAX_ITEM % numberOfNodes;
 
-         init_id_item = (slaveIndex * num_of_items) + 1;
+         init_id_item = (nodeIndex * num_of_items) + 1;
 
-         if (slaveIndex == numSlaves - 1) {
+         if (nodeIndex == numberOfNodes - 1) {
             num_of_items += remainder;
          }
 
@@ -183,7 +183,7 @@ public class TpccPopulation {
       if (this.numWarehouses > 0) {
          for (int warehouseId = 1; warehouseId <= this.numWarehouses; warehouseId++) {
             log.info("Populate Warehouse " + warehouseId);
-            if (this.slaveIndex == 0) {// Warehouse assigned to node 0 if I have more than one node
+            if (this.nodeIndex == 0) {// Warehouse assigned to node 0 if I have more than one node
                txAwarePut(createWarehouse(warehouseId));
             }
             populateStock(warehouseId);
@@ -205,13 +205,13 @@ public class TpccPopulation {
       long init_id_item = 1;
       long num_of_items = TpccTools.NB_MAX_ITEM;
 
-      if (numSlaves > 1) {
-         num_of_items = TpccTools.NB_MAX_ITEM / numSlaves;
-         long remainder = TpccTools.NB_MAX_ITEM % numSlaves;
+      if (numberOfNodes > 1) {
+         num_of_items = TpccTools.NB_MAX_ITEM / numberOfNodes;
+         long remainder = TpccTools.NB_MAX_ITEM % numberOfNodes;
 
-         init_id_item = (slaveIndex * num_of_items) + 1;
+         init_id_item = (nodeIndex * num_of_items) + 1;
 
-         if (slaveIndex == numSlaves - 1) {
+         if (nodeIndex == numberOfNodes - 1) {
             num_of_items += remainder;
          }
 
@@ -233,16 +233,16 @@ public class TpccPopulation {
       int init_districtId = 1;
       int num_of_districts = TpccTools.NB_MAX_DISTRICT;
 
-      if (numSlaves > 1) {
-         num_of_districts = TpccTools.NB_MAX_DISTRICT / numSlaves;
-         int remainder = TpccTools.NB_MAX_DISTRICT % numSlaves;
+      if (numberOfNodes > 1) {
+         num_of_districts = TpccTools.NB_MAX_DISTRICT / numberOfNodes;
+         int remainder = TpccTools.NB_MAX_DISTRICT % numberOfNodes;
 
-         if (slaveIndex <= remainder) {
-            init_districtId = (slaveIndex * (num_of_districts + 1)) + 1;
+         if (nodeIndex <= remainder) {
+            init_districtId = (nodeIndex * (num_of_districts + 1)) + 1;
          } else {
-            init_districtId = (((remainder) * (num_of_districts + 1)) + ((slaveIndex - remainder) * num_of_districts)) + 1;
+            init_districtId = (((remainder) * (num_of_districts + 1)) + ((nodeIndex - remainder) * num_of_districts)) + 1;
          }
-         if (slaveIndex < remainder) {
+         if (nodeIndex < remainder) {
             num_of_districts += 1;
          }
       }
@@ -353,7 +353,7 @@ public class TpccPopulation {
    protected final boolean txAwarePut(DomainObject domainObject) {
       if (wrapper.isInTransaction()) {
          try {
-            domainObject.store(wrapper, slaveIndex);
+            domainObject.store(wrapper, nodeIndex);
          } catch (Throwable throwable) {
             return false;
          }
@@ -361,7 +361,7 @@ public class TpccPopulation {
          boolean putDone = false;
          do {
             try {
-               domainObject.store(wrapper, slaveIndex);
+               domainObject.store(wrapper, nodeIndex);
                putDone = true;
             } catch (Throwable e) {
                logErrorWhilePut(domainObject, e);
@@ -567,6 +567,44 @@ public class TpccPopulation {
       return new NewOrder(orderId,
                           districtId,
                           warehouseId);
+   }
+
+   public static SplitIndex split(int number, int numberOfNodes, int nodeIndex) {
+      int start = 1;
+      int end = number;
+
+      if (numberOfNodes > 0) {
+         int remainder = number % numberOfNodes;
+         int elementsPerSlave = (number - remainder) / numberOfNodes;
+
+         start = (nodeIndex * elementsPerSlave) + 1;
+
+         end = start + elementsPerSlave;
+
+         //last node gets the remainder
+         if (nodeIndex == numberOfNodes - 1) {
+            end += remainder;
+         }
+      }
+      return new SplitIndex(start, end);
+   }
+
+   public static class SplitIndex {
+      public final int start;
+      public final int end;
+
+      public SplitIndex(int start, int end) {
+         this.start = start;
+         this.end = end;
+      }
+
+      public int getStart() {
+         return start;
+      }
+
+      public int getEnd() {
+         return end;
+      }
    }
 }
 

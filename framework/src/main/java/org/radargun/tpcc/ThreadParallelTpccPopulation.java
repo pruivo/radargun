@@ -25,7 +25,7 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
    private static Log log = LogFactory.getLog(ThreadParallelTpccPopulation.class);
    private static final long MAX_SLEEP_BEFORE_RETRY = 30000; //30 seconds
 
-   private int parallelThreads = 4;
+   protected int parallelThreads = 4;
    private int elementsPerBlock = 100;  //items loaded per transaction
    private AtomicLong waitingPeriod;
 
@@ -52,21 +52,9 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
    protected void populateItem(){
       log.trace("Populating Items");
 
-      long init_id_item=1;
-      long num_of_items=TpccTools.NB_MAX_ITEM;
+      SplitIndex splitIndex = split(TpccTools.NB_MAX_ITEM, numberOfNodes, nodeIndex);
 
-      if(numSlaves>1){
-         long remainder=TpccTools.NB_MAX_ITEM % numSlaves;
-         num_of_items=(TpccTools.NB_MAX_ITEM-remainder)/numSlaves;
-
-         init_id_item=(slaveIndex*num_of_items)+1;
-
-         if(slaveIndex==numSlaves-1){
-            num_of_items+=remainder;
-         }
-      }
-
-      performMultiThreadPopulation(init_id_item, num_of_items, new ThreadCreator() {
+      performMultiThreadPopulation(splitIndex.start, splitIndex.end, parallelThreads, new ThreadCreator() {
          @Override
          public Thread createThread(long lowerBound, long upperBound) {
             return new PopulateItemThread(lowerBound, upperBound);
@@ -82,26 +70,34 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
       }
       log.trace("Populating Stock for warehouse " + warehouseId);
 
-      long init_id_item=1;
-      long num_of_items=TpccTools.NB_MAX_ITEM;
+      SplitIndex splitIndex = split(TpccTools.NB_MAX_ITEM, this.numberOfNodes, this.nodeIndex);
 
-      if(numSlaves>1){
-         long remainder=TpccTools.NB_MAX_ITEM % numSlaves;
-         num_of_items=(TpccTools.NB_MAX_ITEM-remainder)/numSlaves;
-
-         init_id_item=(slaveIndex*num_of_items)+1;
-
-         if(slaveIndex==numSlaves-1){
-            num_of_items+=remainder;
-         }
-      }
-
-      performMultiThreadPopulation(init_id_item, num_of_items, new ThreadCreator() {
+      performMultiThreadPopulation(splitIndex.start, splitIndex.end, parallelThreads, new ThreadCreator() {
          @Override
          public Thread createThread(long lowerBound, long upperBound) {
             return new PopulateStockThread(lowerBound, upperBound, warehouseId);
          }
       });
+   }
+
+   @Override
+   protected void populateDistricts(int warehouseId) {
+      if (warehouseId < 0) {
+         log.warn("Trying to populate Districts for a negative warehouse ID. skipping...");
+         return;
+      }
+      log.trace("Populating District for warehouse " + warehouseId);
+
+      SplitIndex splitIndex = split(TpccTools.NB_MAX_DISTRICT, this.numberOfNodes, this.nodeIndex);
+      logDistrictPopulation(warehouseId, splitIndex.start, splitIndex.end);
+      for (long districtId = splitIndex.start; districtId < splitIndex.end; ++districtId) {
+         txAwarePut(createDistrict((int) districtId, warehouseId));
+      }
+
+      for (int districtId = 1; districtId <= TpccTools.NB_MAX_DISTRICT; ++districtId) {
+         populateCustomers(warehouseId, districtId);
+         populateOrders(warehouseId, districtId);
+      }
    }
 
    @Override
@@ -116,7 +112,9 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
       final ConcurrentHashMap<CustomerLookupQuadruple,Integer> lookupContentionAvoidance =
             new ConcurrentHashMap<CustomerLookupQuadruple, Integer>();
 
-      performMultiThreadPopulation(1, TpccTools.NB_MAX_CUSTOMER, new ThreadCreator() {
+      SplitIndex splitIndex = split(TpccTools.NB_MAX_CUSTOMER, this.numberOfNodes, this.nodeIndex);
+
+      performMultiThreadPopulation(splitIndex.start, splitIndex.end, parallelThreads, new ThreadCreator() {
          @Override
          public Thread createThread(long lowerBound, long upperBound) {
             return new PopulateCustomerThread(lowerBound, upperBound, _warehouseId, _districtId, lookupContentionAvoidance);
@@ -136,7 +134,7 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
 
       log.trace("Populating customer lookup. Size is " + totalEntries);
 
-      performMultiThreadPopulation(0, totalEntries, new ThreadCreator() {
+      performMultiThreadPopulation(0, totalEntries, parallelThreads, new ThreadCreator() {
          @Override
          public Thread createThread(long lowerBound, long upperBound) {
             return new PopulateCustomerLookupThread(lowerBound, upperBound, vec_map);
@@ -154,7 +152,9 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
       log.trace("Populating Orders for warehouse " + warehouseId + " and district " + districtId);
       this._new_order = false;
 
-      performMultiThreadPopulation(1, TpccTools.NB_MAX_ORDER, new ThreadCreator() {
+      SplitIndex splitIndex = split(TpccTools.NB_MAX_ORDER, this.numberOfNodes, this.nodeIndex);
+
+      performMultiThreadPopulation(splitIndex.start, splitIndex.end, parallelThreads, new ThreadCreator() {
          @Override
          public Thread createThread(long lowerBound, long upperBound) {
             return new PopulateOrderThread(lowerBound, upperBound, warehouseId, districtId);
@@ -166,50 +166,19 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
     * ######################################### POPULATING THREADS ################################
     */
 
-   protected class PopulateOrderThread extends Thread{
-      private long lowerBound;
-      private long upperBound;
-      private int warehouseId;
-      private int districtId;
-
-      @Override
-      public String toString() {
-         return "PopulateOrderThread{" +
-               "lowerBound=" + lowerBound +
-               ", upperBound=" + upperBound +
-               ", warehouseId=" + warehouseId +
-               ", districtId=" + districtId +
-               '}';
-      }
+   protected class PopulateOrderThread extends PopulationThread {
+      private final int warehouseId;
+      private final int districtId;
 
       public PopulateOrderThread(long l, long u, int w, int d){
-         this.lowerBound = l;
-         this.upperBound = u;
+         super(l, u, elementsPerBlock);
          this.districtId = d;
          this.warehouseId = w;
       }
 
-      public void run(){
-         logStart(toString());
-
-         long remainder = (upperBound - lowerBound) % elementsPerBlock;
-         long numBatches = (upperBound - lowerBound - remainder) / elementsPerBlock;
-         long base = lowerBound;
-
-         for(int batch = 1; batch <= numBatches; batch++){
-            logBatch(toString(), batch, numBatches);
-            executeTransaction(base, base + elementsPerBlock);
-            base += elementsPerBlock;
-         }
-
-         logRemainder(toString());
-         executeTransaction(base, upperBound + 1);
-
-         logFinish(toString());
-      }
-
-      private void executeTransaction(long start, long end) {
-         logOrderPopulation(warehouseId, districtId, start, end - 1);
+      @Override
+      protected void executeTransaction(long start, long end) {
+         logOrderPopulation(warehouseId, districtId, start, end);
          LinkedList<Integer> seqAleaList = new LinkedList<Integer>();
          boolean useList = false;
 
@@ -217,7 +186,7 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
             startTransactionIfNeeded();
             Iterator<Integer> iterator = seqAleaList.iterator();
 
-            for(long orderId=start; orderId < end; orderId++){
+            for(long orderId=start; orderId <= end; orderId++){
 
                int generatedSeqAlea;
 
@@ -243,59 +212,36 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
             useList = true;
          } while (!endTransactionIfNeeded());
       }
-   }
-
-   protected class PopulateCustomerThread extends Thread{
-      private long lowerBound;
-      private long upperBound;
-      private int warehouseId;
-      private int districtId;
-      private ConcurrentHashMap<CustomerLookupQuadruple,Integer> lookupContentionAvoidance;
 
       @Override
       public String toString() {
-         return "PopulateCustomerThread{" +
-               "lowerBound=" + lowerBound +
-               ", upperBound=" + upperBound +
-               ", warehouseId=" + warehouseId +
+         return "PopulateOrderThread{" +
+               "warehouseId=" + warehouseId +
                ", districtId=" + districtId +
-               '}';
+               ", " + super.toString();
       }
+   }
+
+   protected class PopulateCustomerThread extends PopulationThread {
+      private final int warehouseId;
+      private final int districtId;
+      private final ConcurrentHashMap<CustomerLookupQuadruple,Integer> lookupContentionAvoidance;
 
       @SuppressWarnings("unchecked")
       public PopulateCustomerThread(long lowerBound, long upperBound, int warehouseId, int districtId,
                                     ConcurrentHashMap c){
-         this.lowerBound = lowerBound;
-         this.upperBound = upperBound;
+         super(lowerBound, upperBound, elementsPerBlock);
          this.districtId = districtId;
          this.warehouseId = warehouseId;
          this.lookupContentionAvoidance = c;
       }
 
-      public void run(){
-         logStart(toString());
-
-         long remainder = (upperBound - lowerBound) % elementsPerBlock;
-         long numBatches = (upperBound - lowerBound - remainder)  / elementsPerBlock;
-         long base = lowerBound;
-
-         for(int batch =1; batch <= numBatches; batch++){
-            logBatch(toString(), batch, numBatches);
-            executeTransaction(base, base + elementsPerBlock);
-            base += elementsPerBlock;
-         }
-
-         logRemainder(toString());
-         executeTransaction(base, upperBound + 1);
-
-         logFinish(toString());
-      }
-
-      private void executeTransaction(long start, long end) {
-         logCustomerPopulation(warehouseId, districtId, start, end - 1);
+      @Override
+      protected void executeTransaction(long start, long end) {
+         logCustomerPopulation(warehouseId, districtId, start, end);
          do {
             startTransactionIfNeeded();
-            for(long customerId = start; customerId < end; customerId++) {
+            for(long customerId = start; customerId <= end; customerId++) {
                String c_last = c_last();
 
                if (!txAwarePut(createCustomer(warehouseId, districtId, customerId, c_last))) {
@@ -323,154 +269,85 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
             }
          } while (!endTransactionIfNeeded());
       }
-   }
-
-   protected class PopulateItemThread extends Thread{
-
-      private long lowerBound;
-      private long upperBound;
 
       @Override
       public String toString() {
-         return "PopulateItemThread{" +
-               "lowerBound=" + lowerBound +
-               ", upperBound=" + upperBound +
-               '}';
+         return "PopulateCustomerThread{" +
+               "warehouseId=" + warehouseId +
+               ", districtId=" + districtId +
+               ", " + super.toString();
       }
+   }
+
+   protected class PopulateItemThread extends PopulationThread {
 
       public PopulateItemThread(long low, long up){
-         this.lowerBound = low;
-         this.upperBound = up;
+         super(low, up, elementsPerBlock);
       }
 
-      public void run(){
-         logStart(toString());
-
-         long remainder = (upperBound - lowerBound) % elementsPerBlock;
-         long numBatches = (upperBound - lowerBound - remainder ) / elementsPerBlock;
-         long base = lowerBound;
-
-         for(long batch = 1; batch <=numBatches; batch++){
-            logBatch(toString(), batch, numBatches);
-            executeTransaction(base, base + elementsPerBlock);
-            base += elementsPerBlock;
-         }
-
-         logRemainder(toString());
-         executeTransaction(base, upperBound + 1);
-
-         logFinish(toString());
-      }
-
-      private void executeTransaction(long start, long end) {
-         logItemsPopulation(start, end - 1);
+      @Override
+      protected void executeTransaction(long start, long end) {
+         logItemsPopulation(start, end);
          do {
             startTransactionIfNeeded();
-            for(long itemId = start; itemId < end; itemId++){
+            for(long itemId = start; itemId <= end; itemId++){
                if (!txAwarePut(createItem(itemId))) {
                   break; //rollback tx;
                }
             }
          } while (!endTransactionIfNeeded());
       }
-   }
-
-   protected class PopulateStockThread extends Thread{
-      private long lowerBound;
-      private long upperBound;
-      private int warehouseId;
 
       @Override
       public String toString() {
-         return "PopulateStockThread{" +
-               "lowerBound=" + lowerBound +
-               ", upperBound=" + upperBound +
-               ", warehouseId=" + warehouseId +
-               '}';
+         return "PopulateItemThread{" + super.toString();
       }
+   }
+
+   protected class PopulateStockThread extends PopulationThread {
+      private final int warehouseId;
 
       public PopulateStockThread(long low, long up, int warehouseId){
-         this.lowerBound = low;
-         this.upperBound = up;
+         super(low, up, elementsPerBlock);
          this.warehouseId = warehouseId;
       }
 
-      public void run(){
-         logStart(toString());
-
-         long remainder = (upperBound - lowerBound) % elementsPerBlock;
-         long numBatches = (upperBound - lowerBound - remainder ) / elementsPerBlock;
-         long base = lowerBound;
-
-         for(long batch = 1; batch <=numBatches; batch++){
-            logBatch(toString(), batch, numBatches);
-            executeTransaction(base, base + elementsPerBlock);
-            base += elementsPerBlock;
-         }
-
-         logRemainder(toString());
-         executeTransaction(base, upperBound + 1);
-
-         logFinish(toString());
-      }
-
-      private void executeTransaction(long start, long end) {
-         logStockPopulation(warehouseId, start, end - 1);
+      @Override
+      protected void executeTransaction(long start, long end) {
+         logStockPopulation(warehouseId, start, end);
          do {
             startTransactionIfNeeded();
-            for(long stockId = start; stockId < end; stockId++){
+            for(long stockId = start; stockId <= end; stockId++){
                if (!txAwarePut(createStock(stockId, warehouseId))) {
                   break;
                }
             }
          } while (!endTransactionIfNeeded());
       }
-   }
-
-   protected class PopulateCustomerLookupThread extends Thread{
-      private Vector<CustomerLookupQuadruple> vector;
-      private long lowerBound;
-      private long upperBound;
 
       @Override
       public String toString() {
-         return "PopulateCustomerLookupThread{" +
-               "lowerBound=" + lowerBound +
-               ", upperBound=" + upperBound +
-               '}';
+         return "PopulateStockThread{" +
+               "warehouseId=" + warehouseId +
+               ", " + super.toString();
       }
+   }
+
+   protected class PopulateCustomerLookupThread extends PopulationThread {
+      private final Vector<CustomerLookupQuadruple> vector;
 
       @SuppressWarnings("unchecked")
       public PopulateCustomerLookupThread(long l, long u, Vector v){
+         super(l, u, elementsPerBlock);
          this.vector = v;
-         this.lowerBound = l;
-         this.upperBound = u;
       }
 
-      public void run(){
-         logStart(toString());
-
-         long remainder = (upperBound - lowerBound) % elementsPerBlock;
-         long numBatches = (upperBound - lowerBound - remainder ) / elementsPerBlock;
-         long base = lowerBound;
-
-         for(long batch = 1; batch <= numBatches; batch++){
-            logBatch(toString(), batch, numBatches);
-            executeTransaction(base, base + elementsPerBlock);
-            base += elementsPerBlock;
-         }
-
-         logRemainder(toString());
-         executeTransaction(base, upperBound + 1);
-
-         logFinish(toString());
-      }
-
-      private void executeTransaction(long start, long end) {
-         logCustomerLookupPopulation(start, end - 1);
+      @Override
+      protected void executeTransaction(long start, long end) {
+         logCustomerLookupPopulation(start, end);
          do {
             startTransactionIfNeeded();
-            for(long idx = start; idx < end; idx++){
+            for(long idx = start; idx <= end; idx++){
 
                CustomerLookupQuadruple clq = this.vector.get((int)idx);
                CustomerLookup customerLookup = new CustomerLookup(clq.c_last, clq.warehouseId, clq.districtId);
@@ -486,6 +363,11 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
                }
             }
          } while (!endTransactionIfNeeded());
+      }
+
+      @Override
+      public String toString() {
+         return "PopulateCustomerLookupThread{" + super.toString();
       }
    }
 
@@ -535,6 +417,46 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
                ", districtId=" + districtId +
                ", customerId=" + customerId +
                '}';
+      }
+   }
+
+   public static abstract class PopulationThread extends Thread {
+      private final long lowerBound;
+      private final long upperBound;
+      private final int elementsPerThread;
+
+      protected PopulationThread(long lowerBound, long upperBound, int elementsPerThread) {
+         this.lowerBound = lowerBound;
+         this.upperBound = upperBound;
+         this.elementsPerThread = elementsPerThread;
+      }
+
+      @Override
+      public void run() {
+         logStart(toString());
+
+         long remainder = (upperBound - lowerBound) % elementsPerThread;
+         long numBatches = (upperBound - lowerBound - remainder ) / elementsPerThread;
+         long base = lowerBound;
+
+         for(long batch = 1; batch <= numBatches; batch++){
+            long endBase = base + elementsPerThread - 1;
+            logBatch(toString(), batch, numBatches, base, endBase);
+            executeTransaction(base, endBase);
+            base += elementsPerThread;
+         }
+
+         logRemainder(toString(), base, upperBound);
+         executeTransaction(base, upperBound);
+
+         logFinish(toString());
+      }
+
+      protected abstract void executeTransaction(long start, long end);
+
+      @Override
+      public String toString() {
+         return "bounds=[" + lowerBound +"," + upperBound + "]}";
       }
    }
 
@@ -610,38 +532,54 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
       }
    }
 
-   private void logStart(String thread) {
+   private static void logStart(String thread) {
       log.debug("Starting " + thread);
    }
 
-   private void logFinish(String thread) {
+   private static void logFinish(String thread) {
       log.debug("Ended " + thread);
    }
 
-   private void logBatch(String thread, long batch, long numberOfBatches) {
-      log.debug(thread + " is populating the " + batch + " batch out of " + numberOfBatches);
+   private static void logBatch(String thread, long batch, long numberOfBatches, long start, long end) {
+      if (log.isDebugEnabled()) {
+         log.debug(String.format("%s is populating the %s batch out of %s [%s,%s]",
+                                 thread, batch, numberOfBatches, start, end));
+      }
    }
 
-   private void logRemainder(String thread) {
-      log.debug(thread + " is populating the remainder");
+   private static void logRemainder(String thread, long start, long end) {
+      if (log.isDebugEnabled()) {
+         log.debug(String.format("%s is populating the remainder [%s,%s]",
+                                 thread, start, end));
+      }
    }
 
    private void logCustomerLookupPopulation(long init, long end) {
       log.debug("Populate Customer Lookup from index " + init + " to " + end);
    }
 
-   protected void performMultiThreadPopulation(long initValue, long numberOfItems, ThreadCreator threadCreator) {
-      Thread[] threads = new Thread[parallelThreads];
+   public static void performMultiThreadPopulation(long start, long end, int numberOfThreads,
+                                                   ThreadCreator threadCreator) {
+      Thread[] threads = new Thread[numberOfThreads];
+      boolean trace = log.isTraceEnabled();
 
       //compute the number of item per thread
-      long threadRemainder = numberOfItems % parallelThreads;
-      long itemsPerThread = (numberOfItems - threadRemainder) / parallelThreads;
+      long threadRemainder = (end - start) % numberOfThreads;
+      long itemsPerThread = (end - start - threadRemainder) / numberOfThreads;
 
-      long lowerBound = initValue;
+      if (trace) {
+         log.trace(String.format("init=%s, nr of items=%s, nr of threads=%s, items per thread=%s, remainder=%s",
+                                 start, end, numberOfThreads, itemsPerThread, threadRemainder));
+      }
+
+      long lowerBound = start;
       long itemsToAdd;
 
-      for(int i = 1; i <= parallelThreads; i++){
-         itemsToAdd = itemsPerThread + (i == parallelThreads ? threadRemainder:0);
+      for(int i = 1; i <= numberOfThreads; i++){
+         itemsToAdd = itemsPerThread + (i == numberOfThreads ? threadRemainder : 0);
+         if (trace) {
+            log.trace(String.format("thread %s gets [%s,%s]", i, lowerBound, lowerBound + itemsToAdd - 1));
+         }
          Thread thread = threadCreator.createThread(lowerBound, lowerBound + itemsToAdd - 1);
          threads[i-1] = thread;
          thread.start();
@@ -662,7 +600,7 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
       }
    }
 
-   protected interface ThreadCreator {
+   public interface ThreadCreator {
       Thread createThread(long lowerBound, long upperBound);
    }
 }

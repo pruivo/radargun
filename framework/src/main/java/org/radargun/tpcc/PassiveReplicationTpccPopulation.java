@@ -110,7 +110,7 @@ public class PassiveReplicationTpccPopulation extends ThreadParallelTpccPopulati
    protected void populateItem() {
       log.trace("Populating Items");
 
-      performMultiThreadPopulation(1, TpccTools.NB_MAX_ITEM, new ThreadCreator() {
+      performMultiThreadPopulation(1, TpccTools.NB_MAX_ITEM, parallelThreads, new ThreadCreator() {
          @Override
          public Thread createThread(long lowerBound, long upperBound) {
             return new PopulateItemThread(lowerBound, upperBound);
@@ -126,7 +126,7 @@ public class PassiveReplicationTpccPopulation extends ThreadParallelTpccPopulati
       }
       log.trace("Populating Stock for warehouse " + warehouseId);
 
-      performMultiThreadPopulation(1, TpccTools.NB_MAX_ITEM, new ThreadCreator() {
+      performMultiThreadPopulation(1, TpccTools.NB_MAX_ITEM, parallelThreads, new ThreadCreator() {
          @Override
          public Thread createThread(long lowerBound, long upperBound) {
             return new PopulateStockThread(lowerBound, upperBound, warehouseId);

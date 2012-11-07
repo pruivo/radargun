@@ -14,7 +14,7 @@ public final class TpccTools {
 
    public static final int NB_MAX_DISTRICT = 10;
 
-   public static final long NB_MAX_ITEM = 100000;
+   public static final int NB_MAX_ITEM = 100000;
 
    public static final int NB_MAX_CUSTOMER = 3000;
 
