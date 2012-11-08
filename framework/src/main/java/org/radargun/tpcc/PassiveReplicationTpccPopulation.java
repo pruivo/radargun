@@ -4,6 +4,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.radargun.CacheWrapper;
 
+import java.util.concurrent.Callable;
+
 /**
  * This population is used when passive replication is enabled. Only the primary can perform the population.
  *
@@ -29,6 +31,7 @@ public class PassiveReplicationTpccPopulation extends ThreadParallelTpccPopulati
       } else {
          initTpccTools();
          log.info("I am not allowed to perform the population.");
+         executorService.shutdown();
       }
    }
 
@@ -112,10 +115,10 @@ public class PassiveReplicationTpccPopulation extends ThreadParallelTpccPopulati
 
       performMultiThreadPopulation(1, TpccTools.NB_MAX_ITEM, parallelThreads, new ThreadCreator() {
          @Override
-         public Thread createThread(long lowerBound, long upperBound) {
+         public Callable<Object> createThread(long lowerBound, long upperBound) {
             return new PopulateItemThread(lowerBound, upperBound);
          }
-      });
+      }, executorService);
    }
 
    @Override
@@ -128,9 +131,9 @@ public class PassiveReplicationTpccPopulation extends ThreadParallelTpccPopulati
 
       performMultiThreadPopulation(1, TpccTools.NB_MAX_ITEM, parallelThreads, new ThreadCreator() {
          @Override
-         public Thread createThread(long lowerBound, long upperBound) {
+         public Callable<Object> createThread(long lowerBound, long upperBound) {
             return new PopulateStockThread(lowerBound, upperBound, warehouseId);
          }
-      });
+      }, executorService);
    }
 }

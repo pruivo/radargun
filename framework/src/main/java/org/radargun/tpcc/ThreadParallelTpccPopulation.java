@@ -8,9 +8,15 @@ import org.radargun.tpcc.domain.CustomerLookup;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Random;
 import java.util.Vector;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -28,6 +34,7 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
    protected int parallelThreads = 4;
    private int elementsPerBlock = 100;  //items loaded per transaction
    private AtomicLong waitingPeriod;
+   final ExecutorService executorService;
 
    public ThreadParallelTpccPopulation(CacheWrapper wrapper, int numWarehouses, int slaveIndex, int numSlaves,
                                        long cLastMask, long olIdMask, long cIdMask,
@@ -46,6 +53,13 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
       }
 
       this.waitingPeriod = new AtomicLong(0);
+      executorService = Executors.newFixedThreadPool(parallelThreads);
+   }
+
+   @Override
+   public void performPopulation() {
+      super.performPopulation();
+      executorService.shutdown();
    }
 
    @Override
@@ -56,10 +70,10 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
 
       performMultiThreadPopulation(splitIndex.start, splitIndex.end, parallelThreads, new ThreadCreator() {
          @Override
-         public Thread createThread(long lowerBound, long upperBound) {
+         public Callable<Object> createThread(long lowerBound, long upperBound) {
             return new PopulateItemThread(lowerBound, upperBound);
          }
-      });
+      }, executorService);
    }
 
    @Override
@@ -74,10 +88,10 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
 
       performMultiThreadPopulation(splitIndex.start, splitIndex.end, parallelThreads, new ThreadCreator() {
          @Override
-         public Thread createThread(long lowerBound, long upperBound) {
+         public Callable<Object> createThread(long lowerBound, long upperBound) {
             return new PopulateStockThread(lowerBound, upperBound, warehouseId);
          }
-      });
+      }, executorService);
    }
 
    @Override
@@ -94,8 +108,13 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
          txAwarePut(createDistrict((int) districtId, warehouseId));
       }
 
-      for (int districtId = 1; districtId <= TpccTools.NB_MAX_DISTRICT; ++districtId) {
+      splitIndex = split(TpccTools.NB_MAX_DISTRICT, numberOfNodes, nodeIndex);
+
+      for (int districtId = splitIndex.start; districtId < splitIndex.end; ++districtId) {
          populateCustomers(warehouseId, districtId);
+      }
+
+      for (int districtId = 1; districtId <= TpccTools.NB_MAX_DISTRICT; ++districtId) {
          populateOrders(warehouseId, districtId);
       }
    }
@@ -112,14 +131,12 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
       final ConcurrentHashMap<CustomerLookupQuadruple,Integer> lookupContentionAvoidance =
             new ConcurrentHashMap<CustomerLookupQuadruple, Integer>();
 
-      SplitIndex splitIndex = split(TpccTools.NB_MAX_CUSTOMER, this.numberOfNodes, this.nodeIndex);
-
-      performMultiThreadPopulation(splitIndex.start, splitIndex.end, parallelThreads, new ThreadCreator() {
+      performMultiThreadPopulation(1, TpccTools.NB_MAX_CUSTOMER, parallelThreads, new ThreadCreator() {
          @Override
-         public Thread createThread(long lowerBound, long upperBound) {
+         public Callable<Object> createThread(long lowerBound, long upperBound) {
             return new PopulateCustomerThread(lowerBound, upperBound, _warehouseId, _districtId, lookupContentionAvoidance);
          }
-      });
+      }, executorService);
 
       if(isBatchingEnabled()){
          populateCustomerLookup(lookupContentionAvoidance);
@@ -136,10 +153,10 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
 
       performMultiThreadPopulation(0, totalEntries, parallelThreads, new ThreadCreator() {
          @Override
-         public Thread createThread(long lowerBound, long upperBound) {
+         public Callable<Object> createThread(long lowerBound, long upperBound) {
             return new PopulateCustomerLookupThread(lowerBound, upperBound, vec_map);
          }
-      });
+      }, executorService);
    }
 
    @Override
@@ -156,10 +173,10 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
 
       performMultiThreadPopulation(splitIndex.start, splitIndex.end, parallelThreads, new ThreadCreator() {
          @Override
-         public Thread createThread(long lowerBound, long upperBound) {
+         public Callable<Object> createThread(long lowerBound, long upperBound) {
             return new PopulateOrderThread(lowerBound, upperBound, warehouseId, districtId);
          }
-      });
+      }, executorService);
    }
 
    /*
@@ -420,7 +437,7 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
       }
    }
 
-   public static abstract class PopulationThread extends Thread {
+   public static abstract class PopulationThread extends Thread implements Callable<Object> {
       private final long lowerBound;
       private final long upperBound;
       private final int elementsPerThread;
@@ -450,6 +467,12 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
          executeTransaction(base, upperBound);
 
          logFinish(toString());
+      }
+
+      @Override
+      public Object call() throws Exception {
+         run();
+         return null;
       }
 
       protected abstract void executeTransaction(long start, long end);
@@ -533,11 +556,15 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
    }
 
    private static void logStart(String thread) {
-      log.debug("Starting " + thread);
+      if (log.isDebugEnabled()) {
+         log.debug("Starting " + thread);
+      }
    }
 
    private static void logFinish(String thread) {
-      log.debug("Ended " + thread);
+      if (log.isDebugEnabled()) {
+         log.debug("Ended " + thread);
+      }
    }
 
    private static void logBatch(String thread, long batch, long numberOfBatches, long start, long end) {
@@ -555,12 +582,17 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
    }
 
    private void logCustomerLookupPopulation(long init, long end) {
-      log.debug("Populate Customer Lookup from index " + init + " to " + end);
+      if (log.isDebugEnabled()) {
+         log.debug("Populate Customer Lookup from index " + init + " to " + end);
+      }
    }
 
    public static void performMultiThreadPopulation(long start, long end, int numberOfThreads,
-                                                   ThreadCreator threadCreator) {
-      Thread[] threads = new Thread[numberOfThreads];
+                                                   ThreadCreator threadCreator, ExecutorService executorService) {
+      if (threadCreator == null || executorService == null) {
+         throw new NullPointerException("Thread creator or executor service cannot be null");
+      }
+      List<Callable<Object>> populationTasks = new LinkedList<Callable<Object>>();
       boolean trace = log.isTraceEnabled();
 
       //compute the number of item per thread
@@ -577,30 +609,37 @@ public class ThreadParallelTpccPopulation extends TpccPopulation{
 
       for(int i = 1; i <= numberOfThreads; i++){
          itemsToAdd = itemsPerThread + (i == numberOfThreads ? threadRemainder : 0);
+         long upperBound = lowerBound + itemsToAdd - 1;
          if (trace) {
-            log.trace(String.format("thread %s gets [%s,%s]", i, lowerBound, lowerBound + itemsToAdd - 1));
+            log.trace(String.format("thread %s gets [%s,%s]", i, lowerBound, upperBound));
          }
-         Thread thread = threadCreator.createThread(lowerBound, lowerBound + itemsToAdd - 1);
-         threads[i-1] = thread;
-         thread.start();
+         if (lowerBound <= upperBound) {
+            populationTasks.add(threadCreator.createThread(lowerBound, upperBound));
+         }
          lowerBound += (itemsToAdd);
       }
 
       //wait until all thread are finished
       try{
-         for(Thread thread : threads){
-            log.trace("Waiting for the end of " + thread);
-            thread.join();
+         for(Future<?> future : executorService.invokeAll(populationTasks)){
+            if (trace) {
+               log.trace("Waiting for the end of " + future);
+            }
+            future.get();
          }
-         log.trace("All threads have finished! Movin' on");
+         if (trace) {
+            log.trace("All threads have finished! Movin' on");
+         }
       }
       catch(InterruptedException ie){
          ie.printStackTrace();
+         System.exit(-1);
+      } catch (ExecutionException e) {
          System.exit(-1);
       }
    }
 
    public interface ThreadCreator {
-      Thread createThread(long lowerBound, long upperBound);
+      Callable<Object> createThread(long lowerBound, long upperBound);
    }
 }

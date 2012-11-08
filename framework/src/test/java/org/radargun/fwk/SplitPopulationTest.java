@@ -8,6 +8,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static java.lang.String.format;
 import static org.radargun.tpcc.ThreadParallelTpccPopulation.performMultiThreadPopulation;
@@ -22,6 +25,13 @@ import static org.radargun.tpcc.TpccPopulation.split;
  */
 @Test
 public class SplitPopulationTest {
+
+   private static final int NUMBER_OF_THREAD = 2;
+   private final ExecutorService executorService = Executors.newFixedThreadPool(NUMBER_OF_THREAD);
+
+   public void testSingleCase() {
+      populate(10, 2, 1, 50);
+   }
 
    public void test1() {
       for (int numberOfItems = 10; numberOfItems < 1000000; numberOfItems *= 10) {
@@ -79,21 +89,21 @@ public class SplitPopulationTest {
          final SplitIndex splitIndex = split(numberOfItems, numberOfNodes, nodeIdx);
          performMultiThreadPopulation(splitIndex.getStart(), splitIndex.getEnd(), numberOfThreads, new ThreadParallelTpccPopulation.ThreadCreator() {
             @Override
-            public Thread createThread(long lowerBound, long upperBound) {
+            public Callable<Object> createThread(long lowerBound, long upperBound) {
                return new Populate(lowerBound, upperBound, population, numberOfNodes, numberOfItems, batch);
             }
-         });
+         }, executorService);
       }
-      assertPopulation(population, numberOfItems, numberOfNodes);
-      System.out.println(format("[%s,%s,%s] done!", numberOfItems, numberOfNodes, numberOfThreads));
+      assertPopulation(population, numberOfItems, numberOfNodes, numberOfThreads, batch);
+      System.out.println(format("[%s,%s,%s,%s] done!", numberOfItems, numberOfNodes, numberOfThreads, batch));
    }
 
-   private void assertPopulation(Set<Integer> integers, int numberOfItems, int numberOfNodes) {
+   private void assertPopulation(Set<Integer> integers, int numberOfItems, int numberOfNodes, int numberOfThreads, int batch) {
       assert integers.size() == numberOfItems : format("[%s,%s] number of items is different %s != %s", numberOfItems,
                                                        numberOfNodes, integers.size(), numberOfItems);
       for (int i = 1; i <= numberOfItems; ++i) {
-         assert integers.contains(i) : format("[%s,%s] population does not have index %s", numberOfItems,
-                                              numberOfNodes, i);
+         assert integers.contains(i) : format("[%s,%s,%s,%s] population does not have index %s", numberOfItems,
+                                              numberOfNodes, numberOfThreads, batch, i);
       }
    }
 

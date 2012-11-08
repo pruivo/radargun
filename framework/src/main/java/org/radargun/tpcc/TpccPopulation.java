@@ -69,12 +69,8 @@ public class TpccPopulation {
 
    public void performPopulation(){
       initializeToolsParameters();
-
       populateItem();
-
       populateWarehouses();
-
-      System.gc();
    }
 
 
@@ -570,22 +566,40 @@ public class TpccPopulation {
    }
 
    public static SplitIndex split(int number, int numberOfNodes, int nodeIndex) {
-      int start = 1;
-      int end = number;
+      if (numberOfNodes <= 0) {
+         throw new IllegalArgumentException("Expected at least one node");
+      }
 
-      if (numberOfNodes > 0) {
-         int remainder = number % numberOfNodes;
-         int elementsPerSlave = (number - remainder) / numberOfNodes;
+      int[] distribution = new int[numberOfNodes];
 
-         start = (nodeIndex * elementsPerSlave) + 1;
+      int remainder = number % numberOfNodes;
+      int elementsPerSlave = (number - remainder) / numberOfNodes;
 
-         end = start + elementsPerSlave;
+      //calculate the first position
+      distribution[0] = 1 + elementsPerSlave;
+      if (remainder > 0) {
+         distribution[0]++;
+         remainder--;
+      }
 
-         //last node gets the remainder
-         if (nodeIndex == numberOfNodes - 1) {
-            end += remainder;
+      for (int i = 1; i < numberOfNodes && i <= nodeIndex; ++i) {
+         distribution[i] = distribution[i - 1] + elementsPerSlave;
+         if (remainder > 0) {
+            distribution[i]++;
+            remainder--;
          }
       }
+
+      int start;
+      int end;
+      if (nodeIndex == 0) {
+         start = 1;
+         end = distribution[0];
+      } else {
+         start = distribution[nodeIndex - 1];
+         end = distribution[nodeIndex];
+      }
+
       return new SplitIndex(start, end);
    }
 
