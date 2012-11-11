@@ -4,6 +4,7 @@ package org.radargun;
 import org.radargun.utils.BucketsKeysTreeSet;
 
 import javax.transaction.RollbackException;
+import java.util.Collection;
 import java.util.Map;
 
 /**
@@ -144,4 +145,6 @@ public interface CacheWrapper
     * it resets the additional stats
     */
    void resetAdditionalStats();
+
+   <T> Collection<? extends T> getLocalKeys(Class<T> type);
 }

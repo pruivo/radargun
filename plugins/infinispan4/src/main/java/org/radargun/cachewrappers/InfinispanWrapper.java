@@ -24,9 +24,11 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
@@ -236,6 +238,17 @@ public class InfinispanWrapper implements CacheWrapper {
          log.info("Not collecting additional stats. Infinispan MBeans not found");
       }
       return results;
+   }
+
+   @Override
+   public <T> Collection<? extends T> getLocalKeys(Class<T> type) {
+      List<T> list = new LinkedList<T>();
+      for (Object key : cache.keySet()) {
+         if (key != null && type.isAssignableFrom(key.getClass())) {
+            list.add(type.cast(key));
+         }
+      }
+      return list;
    }
 
    private boolean isPassiveReplication() {

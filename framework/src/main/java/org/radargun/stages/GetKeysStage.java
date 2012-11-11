@@ -2,97 +2,90 @@ package org.radargun.stages;
 
 import org.radargun.CacheWrapper;
 import org.radargun.DistStageAck;
+import org.radargun.keygen2.RadargunKey;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.util.*;
+import java.io.FileOutputStream;
+import java.io.ObjectOutputStream;
+import java.util.Collection;
 
 /**
- * Date: 1/18/12
- * Time: 6:19 PM
- *
- * @author pruivo
+ * @author Pedro Ruivo
+ * @since 1.1
  */
 public class GetKeysStage extends AbstractDistStage {
 
-    private String fileNameFormat = "keys-%n-%h%m";
+   private static final String NEW_LINE = System.getProperty("line.separator");
+   private String filePath = "keys.txt";
+   private boolean saveInStringFormat = true;
+   private boolean saveValues = true;
 
-    @Override
-    public DistStageAck executeOnSlave() {
-        DefaultDistStageAck result = new DefaultDistStageAck(slaveIndex, slaveState.getLocalAddress());
-        CacheWrapper cacheWrapper = slaveState.getCacheWrapper();
-        if (cacheWrapper == null) {
-            log.info("Not running test on this slave as the wrapper hasn't been configured.");
-            return result;
-        }
+   @Override
+   public DistStageAck executeOnSlave() {
+      DefaultDistStageAck result = new DefaultDistStageAck(slaveIndex, slaveState.getLocalAddress());
+      CacheWrapper cacheWrapper = slaveState.getCacheWrapper();
 
-        log.info("Starting GetKeysStage:" + this.toString());
-        String fileName = "./" + getFileName();
-        log.info("Save keys to file: " + fileName);
+      if (cacheWrapper == null) {
+         log.info("Not running test on this slave as the wrapper hasn't been configured.");
+         return result;
+      }
 
-        try {
-            BufferedWriter bw = new BufferedWriter(new FileWriter(fileName));
-            for (Map.Entry<String, SortedSet<String>> bucketAndKeys : cacheWrapper.getStressedKeys().getEntrySet()) {
-                String bucked = bucketAndKeys.getKey();
-                bw.append("================= BUCKET [")
-                        .append(bucked)
-                        .append("] ==============");
-                bw.newLine();
-                for (String key : bucketAndKeys.getValue()) {
-                    if (cacheWrapper.isKeyLocal(bucked, key)) {
-                        bw.append(key);
-                        bw.append("=>");
-                        bw.append(String.valueOf(cacheWrapper.get(bucked, key)));
-                        bw.newLine();
-                        bw.flush();
-                    }
-                }
+      Collection<? extends RadargunKey> localKeys = cacheWrapper.getLocalKeys(RadargunKey.class);
+
+      log.info("Starting GetKeysStage:" + this.toString());
+      log.info("Save keys to file in " + filePath);
+
+      try {
+         ObjectOutputStream objectOutputStream = new ObjectOutputStream(new FileOutputStream(filePath));
+         if (saveValues) {
+            for (RadargunKey key : localKeys) {
+               writeKeyAndValue(key, objectOutputStream, cacheWrapper);
             }
-            bw.flush();
-            bw.close();
-        } catch(Exception e) {
-            log.warn("Error while saving keys to file " + e);
-        }
+         } else {
+            for (RadargunKey key : localKeys) {
+               writeKey(key, objectOutputStream);
+            }
+         }
+      } catch (Exception e) {
+         result.setRemoteException(e);
+         return result;
+      }
 
-        return result;
-    }
+      return result;
+   }
 
-    @Override
-    public String toString() {
-        return "GetKeysStage {" +
-                "fileNameFormat=" + fileNameFormat +
-                ", " + super.toString();
-    }
+   public void setFilePath(String filePath) {
+      this.filePath = filePath;
+   }
 
-    public void setFileNameFormat(String fileNameFormat) {
-        this.fileNameFormat = fileNameFormat;
-    }
+   public void setSaveInStringFormat(boolean saveInStringFormat) {
+      this.saveInStringFormat = saveInStringFormat;
+   }
 
-    private String getFileName() {
-        Map<String, String> attributes = new HashMap<String, String>(7);
-        //hostname
-        attributes.put("%n",this.slaveState.getLocalAddress().getHostName());
-        Date now = new Date();
+   public void setSaveValues(boolean saveValues) {
+      this.saveValues = saveValues;
+   }
 
-        //day of month
-        attributes.put("%D", String.valueOf(now.getDate()));
-        //month
-        attributes.put("%M", String.valueOf(now.getMonth() + 1));
-        //year
-        attributes.put("%Y", String.valueOf(now.getYear() + 1900));
+   private void writeKeyAndValue(RadargunKey key, ObjectOutputStream objectOutputStream, CacheWrapper cacheWrapper)
+         throws Exception {
+      Object value = cacheWrapper.get(null, key);
+      if (saveInStringFormat) {
+         objectOutputStream.writeUTF(key == null ? "null" : key.toString());
+         objectOutputStream.writeUTF("=>");
+         objectOutputStream.writeUTF(value == null ? "null" : value.toString());
+         objectOutputStream.writeUTF(NEW_LINE);
+      } else {
+         objectOutputStream.writeObject(key);
+         objectOutputStream.writeObject(value);
+      }
+      objectOutputStream.flush();
+   }
 
-        //hour
-        attributes.put("%h", String.valueOf(now.getHours()));
-        //minute
-        attributes.put("%m", String.valueOf(now.getMinutes()));
-        //seconds
-        attributes.put("%s", String.valueOf(now.getSeconds()));
-
-        String fileName = fileNameFormat;
-        for (Map.Entry<String, String> attr : attributes.entrySet()) {
-            fileName = fileName.replaceAll(attr.getKey(), attr.getValue());
-        }
-
-        return fileName;
-    }
+   private void writeKey(RadargunKey key, ObjectOutputStream objectOutputStream) throws Exception {
+      if (saveInStringFormat) {
+         objectOutputStream.writeUTF(key == null ? "null" : key.toString());
+      } else {
+         objectOutputStream.writeObject(key);
+      }
+   }
 }
+
