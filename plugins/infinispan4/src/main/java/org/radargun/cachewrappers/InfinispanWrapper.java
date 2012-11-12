@@ -5,6 +5,10 @@ import org.apache.commons.logging.LogFactory;
 import org.infinispan.Cache;
 import org.infinispan.config.Configuration;
 import org.infinispan.context.Flag;
+import org.infinispan.dataplacement.OwnersInfo;
+import org.infinispan.dataplacement.lookup.ObjectLookup;
+import org.infinispan.dataplacement.lookup.ObjectLookupFactory;
+import org.infinispan.dataplacement.stats.IncrementableLong;
 import org.infinispan.distribution.DistributionManager;
 import org.infinispan.factories.ComponentRegistry;
 import org.infinispan.manager.DefaultCacheManager;
@@ -14,14 +18,21 @@ import org.infinispan.remoting.transport.Transport;
 import org.radargun.CacheWrapper;
 import org.radargun.cachewrappers.parser.StatisticComponent;
 import org.radargun.cachewrappers.parser.StatsParser;
+import org.radargun.keygen2.RadargunKey;
+import org.radargun.reporting.DataPlacementStats;
 import org.radargun.utils.BucketsKeysTreeSet;
 import org.radargun.utils.Utils;
+import sun.security.acl.OwnerImpl;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.transaction.TransactionManager;
 import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.FileWriter;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
 import java.util.Collection;
@@ -32,6 +43,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
+import java.util.TreeSet;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.radargun.utils.Utils.mBeanAttributes2String;
@@ -249,6 +261,70 @@ public class InfinispanWrapper implements CacheWrapper {
          }
       }
       return list;
+   }
+
+   @SuppressWarnings("unchecked")
+   @Override
+   public void collectDataPlacementStats(ObjectInputStream objectsToMove, Collection<RadargunKey> keys,
+                                         DataPlacementStats stats) throws Exception {
+      Map<Object, OwnersInfo> keyNewOwners = (Map<Object, OwnersInfo>) objectsToMove.readObject();
+      ObjectLookupFactory factory = cache.getCacheConfiguration().dataPlacement().objectLookupFactory();
+      int numberOfOwners = cache.getCacheConfiguration().clustering().hash().numOwners();
+
+      stats.setNumberOfKeysMoved(keyNewOwners.size());
+
+      long ts1 = System.nanoTime();
+      ObjectLookup objectLookup = factory.createObjectLookup(keyNewOwners, numberOfOwners);
+      long ts2 = System.nanoTime();
+
+      stats.setCreationTime(ts2 - ts1);
+
+      int wrongMove = 0;
+      int wrongOwner = 0;
+      IncrementableLong[] queryTimes = new IncrementableLong[factory.getNumberOfQueryProfilingPhases()];
+
+      for (int i = 0; i < queryTimes.length; ++i) {
+         queryTimes[i] = new IncrementableLong();
+      }
+
+      for (Object key : keys) {
+         List<Integer> owners = objectLookup.queryWithProfiling(key, queryTimes);
+         if (owners == null) {
+            continue;
+         }
+         OwnersInfo info = keyNewOwners.get(key);
+         if (info == null) {
+            wrongMove++;
+         } else {
+            TreeSet<Integer> expectedOwners = new TreeSet<Integer>(info.getNewOwnersIndexes());
+            TreeSet<Integer> ownerReturned = new TreeSet<Integer>(owners);
+            if (!ownerReturned.containsAll(expectedOwners)) {
+               wrongOwner++;
+            }
+         }
+      }
+
+      stats.setWrongKeysMoved(wrongMove);
+      stats.setWrongOwnersMoved(wrongOwner);
+
+      long[] queryTimesLong = new long[queryTimes.length];
+      for (int i = 0; i < queryTimes.length; ++i) {
+         queryTimesLong[i] = queryTimes[i].getValue();
+      }
+
+      stats.setQueryTime(queryTimesLong);
+
+      try {
+         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+         ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+         objectOutputStream.writeObject(objectLookup);
+         objectOutputStream.flush();
+
+         stats.setObjectLookupSize(byteArrayOutputStream.toByteArray().length);
+      } catch (IOException e) {
+         log.warn("Error calculating object lookup size", e);
+      }
+
    }
 
    private boolean isPassiveReplication() {

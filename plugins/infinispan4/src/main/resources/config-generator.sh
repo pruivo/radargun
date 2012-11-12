@@ -147,7 +147,7 @@ case $1 in
   -extended-stats) CUSTOM_INTERCEPTOR_CHAIN="true"; shift 1;;
   -c50-data-placement) DATA_PLACEMENT="org.infinispan.dataplacement.c50.C50MLObjectLookupFactory"; shift 1;;
   -hm-data-placement) DATA_PLACEMENT="org.infinispan.dataplacement.hm.HashMapObjectLookupFactory"; shift 1;;
-  -bf-data-placement) DATA_PLACEMENT="org.infinispan.dataplacement.hm.BloomierFilterObjectLookupFactory"; shift 1;;
+  -bf-data-placement) DATA_PLACEMENT="org.infinispan.dataplacement.bloomier.BloomierFilterObjectLookupFactory"; shift 1;;
   -dp-bf-fp) DP_BF_FP=$2; shift 2;;
   -dp-max-keys) DP_MAX_KEYS=$2; shift 2;;
   -dp-nr-hashes) DP_NUMBER_HASHES=$2; shift 2;;

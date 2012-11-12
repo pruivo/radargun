@@ -1,9 +1,13 @@
 package org.radargun;
 
 
+import org.radargun.keygen2.RadargunKey;
+import org.radargun.reporting.DataPlacementStats;
 import org.radargun.utils.BucketsKeysTreeSet;
 
 import javax.transaction.RollbackException;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.util.Collection;
 import java.util.Map;
 
@@ -147,4 +151,7 @@ public interface CacheWrapper
    void resetAdditionalStats();
 
    <T> Collection<? extends T> getLocalKeys(Class<T> type);
+
+   void collectDataPlacementStats(ObjectInputStream objectsToMove, Collection<RadargunKey> keys,
+                                  DataPlacementStats stats) throws Exception;
 }

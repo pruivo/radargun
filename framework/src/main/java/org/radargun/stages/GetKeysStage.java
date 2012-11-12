@@ -87,5 +87,14 @@ public class GetKeysStage extends AbstractDistStage {
          objectOutputStream.writeObject(key);
       }
    }
+
+   @Override
+   public String toString() {
+      return "GetKeysStage{" +
+            "filePath='" + filePath + '\'' +
+            ", saveInStringFormat=" + saveInStringFormat +
+            ", saveValues=" + saveValues +
+            ", " + super.toString();
+   }
 }
 
