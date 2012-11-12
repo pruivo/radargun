@@ -20,7 +20,7 @@ WARMUP_TX_SIZE="50"
 WRITE_TX_WORKLOAD="10,10;10,10"
 READ_TX_WORKLOAD="20"
 LOCALITY_PROBABILITY="-1"
-
+STD_DEV="-1"
 
 help_and_exit(){
 echo "usage: ${0} <options>"
@@ -58,6 +58,9 @@ echo "                                   default: ${READ_TX_WORKLOAD}"
 echo ""
 echo "  -locality-probability <value>    the local probability assuming key_y_* is in node y. a negative number disables it"
 echo "                                   default: ${LOCALITY_PROBABILITY}"
+echo ""
+echo "  -std-dev <value>                 the std dev for gaussian distribution"
+echo "                                   default: ${STD_DEV}"
 echo ""
 echo "  -no-coordinator-participation    the coordinator doesn't executes transactions"
 echo "                                   default: coordinator execute transactions"
@@ -150,6 +153,7 @@ echo "            coordinatorParticipation=\"${COORDINATION_EXEC_TX}\"" >> ${DES
 echo "            writeTxWorkload=\"${WRITE_TX_WORKLOAD}\"" >> ${DEST_FILE}
 echo "            readTxWorkload=\"${READ_TX_WORKLOAD}\"" >> ${DEST_FILE}
 echo "            localityProbability=\"${LOCALITY_PROBABILITY}\"" >> ${DEST_FILE}
+echo "            stdDev=\"${STD_DEV}\"" >> ${DEST_FILE}
 echo "            noContention=\"${NO_CONTENTION}\"/>" >> ${DEST_FILE}
 
 echo "      <CacheSize" >> ${DEST_FILE}

@@ -54,6 +54,9 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
    //the probability of the key to be local, assuming key_x_?? is store in node x
    private int localityProbability = -1;
 
+   //for gaussian keys
+   private double stdDev = -1;
+
    private CacheWrapper cacheWrapper;
    private boolean reportNanos = false;
 
@@ -101,6 +104,7 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
       stressor.setNumberOfNodes(getActiveSlaveCount());
       stressor.setNumberOfThreads(numOfThreads);
       stressor.setLocalityProbability(localityProbability);
+      stressor.setStdDev(stdDev);
 
       try {
          Map<String, String> results = stressor.stress(cacheWrapper);
@@ -146,18 +150,19 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
 
    @Override
    public String toString() {
-      return "WebSessionBenchmarkStage {" +
+      return "WebSessionBenchmarkStage{" +
             "numberOfKeys=" + numberOfKeys +
             ", sizeOfValue=" + sizeOfValue +
-            ", writeTransactionPercentage=" + writeTransactionPercentage +
             ", numOfThreads=" + numOfThreads +
-            ", reportNanos=" + reportNanos +
             ", coordinatorParticipation=" + coordinatorParticipation +
-            ", writeTxWorkload=" + writeTxWorkload +
-            ", readTxWorkload=" + readTxWorkload +
+            ", writeTxWorkload='" + writeTxWorkload + '\'' +
+            ", readTxWorkload='" + readTxWorkload + '\'' +
+            ", writeTransactionPercentage=" + writeTransactionPercentage +
+            ", bucketPrefix='" + bucketPrefix + '\'' +
             ", perThreadSimulTime=" + perThreadSimulTime +
             ", noContention=" + noContention +
-            ", cacheWrapper=" + cacheWrapper +
+            ", localityProbability=" + localityProbability +
+            ", stdDev=" + stdDev +
             ", " + super.toString();
    }
 
@@ -204,4 +209,10 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
    public void setLocalityProbability(int localityProbability) {
       this.localityProbability = localityProbability;
    }
+
+   public void setStdDev(double stdDev) {
+      this.stdDev = stdDev;
+   }
+
+
 }

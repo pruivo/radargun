@@ -668,5 +668,10 @@ public class PutGetStressor implements CacheWrapperStressor {
    public int getLocalityProbability() {
       return factory.getLocalityProbability();
    }
+
+   @ManagedOperation
+   public void setStdDev(double stdDev) {
+      factory.setStdDev(stdDev);
+   }
 }
 

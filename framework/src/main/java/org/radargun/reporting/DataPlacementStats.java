@@ -15,6 +15,7 @@ public class DataPlacementStats {
    private static final String GNUPLOT_COMMENT = "#";
 
    private final int roundId;
+   private final int initialNumberOfKeys;
    private long creationTime;
    private int numberOfKeysMoved;
    private int wrongKeysMoved;
@@ -22,8 +23,9 @@ public class DataPlacementStats {
    private int objectLookupSize;
    private long[] queryTime;
 
-   public DataPlacementStats(int roundId) {
+   public DataPlacementStats(int roundId, int initialNumberOfKeys) {
       this.roundId = roundId;
+      this.initialNumberOfKeys = initialNumberOfKeys;
    }
 
    public void setCreationTime(long creationTime) {
@@ -54,6 +56,8 @@ public class DataPlacementStats {
       writer.write(GNUPLOT_COMMENT);
       writer.write("RoundId");
       writer.write(GNUPLOT_SEPARATOR);
+      writer.write("InitialNumberOfKeys");
+      writer.write(GNUPLOT_SEPARATOR);
       writer.write("CreationTime(nanosec)");
       writer.write(GNUPLOT_SEPARATOR);
       writer.write("NumberOfKeysMoved");
@@ -71,6 +75,8 @@ public class DataPlacementStats {
 
    public void writeValues(BufferedWriter writer) throws IOException {
       writer.write(Integer.toString(roundId));
+      writer.write(GNUPLOT_SEPARATOR);
+      writer.write(Integer.toString(initialNumberOfKeys));
       writer.write(GNUPLOT_SEPARATOR);
       writer.write(Long.toString(creationTime));
       writer.write(GNUPLOT_SEPARATOR);

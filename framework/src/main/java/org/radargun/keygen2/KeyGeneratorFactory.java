@@ -25,6 +25,7 @@ public class KeyGeneratorFactory {
    private int numberOfKeys;
    private int valueSize;
    private int localityProbability;
+   private double stdDev;
    private boolean noContention;
    private String bucketPrefix;
 
@@ -52,8 +53,13 @@ public class KeyGeneratorFactory {
          int numberOfKeysPerNode = (numberOfKeys - nodeIdx) / numberOfNodes;
          int threadIdx = numberOfKeysPerNode % numberOfThreads;
          int numberOfKeysPerThread = (numberOfKeysPerNode - threadIdx) / numberOfThreads;
-         currentWorkload.set(new Workload(numberOfNodes, numberOfThreads, numberOfKeysPerThread, nodeIdx, threadIdx,
-                                          localityProbability, noContention));
+
+         if (localityProbability >= 0 && stdDev > 0) {
+            throw new IllegalArgumentException("Std Dev and Locality Probability cannot be both higher or equals than 0");
+         }
+
+         currentWorkload.set(new Workload(numberOfKeys, numberOfNodes, numberOfThreads, numberOfKeysPerThread, nodeIdx, threadIdx,
+                                          localityProbability, noContention, stdDev));
       }
    }
 
@@ -93,6 +99,10 @@ public class KeyGeneratorFactory {
       }
    }
 
+   public void setStdDev(double stdDev) {
+      this.stdDev = stdDev;
+   }
+
    public void setNoContention(boolean noContention) {
       this.noContention = noContention;
    }
@@ -127,6 +137,38 @@ public class KeyGeneratorFactory {
 
    public int getLocalityProbability() {
       return localityProbability;
+   }
+
+   //debug only
+   public Workload getCurrentWorkload() {
+      return currentWorkload.get();
+   }
+
+   //debug only
+   public Object convertIndexToKey(Workload workload, int index) {
+      int nodeIndex = 0;
+      int threadIndex = 0;
+      int sumOfKeys = 0;
+
+      while (true) {
+         int keys = maxKeyIdx(workload, nodeIndex, threadIndex);
+
+         sumOfKeys += keys;
+
+         if (sumOfKeys > index) {
+            sumOfKeys -= keys;
+            break;
+         }
+
+         threadIndex++;
+         if (threadIndex == workload.numberOfThreads) {
+            threadIndex = 0;
+            nodeIndex++;
+         }
+      }
+
+      int keyIndex = index - sumOfKeys;
+      return createKey(nodeIndex, threadIndex, keyIndex);
    }
 
    @Override
@@ -247,25 +289,18 @@ public class KeyGeneratorFactory {
       @Override
       public Object getRandomKey() {
          Workload workload = currentWorkload.get();
+
+         boolean useLocalityProbability = workload.localityProbability >= 0;
+         boolean useGaussian = workload.stdDev > 0;
+
          if (workload.noContention) {
-            int keyIdx = random.nextInt(maxKeyIdx(workload, nodeIdx, threadIdx));
-            return createKey(nodeIdx, threadIdx, keyIdx);
-         } else if (workload.localityProbability < 0) {
-            int nodeIdx = random.nextInt(workload.numberOfNodes);
-            int threadIdx = random.nextInt(workload.numberOfThreads);
-            int keyIdx = random.nextInt(maxKeyIdx(workload, nodeIdx, threadIdx));
-            return createKey(nodeIdx, threadIdx, keyIdx);
+            return noContentionKey(workload);
+         } else if (!useGaussian && !useLocalityProbability) {
+            return randomKey(workload);
+         } else if (!useGaussian && useLocalityProbability) {
+            return localityProbabilityKey(workload);
          } else {
-            int nodeIdx;
-            if (workload.localityProbability > random.nextInt(100)) {
-               nodeIdx = this.nodeIdx;
-            } else {
-               nodeIdx = random.nextInt(workload.numberOfNodes);
-               nodeIdx = nodeIdx == this.nodeIdx ? (++nodeIdx % workload.numberOfNodes) : nodeIdx;
-            }
-            int threadIdx = random.nextInt(workload.numberOfThreads);
-            int keyIdx = random.nextInt(maxKeyIdx(workload, nodeIdx, threadIdx));
-            return createKey(nodeIdx, threadIdx, keyIdx);
+            return gaussianKey(workload);
          }
       }
 
@@ -303,6 +338,48 @@ public class KeyGeneratorFactory {
       @Override
       public Object getRandomValue() {
          return KeyGeneratorFactory.this.getRandomValue(random);
+      }
+
+      private Object noContentionKey(Workload workload) {
+         int keyIdx = random.nextInt(maxKeyIdx(workload, nodeIdx, threadIdx));
+         return createKey(nodeIdx, threadIdx, keyIdx);
+      }
+
+      private Object randomKey(Workload workload) {
+         int nodeIdx = random.nextInt(workload.numberOfNodes);
+         int threadIdx = random.nextInt(workload.numberOfThreads);
+         int keyIdx = random.nextInt(maxKeyIdx(workload, nodeIdx, threadIdx));
+         return createKey(nodeIdx, threadIdx, keyIdx);
+      }
+
+      private Object localityProbabilityKey(Workload workload) {
+         int nodeIdx;
+         if (workload.localityProbability > random.nextInt(100)) {
+            nodeIdx = this.nodeIdx;
+         } else {
+            nodeIdx = random.nextInt(workload.numberOfNodes);
+            nodeIdx = nodeIdx == this.nodeIdx ? (++nodeIdx % workload.numberOfNodes) : nodeIdx;
+         }
+         int threadIdx = random.nextInt(workload.numberOfThreads);
+         int keyIdx = random.nextInt(maxKeyIdx(workload, nodeIdx, threadIdx));
+         return createKey(nodeIdx, threadIdx, keyIdx);
+      }
+
+      private Object gaussianKey(Workload workload) {
+         long keyIndex = getGaussKey(workload.numberOfKeys, workload.numberOfNodes, workload.stdDev);
+         return convertIndexToKey(workload, (int) keyIndex);
+      }
+
+      private long getGaussKey(int numberOfKeys, int numberOfNodes, double stdDev){
+         double gauss = random.nextGaussian();
+         double avg = (((double)numberOfKeys) *
+                             (((double)nodeIdx / ((double)numberOfNodes)) +
+                                    0.5D / (double)numberOfNodes));
+         long res = Math.round(Math.IEEEremainder(gauss * stdDev + avg, numberOfKeys));
+         if(res < 0)
+            return numberOfKeys + res;
+         else
+            return res;
       }
 
       private boolean findNextUnique(Set<Object> alreadyCollected, Workload workload, int initialNodeIdx, int initialThreadIdx,
@@ -348,6 +425,7 @@ public class KeyGeneratorFactory {
    }
 
    private class Workload {
+      private final int numberOfKeys;
       private final int numberOfNodes;
       private final int numberOfThreads;
       private final int keyPerThread;
@@ -355,9 +433,11 @@ public class KeyGeneratorFactory {
       private final int threadIdx;
       private final int localityProbability;
       private final boolean noContention;
+      private final double stdDev;
 
-      private Workload(int numberOfNodes, int numberOfThreads, int keyPerThread, int nodeIdx, int threadIdx,
-                       int localityProbability, boolean noContention) {
+      private Workload(int numberOfKeys, int numberOfNodes, int numberOfThreads, int keyPerThread, int nodeIdx, int threadIdx,
+                       int localityProbability, boolean noContention, double stdDev) {
+         this.numberOfKeys = numberOfKeys;
          this.numberOfNodes = numberOfNodes;
          this.numberOfThreads = numberOfThreads;
          this.keyPerThread = keyPerThread;
@@ -365,6 +445,7 @@ public class KeyGeneratorFactory {
          this.threadIdx = threadIdx;
          this.localityProbability = localityProbability;
          this.noContention = noContention;
+         this.stdDev = stdDev;
       }
    }
 }

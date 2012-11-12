@@ -2,6 +2,7 @@ package org.radargun.fwk;
 
 import org.radargun.keygen2.KeyGenerator;
 import org.radargun.keygen2.KeyGeneratorFactory;
+import org.radargun.keygen2.RadargunKey;
 import org.radargun.keygen2.WarmupEntry;
 import org.testng.annotations.Test;
 
@@ -125,11 +126,62 @@ public class KeyGeneratorTest {
       }
    }
 
+   public void testConverter() {
+
+      for (int numberOfNodes = 2; numberOfNodes < 10; ++numberOfNodes) {
+         for (int numberOfThreads = 1; numberOfThreads < 8; ++numberOfThreads) {
+            for (int numberOfKeys = 1000; numberOfKeys < 10000000; numberOfKeys *= 10) {
+               KeyGeneratorFactory factory = new KeyGeneratorFactory();
+               factory.setNoContention(false);
+               factory.setNumberOfKeys(numberOfKeys);
+               factory.setNumberOfNodes(numberOfNodes);
+               factory.setNumberOfThreads(numberOfThreads);
+               factory.calculate();
+
+               Iterator<WarmupEntry> iterator = factory.warmupAll();
+               int index = 0;
+               while (iterator.hasNext()) {
+                  WarmupEntry entry = iterator.next();
+                  Object key = factory.convertIndexToKey(factory.getCurrentWorkload(), index++);
+                  assert entry.getKey().equals(key) : "Wrong key: " + entry.getKey() + " != " + key;
+               }
+               //assert index == numberOfKeys;
+               System.out.println(String.format("Nodes=%s,Threads=%s,Keys=%s done. last index=%s",
+                                                numberOfNodes, numberOfThreads, numberOfKeys, index));
+            }
+         }
+      }
+
+      for (int numberOfNodes = 10; numberOfNodes < 100; numberOfNodes += 10) {
+         for (int numberOfThreads = 1; numberOfThreads < 8; ++numberOfThreads) {
+            for (int numberOfKeys = 1000; numberOfKeys < 10000000; numberOfKeys *= 10) {
+               KeyGeneratorFactory factory = new KeyGeneratorFactory();
+               factory.setNoContention(false);
+               factory.setNumberOfKeys(numberOfKeys);
+               factory.setNumberOfNodes(numberOfNodes);
+               factory.setNumberOfThreads(numberOfThreads);
+               factory.calculate();
+
+               Iterator<WarmupEntry> iterator = factory.warmupAll();
+               int index = 0;
+               while (iterator.hasNext()) {
+                  WarmupEntry entry = iterator.next();
+                  Object key = factory.convertIndexToKey(factory.getCurrentWorkload(), index++);
+                  assert entry.getKey().equals(key) : "Wrong key: " + entry.getKey() + " != " + key;
+               }
+               //assert index == numberOfKeys;
+               System.out.println(String.format("Nodes=%s,Threads=%s,Keys=%s done. last index=%s",
+                                                numberOfNodes, numberOfThreads, numberOfKeys, index));
+            }
+         }
+      }
+   }
+
    private void assertKeys(Object[] uniqueRandomKeys, int nodeIdx, int threadIdx, int maxKeys) {
       Set<Object> keys = new HashSet<Object>(Arrays.asList(uniqueRandomKeys));
 
       for (int i = 0; i < maxKeys; ++i) {
-         String key = "KEY_" + nodeIdx + "_" + threadIdx + "_" + i;
+         RadargunKey key = new RadargunKey(nodeIdx, threadIdx, i);
          assert keys.contains(key) : "keys not contains key " + key;
       }
    }
@@ -137,7 +189,7 @@ public class KeyGeneratorTest {
    private void assertIterator(Iterator<WarmupEntry> iterator, int nodeIdx, int threadIdx, int maxKeys) {
       for (int i = 0; i < maxKeys; ++i) {
          assert iterator.hasNext();
-         assert ("KEY_" + nodeIdx + "_" + threadIdx + "_" + i).equals(iterator.next().getKey());
+         assert new RadargunKey(nodeIdx, threadIdx, i).equals(iterator.next().getKey());
       }
    }
 }

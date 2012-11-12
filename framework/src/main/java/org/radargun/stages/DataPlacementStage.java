@@ -80,7 +80,7 @@ public class DataPlacementStage extends AbstractDistStage {
 
    private DataPlacementStats processRound(int roundId, String path, Collection<RadargunKey> initialKeys,
                                            CacheWrapper cacheWrapper) throws Exception {
-      DataPlacementStats stats = new DataPlacementStats(roundId);
+      DataPlacementStats stats = new DataPlacementStats(roundId, initialKeys.size());
       ObjectInputStream objectInputStream = getObjectInputStream(path);
       cacheWrapper.collectDataPlacementStats(objectInputStream, initialKeys, stats);
       return stats;
