@@ -92,14 +92,6 @@ public class DataPlacement2Stage extends AbstractDistStage {
       }
    }
 
-   private DataPlacementStats processRound(int roundId, String path, Collection<RadargunKey> initialKeys,
-                                           CacheWrapper cacheWrapper) throws Exception {
-      DataPlacementStats stats = new DataPlacementStats(roundId);
-      ObjectInputStream objectInputStream = getObjectInputStream(path);
-      cacheWrapper.collectDataPlacementStats(objectInputStream, initialKeys, stats);
-      return stats;
-   }
-
    private BufferedWriter getBufferedWriter(String filePath) {
       try {
          return new BufferedWriter(new FileWriter(filePath));

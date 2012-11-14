@@ -6,6 +6,9 @@ import org.infinispan.Cache;
 import org.infinispan.config.Configuration;
 import org.infinispan.context.Flag;
 import org.infinispan.dataplacement.OwnersInfo;
+import org.infinispan.dataplacement.c50.C50MLObjectLookup;
+import org.infinispan.dataplacement.c50.lookup.BloomFilter;
+import org.infinispan.dataplacement.c50.tree.DecisionTree;
 import org.infinispan.dataplacement.lookup.ObjectLookup;
 import org.infinispan.dataplacement.lookup.ObjectLookupFactory;
 import org.infinispan.dataplacement.stats.IncrementableLong;
@@ -22,7 +25,6 @@ import org.radargun.keygen2.RadargunKey;
 import org.radargun.reporting.DataPlacementStats;
 import org.radargun.utils.BucketsKeysTreeSet;
 import org.radargun.utils.Utils;
-import sun.security.acl.OwnerImpl;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -30,9 +32,9 @@ import javax.transaction.TransactionManager;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
 import java.util.Collection;
@@ -313,18 +315,21 @@ public class InfinispanWrapper implements CacheWrapper {
       }
 
       stats.setQueryTime(queryTimesLong);
+      stats.setObjectLookupSize(serializedSize(objectLookup));
 
-      try {
-         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-         ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
-         objectOutputStream.writeObject(objectLookup);
-         objectOutputStream.flush();
-
-         stats.setObjectLookupSize(byteArrayOutputStream.toByteArray().length);
-      } catch (IOException e) {
-         log.warn("Error calculating object lookup size", e);
+      if (objectLookup instanceof C50MLObjectLookup) {
+         C50MLObjectLookup c50MLObjectLookup = (C50MLObjectLookup) objectLookup;
+         BloomFilter bloomFilter = c50MLObjectLookup.getBloomFilter();
+         stats.setBloomFilterSize(serializedSize(bloomFilter));
+         DecisionTree[] decisionTrees = c50MLObjectLookup.getDecisionTreeArray();
+         for (int i = 0; i < decisionTrees.length; ++i) {
+            if (decisionTrees[i] != null) {
+               stats.setMachineLearnerSize(serializedSize(decisionTrees[i]));
+               stats.setMachineLearnerDeep(decisionTrees[i].getDeep());
+               break;
+            }
+         }
       }
-
    }
 
    @SuppressWarnings("unchecked")
@@ -339,6 +344,24 @@ public class InfinispanWrapper implements CacheWrapper {
          writer.flush();
       }
 
+   }
+
+   private int serializedSize(Serializable object) {
+      int size = 0;
+      try {
+         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+         ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+         objectOutputStream.writeObject(object);
+         objectOutputStream.flush();
+
+         size = byteArrayOutputStream.toByteArray().length;
+
+         byteArrayOutputStream.close();
+         objectOutputStream.close();
+      } catch (Exception e) {
+         //no-op
+      }
+      return size;
    }
 
    private boolean isPassiveReplication() {

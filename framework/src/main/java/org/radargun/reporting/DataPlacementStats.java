@@ -21,6 +21,9 @@ public class DataPlacementStats {
    private int wrongKeysMoved;
    private int wrongOwnersMoved;
    private int objectLookupSize;
+   private int bloomFilterSize;
+   private int machineLearnerSize;
+   private int machineLearnerDeep;
    private long[] queryTime;
 
    public DataPlacementStats(int roundId, int initialNumberOfKeys) {
@@ -52,6 +55,18 @@ public class DataPlacementStats {
       this.objectLookupSize = objectLookupSize;
    }
 
+   public void setBloomFilterSize(int bloomFilterSize) {
+      this.bloomFilterSize = bloomFilterSize;
+   }
+
+   public void setMachineLearnerSize(int machineLearnerSize) {
+      this.machineLearnerSize = machineLearnerSize;
+   }
+
+   public void setMachineLearnerDeep(int machineLearnerDeep) {
+      this.machineLearnerDeep = machineLearnerDeep;
+   }
+
    public static void writeHeader(BufferedWriter writer) throws IOException {
       writer.write(GNUPLOT_COMMENT);
       writer.write("RoundId");
@@ -67,6 +82,12 @@ public class DataPlacementStats {
       writer.write("WrongOwnersMoved");
       writer.write(GNUPLOT_SEPARATOR);
       writer.write("ObjectLookupSize(byte)");
+      writer.write(GNUPLOT_SEPARATOR);
+      writer.write("BloomFilterSize(byte)");
+      writer.write(GNUPLOT_SEPARATOR);
+      writer.write("MachineLearnerSize(byte)");
+      writer.write(GNUPLOT_SEPARATOR);
+      writer.write("MachineLearnerDeep");
       writer.write(GNUPLOT_SEPARATOR);
       writer.write("QueriesTime(nanosec)");
       writer.newLine();
@@ -87,6 +108,12 @@ public class DataPlacementStats {
       writer.write(Integer.toString(wrongOwnersMoved));
       writer.write(GNUPLOT_SEPARATOR);
       writer.write(Integer.toString(objectLookupSize));
+      writer.write(GNUPLOT_SEPARATOR);
+      writer.write(Integer.toString(bloomFilterSize));
+      writer.write(GNUPLOT_SEPARATOR);
+      writer.write(Integer.toString(machineLearnerSize));
+      writer.write(GNUPLOT_SEPARATOR);
+      writer.write(Integer.toString(machineLearnerDeep));
       writer.write(GNUPLOT_SEPARATOR);
       writer.write(Long.toString(sumQueryTimes()));
       for (long value : queryTime) {
