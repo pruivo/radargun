@@ -327,6 +327,20 @@ public class InfinispanWrapper implements CacheWrapper {
 
    }
 
+   @SuppressWarnings("unchecked")
+   @Override
+   public void convertTotString(ObjectInputStream objectsToMove, BufferedWriter writer) throws Exception {
+      Map<Object, OwnersInfo> keyNewOwners = (Map<Object, OwnersInfo>) objectsToMove.readObject();
+      for (Map.Entry<Object, OwnersInfo> entry : keyNewOwners.entrySet()) {
+         writer.write(entry.getKey().toString());
+         writer.write("=");
+         writer.write(entry.getValue().getNewOwnersIndexes().toString());
+         writer.newLine();
+         writer.flush();
+      }
+
+   }
+
    private boolean isPassiveReplication() {
       try {
          return isPassiveReplicationMethod != null && (isPassiveReplicationWithSwitch() ||
