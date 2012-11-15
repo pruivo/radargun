@@ -8,6 +8,7 @@ import org.infinispan.context.Flag;
 import org.infinispan.dataplacement.OwnersInfo;
 import org.infinispan.dataplacement.c50.C50MLObjectLookup;
 import org.infinispan.dataplacement.c50.lookup.BloomFilter;
+import org.infinispan.dataplacement.c50.lookup.BloomFilter2;
 import org.infinispan.dataplacement.c50.tree.DecisionTree;
 import org.infinispan.dataplacement.lookup.ObjectLookup;
 import org.infinispan.dataplacement.lookup.ObjectLookupFactory;
@@ -319,7 +320,7 @@ public class InfinispanWrapper implements CacheWrapper {
 
       if (objectLookup instanceof C50MLObjectLookup) {
          C50MLObjectLookup c50MLObjectLookup = (C50MLObjectLookup) objectLookup;
-         BloomFilter bloomFilter = c50MLObjectLookup.getBloomFilter();
+         BloomFilter2 bloomFilter = c50MLObjectLookup.getBloomFilter();
          stats.setBloomFilterSize(serializedSize(bloomFilter));
          DecisionTree[] decisionTrees = c50MLObjectLookup.getDecisionTreeArray();
          for (int i = 0; i < decisionTrees.length; ++i) {
