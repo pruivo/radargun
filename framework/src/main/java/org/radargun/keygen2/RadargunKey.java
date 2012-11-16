@@ -47,14 +47,15 @@ public class RadargunKey implements Serializable {
       RadargunKey that = (RadargunKey) o;
 
       return keyIdx == that.keyIdx && nodeIdx == that.nodeIdx && threadIdx == that.threadIdx;
-
    }
 
    @Override
    public int hashCode() {
-      int result = nodeIdx;
-      result = 31 * result + threadIdx;
-      result = 31 * result + keyIdx;
-      return result;
+      int hash = 5;
+      hash = 89 * hash + nodeIdx;
+      hash = 89 * hash + threadIdx;
+      hash = 89 * hash + keyIdx;
+      hash = 89 * hash + (threadIdx != 0 ? (nodeIdx * 100 / threadIdx) : nodeIdx * 100);
+      return hash;
    }
 }

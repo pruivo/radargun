@@ -320,7 +320,7 @@ public class InfinispanWrapper implements CacheWrapper {
 
       if (objectLookup instanceof C50MLObjectLookup) {
          C50MLObjectLookup c50MLObjectLookup = (C50MLObjectLookup) objectLookup;
-         BloomFilter2 bloomFilter = c50MLObjectLookup.getBloomFilter();
+         BloomFilter bloomFilter = c50MLObjectLookup.getBloomFilter();
          stats.setBloomFilterSize(serializedSize(bloomFilter));
          DecisionTree[] decisionTrees = c50MLObjectLookup.getDecisionTreeArray();
          for (int i = 0; i < decisionTrees.length; ++i) {

@@ -10,7 +10,7 @@
 
    <groupId>org.radargun</groupId>
    <artifactId>radargun-framework</artifactId>
-  <version>1.1.0-SNAPSHOT</version>
+   <version>1.1.0-SNAPSHOT</version>
    <name>The RadarGun framework</name>
    <packaging>jar</packaging>
 
@@ -69,6 +69,18 @@
          <groupId>log4j</groupId>
          <artifactId>log4j</artifactId>
          <version>1.2.14</version>
+      </dependency>
+
+      <dependency>
+         <groupId>com.elaunira</groupId>
+         <artifactId>scalable-bloom-filter</artifactId>
+         <version>1.0-SNAPSHOT</version>
+      </dependency>
+
+      <dependency>
+         <groupId>org.infinispan</groupId>
+         <artifactId>infinispan-core</artifactId>
+         <version>5.2.0-cloudtm-dataplacement-SNAPSHOT</version>
       </dependency>
    </dependencies>
 </project>
