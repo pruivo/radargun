@@ -5,7 +5,6 @@ import com.elaunira.sbf.SlicedBloomFilter;
 import edu.utexas.ece.mpc.bloomier.ImmutableBloomierFilter;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.commons.math.random.RandomAdaptor;
 import org.infinispan.dataplacement.c50.lookup.BloomFilter;
 import org.radargun.MasterStage;
 import org.radargun.Stage;
@@ -19,7 +18,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.TreeSet;
 import java.util.concurrent.TimeoutException;
@@ -40,6 +38,7 @@ public class BloomFilterStage implements MasterStage {
    private String roundsFilePath = null;
    private String outputFilePath = null;
    private double falsePositive;
+   private int bloomierK = 10;
 
    @Override
    public boolean execute() throws Exception {
@@ -90,14 +89,18 @@ public class BloomFilterStage implements MasterStage {
 
          int roundId = 1;
          int iterator = 0;
-         List<RadargunKey> keysMovedSoFar = new LinkedList<RadargunKey>();
+         HashMap<RadargunKey, Integer> keysMovedSoFar = new HashMap<RadargunKey, Integer>();
          ScalableBloomFilter<RadargunKey> scalableBloomFilter = null;
+         HashMap<RadargunKey, Integer> hashMap = null;
+         Random random = new Random();
          for (Integer totalKeysMoved : keysPerRound) {
             log.info("Start round " + roundId);
-            List<RadargunKey> currentRound = new LinkedList<RadargunKey>();
+            HashMap<RadargunKey, Integer> currentRound = new HashMap<RadargunKey, Integer>();
             while (keysMovedSoFar.size() < totalKeysMoved && iterator < array.length) {
-               keysMovedSoFar.add(array[iterator]);
-               currentRound.add(array[iterator++]);
+               RadargunKey key = array[iterator++];
+               int owner = random.nextInt(40);
+               keysMovedSoFar.put(key, owner);
+               currentRound.put(key, owner);
             }
 
             RoundStats stats = new RoundStats();
@@ -106,18 +109,26 @@ public class BloomFilterStage implements MasterStage {
             stats.totalKeysMoved = totalKeysMoved;
 
             scalableBloomFilter = create(currentRound, scalableBloomFilter, stats);
-            test(scalableBloomFilter, initialKeys, keysMovedSoFar, stats);
+            test(scalableBloomFilter, initialKeys, keysMovedSoFar.keySet(), stats);
             stats.scalableBloomFilterSize = serializedSize(scalableBloomFilter);
+            
+            System.out.println("Scalable: " + scalableBloomFilter);
 
-            BloomFilter bloomFilter = create(keysMovedSoFar, stats);
-            test(bloomFilter, initialKeys, keysMovedSoFar, stats);
+            BloomFilter bloomFilter = create(keysMovedSoFar.keySet(), stats);
+            test(bloomFilter, initialKeys, keysMovedSoFar.keySet(), stats);
             stats.bloomFilterSize = serializedSize(bloomFilter);
 
-            ImmutableBloomierFilter<RadargunKey, Byte> bloomierFilter = createBloomierFilter(keysMovedSoFar, stats);
+            System.out.println("Bloom Filter: " + bloomFilter);
+
+            /*ImmutableBloomierFilter<RadargunKey, Integer> bloomierFilter = createBloomierFilter(keysMovedSoFar, stats);
             if (bloomierFilter != null) {
-               test(bloomierFilter, initialKeys, keysMovedSoFar, stats);
+               test(bloomierFilter, initialKeys, keysMovedSoFar.keySet(), stats);
                stats.bloomierFilterSize = serializedSize(bloomierFilter);
-            }
+            }*/
+
+            /*hashMap = create(hashMap, currentRound, stats);
+            test(hashMap, initialKeys, keysMovedSoFar.keySet(), stats);
+            stats.hashMapSize = serializedSize(hashMap);*/
 
             write(writer, stats);
             log.info("Finish round " + roundId);
@@ -135,34 +146,42 @@ public class BloomFilterStage implements MasterStage {
       return true;
    }
 
-   private ScalableBloomFilter<RadargunKey> create(List<RadargunKey> keyToAdd,
+   private ScalableBloomFilter<RadargunKey> create(HashMap<RadargunKey, Integer> keyToAdd,
                                                    ScalableBloomFilter<RadargunKey> scalableBloomFilter,
                                                    RoundStats stats) {
       if (scalableBloomFilter == null) {
          long ts1 = System.nanoTime();
-         scalableBloomFilter = new ScalableBloomFilter<RadargunKey>(keyToAdd.size(), falsePositive);
-         for (RadargunKey key : keyToAdd) {
+         scalableBloomFilter = new ScalableBloomFilter<RadargunKey>(2, 0.9, keyToAdd.size(), falsePositive);
+         for (RadargunKey key : keyToAdd.keySet()) {
             scalableBloomFilter.add(key);
          }
          long ts2 = System.nanoTime();
          stats.scalableBloomFilterCreationTime = ts2 - ts1;
       } else {
          long ts1 = System.nanoTime();
-         SlicedBloomFilter<RadargunKey> slicedBloomFilter = scalableBloomFilter.createNewSlice(keyToAdd.size());
-         for (RadargunKey key : keyToAdd) {
-            slicedBloomFilter.add(key);
+         List<SlicedBloomFilter<RadargunKey>> slicesToUpdate = new LinkedList<SlicedBloomFilter<RadargunKey>>();         
+         SlicedBloomFilter<RadargunKey> current = scalableBloomFilter.getCurrentSlice();
+         for (RadargunKey key : keyToAdd.keySet()) {
+            if (current.isFull()) {
+               slicesToUpdate.add(current);               
+               current = scalableBloomFilter.createNexSlice();
+            }
+            current.add(key);
          }
-         scalableBloomFilter.add(slicedBloomFilter);
+         slicesToUpdate.add(current);
          long ts2 = System.nanoTime();
-         stats.scalableBloomFilterCreationTime = ts2 - ts1;
-         stats.incrementScalableBloomFilterSize = serializedSize(slicedBloomFilter);
+         stats.incrementScalableBloomFilterSize = serializedSize(slicesToUpdate);
+         long ts3 = System.nanoTime();
+         scalableBloomFilter.update(slicesToUpdate);
+         long ts4 = System.nanoTime();
+         stats.scalableBloomFilterCreationTime = (ts2 - ts1) + (ts4 -ts3);         
       }
 
       return scalableBloomFilter;
    }
 
    private void test(ScalableBloomFilter<RadargunKey> scalableBloomFilter, List<RadargunKey> localKeys,
-                     List<RadargunKey> keysMoved, RoundStats stats) {
+                     Collection<RadargunKey> keysMoved, RoundStats stats) {
       long duration = 0;
       int bfErrors = 0;
       for (RadargunKey key : localKeys) {
@@ -178,7 +197,7 @@ public class BloomFilterStage implements MasterStage {
       stats.scalableBloomFilterErrors = bfErrors;
    }
 
-   private BloomFilter create(List<RadargunKey> keyToAdd, RoundStats stats) {
+   private BloomFilter create(Collection<RadargunKey> keyToAdd, RoundStats stats) {
       long ts1 = System.nanoTime();
       BloomFilter bloomFilter = new BloomFilter(falsePositive, keyToAdd.size());
       for (RadargunKey key : keyToAdd) {
@@ -189,7 +208,7 @@ public class BloomFilterStage implements MasterStage {
       return bloomFilter;
    }
 
-   private void test(BloomFilter bloomFilter, List<RadargunKey> localKeys, List<RadargunKey> keysMoved, RoundStats stats) {
+   private void test(BloomFilter bloomFilter, List<RadargunKey> localKeys, Collection<RadargunKey> keysMoved, RoundStats stats) {
       long duration = 0;
       int bfErrors = 0;
       for (RadargunKey key : localKeys) {
@@ -205,18 +224,13 @@ public class BloomFilterStage implements MasterStage {
       stats.bloomFilterErrors = bfErrors;
    }
 
-   private ImmutableBloomierFilter<RadargunKey, Byte> createBloomierFilter(List<RadargunKey> keyToAdd, RoundStats stats) {
-      Map<RadargunKey, Byte> map = new HashMap<RadargunKey, Byte>();
-      Random random = new Random();
-      for (RadargunKey key : keyToAdd) {
-         map.put(key, (byte)random.nextInt(40));
-      }
-
+   private ImmutableBloomierFilter<RadargunKey, Integer> createBloomierFilter(HashMap<RadargunKey, Integer> keyToAdd,
+                                                                              RoundStats stats) {
       long ts1 = System.nanoTime();
-      ImmutableBloomierFilter<RadargunKey, Byte> bloomierFilter;
+      ImmutableBloomierFilter<RadargunKey, Integer> bloomierFilter;
       try {
-         bloomierFilter = new ImmutableBloomierFilter<RadargunKey, Byte>(
-               map, keyToAdd.size() * 10, 10, 16, Byte.class, 10000);
+         bloomierFilter = new ImmutableBloomierFilter<RadargunKey, Integer>(
+               keyToAdd, keyToAdd.size() * 3, bloomierK, 42, Integer.class, 10000);
       } catch (TimeoutException e) {
          log.warn("Unable to create Bloomier Filter");
          return null;
@@ -226,14 +240,15 @@ public class BloomFilterStage implements MasterStage {
       return bloomierFilter;
    }
 
-   private void test(ImmutableBloomierFilter<RadargunKey, Byte> bloomierFilter, List<RadargunKey> localKeys,
-                     List<RadargunKey> keysMoved, RoundStats stats) {
+   private void test(ImmutableBloomierFilter<RadargunKey, Integer> bloomierFilter, Collection<RadargunKey> localKeys,
+                     Collection<RadargunKey> keysMoved, RoundStats stats) {
       long duration = 0;
       int bfErrors = 0;
       for (RadargunKey key : localKeys) {
          long ts1 = System.nanoTime();
-         boolean bfResult = bloomierFilter.get(key) != null;
+         Integer value = bloomierFilter.get(key);         
          long ts2 = System.nanoTime();
+         boolean bfResult = value != null && value >= 0 && value <= 40;
          duration += ts2 - ts1;
          if (bfResult && !keysMoved.contains(key)) {
             bfErrors++;
@@ -241,6 +256,44 @@ public class BloomFilterStage implements MasterStage {
       }
       stats.bloomierFilterQueryTime = duration;
       stats.bloomierFilterErrors = bfErrors;
+   }
+
+   private HashMap<RadargunKey, Integer> create(HashMap<RadargunKey, Integer> map,
+                                                HashMap<RadargunKey, Integer> keyToAdd,
+                                                RoundStats stats) {
+      if (map == null) {
+         long ts1 = System.nanoTime();
+         map = new HashMap<RadargunKey, Integer>();
+         map.putAll(keyToAdd);
+         long ts2 = System.nanoTime();
+         stats.hashMapCreationTime = ts2 - ts1;
+      } else {
+         long ts1 = System.nanoTime();
+         map.putAll(keyToAdd);
+         long ts2 = System.nanoTime();
+         stats.hashMapCreationTime = ts2 - ts1;
+         stats.incrementHashMapSize = serializedSize(keyToAdd);
+      }
+
+      return map;
+   }
+
+
+   private void test(HashMap<RadargunKey, Integer> hashMap, Collection<RadargunKey> localKeys,
+                     Collection<RadargunKey> keysMoved, RoundStats stats) {
+      long duration = 0;
+      int bfErrors = 0;
+      for (RadargunKey key : localKeys) {
+         long ts1 = System.nanoTime();
+         boolean bfResult = hashMap.containsKey(key);
+         long ts2 = System.nanoTime();
+         duration += ts2 - ts1;
+         if (bfResult && !keysMoved.contains(key)) {
+            bfErrors++;
+         }
+      }
+      stats.hashMapQueryTime = duration;
+      stats.hashMapErrors = bfErrors;
    }
 
    private void writeHeader(BufferedWriter writer) throws IOException {
@@ -280,6 +333,17 @@ public class BloomFilterStage implements MasterStage {
       writer.write("bloomierFilterErrors");
       writer.write(GNUPLOT_SEPARATOR);
       writer.write("bloomierFilterSize");
+      writer.write(GNUPLOT_SEPARATOR);
+
+      writer.write("hashMapCreationTime");
+      writer.write(GNUPLOT_SEPARATOR);
+      writer.write("hashMapQueryTime");
+      writer.write(GNUPLOT_SEPARATOR);
+      writer.write("hashMapErrors");
+      writer.write(GNUPLOT_SEPARATOR);
+      writer.write("hashMapSize");
+      writer.write(GNUPLOT_SEPARATOR);
+      writer.write("incrementHashMapSize");
       writer.write(GNUPLOT_SEPARATOR);
 
       writer.newLine();
@@ -324,8 +388,39 @@ public class BloomFilterStage implements MasterStage {
       writer.write(Integer.toString(stats.bloomierFilterSize));
       writer.write(GNUPLOT_SEPARATOR);
 
+      writer.write(Long.toString(stats.hashMapCreationTime));
+      writer.write(GNUPLOT_SEPARATOR);
+      writer.write(Long.toString(stats.hashMapQueryTime));
+      writer.write(GNUPLOT_SEPARATOR);
+      writer.write(Integer.toString(stats.hashMapErrors));
+      writer.write(GNUPLOT_SEPARATOR);
+      writer.write(Integer.toString(stats.hashMapSize));
+      writer.write(GNUPLOT_SEPARATOR);
+      writer.write(Integer.toString(stats.incrementHashMapSize));
+      writer.write(GNUPLOT_SEPARATOR);
+
       writer.newLine();
       writer.flush();
+   }
+
+   private int serializedSize(Collection<?> collection) {
+      int size = 0;
+      try {
+         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+         ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+         for (Object o : collection) {
+            objectOutputStream.writeObject(o);
+         }
+         objectOutputStream.flush();
+
+         size = byteArrayOutputStream.toByteArray().length;
+
+         byteArrayOutputStream.close();
+         objectOutputStream.close();
+      } catch (Exception e) {
+         //no-op
+      }
+      return size;
    }
 
    private int serializedSize(Serializable object) {
@@ -417,6 +512,10 @@ public class BloomFilterStage implements MasterStage {
       this.falsePositive = falsePositive;
    }
 
+   public void setBloomierK(int bloomierK) {
+      this.bloomierK = bloomierK;
+   }
+
    private boolean logAndReturnError(String errorMessage) {
       log.warn(errorMessage);
       return false;
@@ -470,5 +569,12 @@ public class BloomFilterStage implements MasterStage {
       private long bloomierFilterQueryTime;
       private int bloomierFilterErrors;
       private int bloomierFilterSize;
+
+      //hash map
+      private long hashMapCreationTime;
+      private long hashMapQueryTime;
+      private int hashMapErrors;
+      private int hashMapSize;
+      private int incrementHashMapSize;
    }
 }
