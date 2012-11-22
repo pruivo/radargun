@@ -17,8 +17,8 @@
                 partialReplication="false"/>
         <ClearCluster />
         <BankWarmup
-                numberOfAccounts="false"
-                initialAmount="false"/>
+                numberOfAccounts="10000"
+                initialAmount="10000"/>
         <ResetStats />
         <BankBenchmark
                 perThreadSimulTime="300"                                
