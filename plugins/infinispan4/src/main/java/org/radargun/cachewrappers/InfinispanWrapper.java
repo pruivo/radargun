@@ -4,6 +4,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.infinispan.Cache;
 import org.infinispan.config.Configuration;
+import org.infinispan.container.DataContainer;
+import org.infinispan.container.GMUDataContainer;
 import org.infinispan.context.Flag;
 import org.infinispan.distribution.DistributionManager;
 import org.infinispan.factories.ComponentRegistry;
@@ -236,6 +238,15 @@ public class InfinispanWrapper implements CacheWrapper {
          log.info("Not collecting additional stats. Infinispan MBeans not found");
       }
       return results;
+   }
+
+   @Override
+   public String dataContainerToString() {
+      DataContainer dataContainer = cache.getAdvancedCache().getDataContainer();
+      if (dataContainer instanceof GMUDataContainer) {
+         return ((GMUDataContainer) dataContainer).stateToString();
+      }
+      return dataContainer.toString();
    }
 
    private boolean isPassiveReplication() {
