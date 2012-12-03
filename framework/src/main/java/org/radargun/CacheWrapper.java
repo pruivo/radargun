@@ -145,5 +145,7 @@ public interface CacheWrapper
     */
    void resetAdditionalStats();
 
-   String dataContainerToString();
+   void dumpDataContainer(String filePath);
+
+   void dumpCommitLog(String filePath);
 }

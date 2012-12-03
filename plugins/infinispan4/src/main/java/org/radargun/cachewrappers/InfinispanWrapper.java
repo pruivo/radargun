@@ -5,7 +5,6 @@ import org.apache.commons.logging.LogFactory;
 import org.infinispan.Cache;
 import org.infinispan.config.Configuration;
 import org.infinispan.container.DataContainer;
-import org.infinispan.container.GMUDataContainer;
 import org.infinispan.context.Flag;
 import org.infinispan.distribution.DistributionManager;
 import org.infinispan.factories.ComponentRegistry;
@@ -13,6 +12,7 @@ import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.remoting.rpc.RpcManager;
 import org.infinispan.remoting.transport.Address;
 import org.infinispan.remoting.transport.Transport;
+import org.infinispan.transaction.gmu.CommitLog;
 import org.radargun.CacheWrapper;
 import org.radargun.cachewrappers.parser.StatisticComponent;
 import org.radargun.cachewrappers.parser.StatsParser;
@@ -241,12 +241,19 @@ public class InfinispanWrapper implements CacheWrapper {
    }
 
    @Override
-   public String dataContainerToString() {
+   public void dumpDataContainer(String filePath) {
       DataContainer dataContainer = cache.getAdvancedCache().getDataContainer();
-      if (dataContainer instanceof GMUDataContainer) {
-         return ((GMUDataContainer) dataContainer).stateToString();
+      if (dataContainer != null) {
+         dataContainer.dumpTo(filePath);
       }
-      return dataContainer.toString();
+   }
+
+   @Override
+   public void dumpCommitLog(String filePath) {
+      CommitLog commitLog = cache.getAdvancedCache().getComponentRegistry().getComponent(CommitLog.class);
+      if (commitLog != null) {
+         commitLog.dumpTo(filePath);
+      }
    }
 
    private boolean isPassiveReplication() {
