@@ -12,6 +12,7 @@
    <modules>
       <module>framework</module>
       <module>plugins/infinispan4</module>
+      <module>plugins/infinispan50-gmu</module>
    </modules>
 
    <scm>
@@ -113,6 +114,17 @@
                         </copy>
                         <chmod perm="ugo+rwx" type="file">
                            <fileset dir="${distribution.artifact}/plugins/infinispan4/bin">
+                              <include name="**/*.sh" />
+                              <include name="**/*.py" />
+                           </fileset>
+                        </chmod>
+                        <copy todir="${distribution.artifact}/plugins/infinispan50-gmu">
+                           <fileset dir="plugins/infinispan50-gmu/target/distribution/plugin-infinispan50-gmu-bin/plugin-infinispan50-gmu">
+                              <include name="**/*" />
+                           </fileset>
+                        </copy>
+                        <chmod perm="ugo+rwx" type="file">
+                           <fileset dir="${distribution.artifact}/plugins/infinispan50-gmu/bin">
                               <include name="**/*.sh" />
                               <include name="**/*.py" />
                            </fileset>

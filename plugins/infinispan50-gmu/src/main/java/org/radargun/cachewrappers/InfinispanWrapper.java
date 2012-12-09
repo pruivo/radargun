@@ -4,7 +4,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.infinispan.Cache;
 import org.infinispan.config.Configuration;
-import org.infinispan.container.DataContainer;
 import org.infinispan.context.Flag;
 import org.infinispan.distribution.DistributionManager;
 import org.infinispan.factories.ComponentRegistry;
@@ -12,7 +11,6 @@ import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.remoting.rpc.RpcManager;
 import org.infinispan.remoting.transport.Address;
 import org.infinispan.remoting.transport.Transport;
-import org.infinispan.transaction.gmu.CommitLog;
 import org.radargun.CacheWrapper;
 import org.radargun.cachewrappers.parser.StatisticComponent;
 import org.radargun.cachewrappers.parser.StatsParser;
@@ -38,8 +36,8 @@ import static org.radargun.utils.Utils.mBeanAttributes2String;
 
 public class InfinispanWrapper implements CacheWrapper {
    private static final String GET_ATTRIBUTE_ERROR = "Exception while obtaining the attribute [%s] from [%s]";
-
    private static final Log log = LogFactory.getLog(InfinispanWrapper.class);
+   private final List<StatisticComponent> statisticComponents = StatsParser.parse("all-stats.xml");
    DefaultCacheManager cacheManager;
    Cache<Object, Object> cache;
    TransactionManager tm;
@@ -47,10 +45,7 @@ public class InfinispanWrapper implements CacheWrapper {
    String config;
    Transport transport;
    Method isPassiveReplicationMethod = null;
-
    private BucketsKeysTreeSet keys;
-
-   private final List<StatisticComponent> statisticComponents = StatsParser.parse("all-stats.xml");
 
    public void setUp(String config, boolean isLocal, int nodeIndex) throws Exception {
       this.config = config;
@@ -66,7 +61,7 @@ public class InfinispanWrapper implements CacheWrapper {
          //cacheManager.defineConfiguration("x", new Configuration());
          cache = cacheManager.getCache("x");
          tm = cache.getAdvancedCache().getTransactionManager();
-         transport = cacheManager.getTransport();
+         transport = cache.getAdvancedCache().getRpcManager().getTransport();
          try {
             isPassiveReplicationMethod = Configuration.class.getMethod("isPassiveReplication");
          } catch (Exception e) {
@@ -149,7 +144,6 @@ public class InfinispanWrapper implements CacheWrapper {
       }
    }
 
-
    public void endTransaction(boolean successful) throws RuntimeException {
       if (tm == null) {
          return;
@@ -173,7 +167,7 @@ public class InfinispanWrapper implements CacheWrapper {
    @Override
    public boolean isKeyLocal(String bucket, String key) {
       DistributionManager dm = cache.getAdvancedCache().getDistributionManager();
-      return dm == null || dm.isLocal(key);
+      return dm == null || dm.getLocality(key).isLocal();
    }
 
    @Override
@@ -242,18 +236,12 @@ public class InfinispanWrapper implements CacheWrapper {
 
    @Override
    public void dumpDataContainer(String filePath) {
-      DataContainer dataContainer = cache.getAdvancedCache().getDataContainer();
-      if (dataContainer != null) {
-         dataContainer.dumpTo(filePath);
-      }
+      //no-op
    }
 
    @Override
    public void dumpCommitLog(String filePath) {
-      CommitLog commitLog = cache.getAdvancedCache().getComponentRegistry().getComponent(CommitLog.class);
-      if (commitLog != null) {
-         commitLog.dumpTo(filePath);
-      }
+      //no-op
    }
 
    private boolean isPassiveReplication() {
@@ -300,8 +288,8 @@ public class InfinispanWrapper implements CacheWrapper {
             if ("Cache".equals(name.getKeyProperty("type"))) {
                String cacheName = name.getKeyProperty("name");
                String cacheManagerName = name.getKeyProperty("manager");
-               return domain +
-                     ":type=Cache,name=" + (cacheName.startsWith("\"") ? cacheName : ObjectName.quote(cacheName)) +
+               return domain + ":type=Cache,name=" +
+                     (cacheName.startsWith("\"") ? cacheName : ObjectName.quote(cacheName)) +
                      ",manager=" + (cacheManagerName.startsWith("\"") ? cacheManagerName :
                                           ObjectName.quote(cacheManagerName)) +
                      ",component=";
