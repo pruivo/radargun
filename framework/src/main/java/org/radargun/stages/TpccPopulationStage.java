@@ -1,12 +1,12 @@
 
 package org.radargun.stages;
 
-import java.util.List;
-
 import org.radargun.CacheWrapper;
 import org.radargun.DistStageAck;
 import org.radargun.state.MasterState;
 import org.radargun.stressors.TpccPopulationStressor;
+
+import java.util.List;
 
 /**
  * This stage shuld be run before the <b>TpccBenchmarkStage</b>. It will perform the population of
@@ -18,32 +18,56 @@ import org.radargun.stressors.TpccPopulationStressor;
  *       - cLastMask : the mask used to generate non-uniformly distributed random customer last names.
  *       - olIdMask : mask used to generate non-uniformly distributed random item numbers.
  *       - cIdMask : mask used to generate non-uniformly distributed random customer numbers.
+ *       - threadParallelLoad: enable/disable the parallelLoading
+ *       - numLoaderThreads: the number of populating threads per node 
+ *       - batchLevel: the size of a transaction in population (i.e., the number of items per transaction) 
  * </pre>
  *
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
+ * @author Diego Didona, didona@gsd.inesc-id.pt
+ * @author Pedro Ruivo
  */
-
 public class TpccPopulationStage extends AbstractDistStage{
-   
+
    /**
     * number of Warehouses
     */
    private int numWarehouses = 1;
-   
+
    /**
     * mask used to generate non-uniformly distributed random customer last names
     */
    private long cLastMask = 255;
-   
+
    /**
     * mask used to generate non-uniformly distributed random item numbers
     */
    private long olIdMask = 8191;
-   
+
    /**
     * mask used to generate non-uniformly distributed random customer numbers
     */
    private long cIdMask = 1023;
+
+   /**
+    * enable/disable the parallelLoading 
+    */
+   private boolean threadParallelLoad = false;
+
+   /**
+    * the number of populating threads per node 
+    */
+   private int numLoaderThreads = 4;
+
+   /**
+    * the size of a transaction in population (i.e., the number of item per transaction) 
+    */
+   private int batchLevel = 100;
+
+   /**
+    * if true, it means that the cache was already preloaded from a DataBase. So no population is needed
+    */
+   private boolean preloadedFromDB = false;
 
    public DistStageAck executeOnSlave() {
       DefaultDistStageAck ack = newDefaultStageAck();
@@ -68,6 +92,10 @@ public class TpccPopulationStage extends AbstractDistStage{
       populationStressor.setCLastMask(this.cLastMask);
       populationStressor.setOlIdMask(this.olIdMask);
       populationStressor.setCIdMask(this.cIdMask);
+      populationStressor.setThreadParallelLoad(threadParallelLoad);
+      populationStressor.setNumLoadersThread(numLoaderThreads);
+      populationStressor.setBatchLevel(batchLevel);
+      populationStressor.setPreloadedFromDB(preloadedFromDB);
       populationStressor.stress(wrapper);
    }
 
@@ -85,7 +113,7 @@ public class TpccPopulationStage extends AbstractDistStage{
    public void setNumWarehouses(int numWarehouses) {
       this.numWarehouses = numWarehouses;
    }
-   
+
    public void setCLastMask(long cLastMask) {
       this.cLastMask = cLastMask;
    }
@@ -98,14 +126,33 @@ public class TpccPopulationStage extends AbstractDistStage{
       this.cIdMask = cIdMask;
    }
 
+   public void setThreadParallelLoad(boolean threadParallelLoad) {
+      this.threadParallelLoad = threadParallelLoad;
+   }
+
+   public void setNumLoaderThreads(int numLoaderThreads) {
+      this.numLoaderThreads = numLoaderThreads;
+   }
+
+   public void setBatchLevel(int batchLevel) {
+      this.batchLevel = batchLevel;
+   }
+
+   public void setPreloadedFromDB(boolean preloadedFromDB) {
+      this.preloadedFromDB = preloadedFromDB;
+   }
+
    @Override
    public String toString() {
       return "TpccPopulationStage {" +
-            "numWarehouses=" + numWarehouses + 
+            "numWarehouses=" + numWarehouses +
             ", cLastMask=" + cLastMask +
             ", olIdMask=" + olIdMask +
-            ", cIdMask=" + cIdMask +   
+            ", cIdMask=" + cIdMask +
+            ", threadParallelLoad=" + threadParallelLoad +
+            ", numLoaderThreads=" + numLoaderThreads +
+            ", batchLevel=" + batchLevel +
+            ", preloadedFromDB=" + preloadedFromDB +
             ", " + super.toString();
    }
-
 }

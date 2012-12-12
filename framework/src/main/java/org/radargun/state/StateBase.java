@@ -1,7 +1,7 @@
 package org.radargun.state;
 
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Support class for master and slave states.

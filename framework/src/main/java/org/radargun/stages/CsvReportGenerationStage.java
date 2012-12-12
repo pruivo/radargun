@@ -1,5 +1,6 @@
 package org.radargun.stages;
 
+import org.radargun.utils.CacheSizeValues;
 import org.radargun.utils.Utils;
 
 import java.io.File;
@@ -34,6 +35,8 @@ public class CsvReportGenerationStage extends AbstractMasterStage {
             log.warn("Nothing to report!");
             return false;
          }
+
+         joinCacheSizes(results, (List<CacheSizeValues>) masterState.get("CacheSizeResults"));
          prepareOutputFile(results.size());
          writeData(results);
       } catch (Exception e) {
@@ -41,6 +44,26 @@ public class CsvReportGenerationStage extends AbstractMasterStage {
          return false;
       }
       return true;
+   }
+
+   private void joinCacheSizes(Map<Integer, Map<String, Object>> results, List<CacheSizeValues> cacheSizeValues) {
+      if (cacheSizeValues == null || cacheSizeValues.size() == 0) {
+         log.info("Cache size values not collected. Skip join to results");
+         return;
+      }
+
+      for (Map.Entry<Integer, Map<String, Object>> entry : results.entrySet()) {
+         int slaveIdx = entry.getKey();
+         Map<String, Object> slaveResults = entry.getValue();
+
+         try {
+            for (CacheSizeValues values : cacheSizeValues) {
+               slaveResults.put(values.getStatName(), values.getCacheSize(slaveIdx));
+            }
+         } catch (Exception e) {
+            log.warn("Exception occurs while join the cache size to results for slave index " + slaveIdx, e);
+         }
+      }
    }
 
    private void writeData(Map<Integer, Map<String, Object>> results) throws Exception {

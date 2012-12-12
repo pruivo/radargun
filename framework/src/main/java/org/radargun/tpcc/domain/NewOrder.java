@@ -1,13 +1,12 @@
 package org.radargun.tpcc.domain;
 
 import org.radargun.CacheWrapper;
-
-import java.io.Serializable;
+import org.radargun.tpcc.DomainObject;
 
 /**
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
  */
-public class NewOrder implements Serializable {
+public class NewOrder extends DomainObject<NewOrder> {
 
    private long no_o_id;
 
@@ -15,9 +14,7 @@ public class NewOrder implements Serializable {
 
    private long no_w_id;
 
-   public NewOrder() {
-
-   }
+   public NewOrder() {}
 
    public NewOrder(long no_o_id, long no_d_id, long no_w_id) {
       this.no_o_id = no_o_id;
@@ -50,21 +47,6 @@ public class NewOrder implements Serializable {
       this.no_w_id = no_w_id;
    }
 
-   private String getKey() {
-
-      return "NEWORDER_" + this.no_w_id + "_" + this.no_d_id + "_" + this.no_o_id;
-   }
-
-   public void store(CacheWrapper wrapper) throws Throwable {
-
-      wrapper.put(null, this.getKey(), this);
-   }
-
-   public void insert(CacheWrapper wrapper) throws Throwable {
-
-      wrapper.put(null, this.getKey(), this);
-   }
-
    @Override
    public boolean equals(Object o) {
       if (this == o) return true;
@@ -87,4 +69,70 @@ public class NewOrder implements Serializable {
       return result;
    }
 
+   @Override
+   public boolean load(CacheWrapper wrapper) throws Throwable {
+      return true;
+   }
+
+   @Override
+   protected TpccKey createTpccKey() {
+      return new NewOrderKey(no_o_id, no_d_id, no_w_id);
+   }
+
+   public static class NewOrderKey extends TpccKey {
+
+      private final long orderId;
+      private final long districtId;
+      private final long warehouseId;
+
+      public NewOrderKey(long orderId, long districtId, long warehouseId) {
+         this.orderId = orderId;
+         this.districtId = districtId;
+         this.warehouseId = warehouseId;
+      }
+
+      @Override
+      public Number getWarehouseId() {
+         return warehouseId;
+      }
+
+      @Override
+      public Number getDistrictId() {
+         return districtId;
+      }
+
+      @Override
+      public Number getOrderId() {
+         return orderId;
+      }
+
+      @Override
+      public String toString() {
+         return "NewOrderKey{" +
+               "orderId=" + orderId +
+               ", districtId=" + districtId +
+               ", warehouseId=" + warehouseId +
+               '}';
+      }
+
+      @Override
+      public boolean equals(Object o) {
+         if (this == o) return true;
+         if (o == null || getClass() != o.getClass()) return false;
+
+         NewOrderKey that = (NewOrderKey) o;
+
+         return districtId == that.districtId &&
+               orderId == that.orderId &&
+               warehouseId == that.warehouseId;
+      }
+
+      @Override
+      public int hashCode() {
+         int result = (int) (orderId ^ (orderId >>> 32));
+         result = 31 * result + (int) (districtId ^ (districtId >>> 32));
+         result = 31 * result + (int) (warehouseId ^ (warehouseId >>> 32));
+         return result;
+      }
+   }
 }

@@ -8,6 +8,7 @@ import org.radargun.MasterStage;
 import org.radargun.Stage;
 import org.radargun.config.FixedSizeBenchmarkConfig;
 import org.radargun.config.MasterConfig;
+import org.radargun.jmx.JmxRegistration;
 import org.radargun.utils.Utils;
 
 import java.util.ArrayList;
@@ -29,6 +30,7 @@ public class MasterState extends StateBase {
    private FixedSizeBenchmarkConfig currentBenchmark;
    private long startTime = System.currentTimeMillis();
    private DistStage currentDistStage;
+   private final JmxRegistration jmxRegistration = JmxRegistration.getInstance();   
 
    public MasterState(MasterConfig config) {
       this.config = config;
@@ -50,6 +52,7 @@ public class MasterState extends StateBase {
             currentDistStage = (DistStage) stage;
             return currentDistStage;
          } else {
+            jmxRegistration.processStage(stage);
             executeServerStage((MasterStage) stage);
          }
       }

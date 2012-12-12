@@ -1,17 +1,19 @@
 package org.radargun.stages;
 
-import static java.lang.Double.parseDouble;
-import static org.radargun.utils.Utils.numberFormat;
+import org.radargun.CacheWrapper;
+import org.radargun.DistStageAck;
+import org.radargun.jmx.annotations.MBean;
+import org.radargun.jmx.annotations.ManagedAttribute;
+import org.radargun.jmx.annotations.ManagedOperation;
+import org.radargun.state.MasterState;
+import org.radargun.stressors.TpccStressor;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
-import org.radargun.CacheWrapper;
-import org.radargun.DistStageAck;
-import org.radargun.state.MasterState;
-import org.radargun.stressors.TpccStressor;
+import static java.lang.Double.parseDouble;
+import static org.radargun.utils.Utils.numberFormat;
 
 /**
  * Simulate the activities found in complex OLTP application environments.
@@ -26,41 +28,85 @@ import org.radargun.stressors.TpccStressor;
  * </pre>
  *
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
+ * @author Pedro Ruivo
  */
+@MBean(objectName = "TpccBenchmark", description = "TPC-C benchmark stage that generates the TPC-C workload")
 public class TpccBenchmarkStage extends AbstractDistStage {
-   
-   private static final String SIZE_INFO = "SIZE_INFO";
-   
 
-   public static final String SESSION_PREFIX = "SESSION";
+   private static final String SIZE_INFO = "SIZE_INFO";
+   private static final String SCRIPT_LAUNCH = "_script_launch_";
+   private static final String SCRIPT_PATH = "/home/pruivo/beforeBenchmark.sh";
 
    /**
     * the number of threads that will work on this slave
     */
    private int numOfThreads = 10;
-   
+
    /**
     * total time (in seconds) of simulation for each stressor thread
     */
    private long perThreadSimulTime = 180L;
-   
+
    /**
     * average arrival rate of the transactions to the system
     */
-   private double arrivalRate = 0.0D;
-   
+   private int arrivalRate = 0;
+
    /**
     * percentage of Payment transactions
     */
-   private double paymentWeight = 45.0D;
-   
+   private int paymentWeight = 45;
+
    /**
     * percentage of Order Status transactions
     */
-   private double orderStatusWeight = 5.0D;
+   private int orderStatusWeight = 5;
 
+   /**
+    * if true, each node will pick a warehouse and all transactions will work over that warehouse. The warehouses are
+    * picked by order, i.e., slave 0 gets warehouse 1,N+1, 2N+1,[...]; ... slave N-1 gets warehouse N, 2N, [...].
+    */
+   private boolean accessSameWarehouse = false;
 
-   private CacheWrapper cacheWrapper;
+   /**
+    * specify the min and the max number of items created by a New Order Transaction.
+    * format: min,max
+    */
+   private String numberOfItemsInterval = null;
+
+   /**
+    * specify the interval period (in milliseconds) of the memory and cpu usage is collected
+    */
+   private long statsSamplingInterval = 0;
+
+   /**
+    * sets the probability of the workload access to the same warehouse
+    */
+   private int localityProbability = -1;
+
+   private transient CacheWrapper cacheWrapper;
+
+   private transient TpccStressor tpccStressor;
+
+   @Override
+   public void initOnMaster(MasterState masterState, int slaveIndex) {
+      super.initOnMaster(masterState, slaveIndex);
+      Boolean started = (Boolean) masterState.get(SCRIPT_LAUNCH);
+      if (started == null || !started) {
+         masterState.put(SCRIPT_LAUNCH, startScript());
+      }
+   }
+
+   private Boolean startScript() {
+      try {
+         Runtime.getRuntime().exec(SCRIPT_PATH);
+         log.info("Script " + SCRIPT_PATH + " started successfully");
+         return Boolean.TRUE;
+      } catch (Exception e) {
+         log.warn("Error starting script " + SCRIPT_PATH + ". " + e.getMessage());
+         return Boolean.FALSE;
+      }
+   }
 
    public DistStageAck executeOnSlave() {
       DefaultDistStageAck result = new DefaultDistStageAck(slaveIndex, slaveState.getLocalAddress());
@@ -72,7 +118,7 @@ public class TpccBenchmarkStage extends AbstractDistStage {
 
       log.info("Starting TpccBenchmarkStage: " + this.toString());
 
-      TpccStressor tpccStressor = new TpccStressor();
+      tpccStressor = new TpccStressor();
       tpccStressor.setNodeIndex(getSlaveIndex());
       tpccStressor.setNumSlaves(getActiveSlaveCount());
       tpccStressor.setNumOfThreads(this.numOfThreads);
@@ -80,10 +126,17 @@ public class TpccBenchmarkStage extends AbstractDistStage {
       tpccStressor.setArrivalRate(this.arrivalRate);
       tpccStressor.setPaymentWeight(this.paymentWeight);
       tpccStressor.setOrderStatusWeight(this.orderStatusWeight);
+      tpccStressor.setAccessSameWarehouse(accessSameWarehouse);
+      tpccStressor.setNumberOfItemsInterval(numberOfItemsInterval);
+      tpccStressor.setStatsSamplingInterval(statsSamplingInterval);
 
       try {
          Map<String, String> results = tpccStressor.stress(cacheWrapper);
-         String sizeInfo = "size info: " + cacheWrapper.getInfo() + ", clusterSize:" + super.getActiveSlaveCount() + ", nodeIndex:" + super.getSlaveIndex() + ", cacheSize: " + cacheWrapper.size();
+         String sizeInfo = "size info: " + cacheWrapper.getInfo() +
+               ", clusterSize:" + super.getActiveSlaveCount() +
+               ", nodeIndex:" + super.getSlaveIndex() +
+               ", cacheSize: " + cacheWrapper.size();
+
          log.info(sizeInfo);
          results.put(SIZE_INFO, sizeInfo);
          result.setPayload(results);
@@ -129,35 +182,102 @@ public class TpccBenchmarkStage extends AbstractDistStage {
    public void setNumOfThreads(int numOfThreads) {
       this.numOfThreads = numOfThreads;
    }
-   
+
    public void setPerThreadSimulTime(long perThreadSimulTime) {
       this.perThreadSimulTime = perThreadSimulTime;
    }
 
-   public void setArrivalRate(double arrivalRate) {
+   public void setArrivalRate(int arrivalRate) {
       this.arrivalRate = arrivalRate;
    }
 
-   public void setPaymentWeight(double paymentWeight) {
+   public void setPaymentWeight(int paymentWeight) {
       this.paymentWeight = paymentWeight;
    }
 
-   public void setOrderStatusWeight(double orderStatusWeight) {
+   public void setOrderStatusWeight(int orderStatusWeight) {
       this.orderStatusWeight = orderStatusWeight;
    }
 
-   
+   public void setAccessSameWarehouse(boolean accessSameWarehouse) {
+      this.accessSameWarehouse = accessSameWarehouse;
+   }
+
+   public void setNumberOfItemsInterval(String numberOfItemsInterval) {
+      this.numberOfItemsInterval = numberOfItemsInterval;
+   }
+
+   public void setStatsSamplingInterval(long statsSamplingInterval) {
+      this.statsSamplingInterval = statsSamplingInterval;
+   }
+
+   public void setLocalityProbability(int localityProbability) {
+      this.localityProbability = localityProbability;
+   }
 
    @Override
    public String toString() {
-      return "WebSessionBenchmarkStage {" +
-            ", numOfThreads=" + numOfThreads +
+      return "TpccBenchmarkStage {" +
+            "numOfThreads=" + numOfThreads +
             ", perThreadSimulTime=" + perThreadSimulTime +
             ", arrivalRate=" + arrivalRate +
             ", paymentWeight=" + paymentWeight +
             ", orderStatusWeight=" + orderStatusWeight +
+            ", accessSameWarehouse=" + accessSameWarehouse +
+            ", numberOfItemsInterval=" + numberOfItemsInterval +
+            ", statsSamplingInterval=" + statsSamplingInterval +
+            ", localityProbability=" + localityProbability +
             ", cacheWrapper=" + cacheWrapper +
             ", " + super.toString();
    }
 
+   @ManagedOperation(description = "Change the workload to decrease contention between transactions")
+   public void lowContention(int payment, int order) {
+      tpccStressor.lowContention(payment, order);
+   }
+
+   @ManagedOperation(description = "Change the workload to increase contention between transactions")
+   public void highContention(int payment, int order) {
+      tpccStressor.highContention(payment, order);
+   }
+
+   @ManagedOperation(description = "Change the workload to random select the warehouse to work with")
+   public void randomContention(int payment, int order) {
+      tpccStressor.randomContention(payment, order);
+   }
+
+   @ManagedAttribute(description = "Returns the number of threads created")
+   public final int getNumOfThreads() {
+      return tpccStressor.getNumberOfThreads();
+   }
+
+   @ManagedAttribute(description = "Returns the number of threads actually running")
+   public final int getNumberOfActiveThreads() {
+      return tpccStressor.getNumberOfActiveThreads();
+   }
+
+   @ManagedOperation(description = "Change the number of threads running, creating more threads if needed")
+   public final void setNumberOfActiveThreads(int numberOfActiveThreads) {
+      tpccStressor.setNumberOfRunningThreads(numberOfActiveThreads);
+   }
+
+   @ManagedAttribute(description = "Returns the expected write percentage workload")
+   public final double getExpectedWritePercentage() {
+      return tpccStressor.getExpectedWritePercentage();
+   }
+
+   @ManagedAttribute(description = "Returns the Payment transaction type percentage")
+   public final int getPaymentWeight() {
+      return tpccStressor.getPaymentWeight();
+   }
+
+   @ManagedAttribute(description = "Returns the Order Status transaction type percentage")
+   public final int getOrderStatusWeight() {
+      return tpccStressor.getOrderStatusWeight();
+   }
+
+   @ManagedOperation(description = "Stop the current benchmark")
+   public final void stopBenchmark() {
+      tpccStressor.stopBenchmark();
+   }
 }

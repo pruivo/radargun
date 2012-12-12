@@ -1,13 +1,12 @@
 package org.radargun.tpcc.domain;
 
 import org.radargun.CacheWrapper;
-
-import java.io.Serializable;
+import org.radargun.tpcc.DomainObject;
 
 /**
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
  */
-public class Warehouse implements Serializable {
+public class Warehouse extends DomainObject<Warehouse> {
 
    private long w_id;
 
@@ -117,33 +116,6 @@ public class Warehouse implements Serializable {
       return w_ytd;
    }
 
-   private String getKey() {
-      return "WAREHOUSE_" + this.w_id;
-   }
-
-   public void store(CacheWrapper wrapper) throws Throwable {
-
-      wrapper.put(null, this.getKey(), this);
-   }
-
-   public boolean load(CacheWrapper wrapper) throws Throwable {
-
-      Warehouse loaded = (Warehouse) wrapper.get(null, this.getKey());
-
-      if (loaded == null) return false;
-
-      this.w_city = loaded.w_city;
-      this.w_name = loaded.w_name;
-      this.w_state = loaded.w_state;
-      this.w_street1 = loaded.w_street1;
-      this.w_street2 = loaded.w_street2;
-      this.w_tax = loaded.w_tax;
-      this.w_ytd = loaded.w_ytd;
-      this.w_zip = loaded.w_zip;
-
-      return true;
-   }
-
    @Override
    public boolean equals(Object o) {
       if (this == o) return true;
@@ -182,4 +154,62 @@ public class Warehouse implements Serializable {
       return result;
    }
 
+   @Override
+   public boolean load(CacheWrapper wrapper) throws Throwable {
+      Warehouse loaded = internalLoad(wrapper);
+
+      if (loaded == null) return false;
+
+      this.w_city = loaded.w_city;
+      this.w_name = loaded.w_name;
+      this.w_state = loaded.w_state;
+      this.w_street1 = loaded.w_street1;
+      this.w_street2 = loaded.w_street2;
+      this.w_tax = loaded.w_tax;
+      this.w_ytd = loaded.w_ytd;
+      this.w_zip = loaded.w_zip;
+
+      return true;
+   }
+
+   @Override
+   protected TpccKey createTpccKey() {
+      return new WarehouseKey(w_id);
+   }
+
+   public static class WarehouseKey extends TpccKey {
+
+      private final long warehouseId;
+
+      public WarehouseKey(long warehouseId) {
+         this.warehouseId = warehouseId;
+      }
+
+      @Override
+      public Number getWarehouseId() {
+         return warehouseId;
+      }
+
+      @Override
+      public String toString() {
+         return "WarehouseKey{" +
+               "warehouseId=" + warehouseId +
+               '}';
+      }
+
+      @Override
+      public boolean equals(Object o) {
+         if (this == o) return true;
+         if (o == null || getClass() != o.getClass()) return false;
+
+         WarehouseKey that = (WarehouseKey) o;
+
+         return warehouseId == that.warehouseId;
+      }
+
+      @Override
+      public int hashCode() {
+         return (int) (warehouseId ^ (warehouseId >>> 32));
+      }
+   }
 }

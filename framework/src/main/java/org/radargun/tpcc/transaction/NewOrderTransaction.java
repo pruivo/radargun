@@ -2,6 +2,7 @@ package org.radargun.tpcc.transaction;
 
 import org.radargun.CacheWrapper;
 import org.radargun.tpcc.ElementNotFoundException;
+import org.radargun.tpcc.TpccTerminal;
 import org.radargun.tpcc.TpccTools;
 import org.radargun.tpcc.domain.Customer;
 import org.radargun.tpcc.domain.District;
@@ -16,65 +17,55 @@ import java.util.Date;
 
 /**
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
+ * @author Pedro Ruivo
  */
 public class NewOrderTransaction implements TpccTransaction {
 
-   private long terminalWarehouseID;
-
-   private long districtID;
-
-   private long customerID;
-
-   private int numItems;
-
+   private final long warehouseID;
+   private final long districtID;
+   private final long customerID;
+   private final int numItems;
    private int allLocal;
 
-   private long[] itemIDs;
+   private final long[] itemIDs;
+   private final long[] supplierWarehouseIDs;
+   private final long[] orderQuantities;
 
-   private long[] supplierWarehouseIDs;
+   public NewOrderTransaction(TpccTools tpccTools, TpccTerminal tpccTerminal) {
+      this.warehouseID = tpccTerminal.chooseWarehouse();
+      this.districtID = tpccTools.randomNumber(1, TpccTools.NB_MAX_DISTRICT);
+      this.customerID = tpccTools.nonUniformRandom(TpccTools.C_C_ID, TpccTools.A_C_ID, 1, TpccTools.NB_MAX_CUSTOMER);
 
-   private long[] orderQuantities;
-
-   public NewOrderTransaction() {
-
-      this.terminalWarehouseID = TpccTools.randomNumber(1, TpccTools.NB_WAREHOUSES);
-
-
-      this.districtID = TpccTools.randomNumber(1, TpccTools.NB_MAX_DISTRICT);
-      this.customerID = TpccTools.nonUniformRandom(TpccTools.C_C_ID, TpccTools.A_C_ID, 1, TpccTools.NB_MAX_CUSTOMER);
-
-      this.numItems = (int) TpccTools.randomNumber(5, 15); // o_ol_cnt
+      this.numItems = (int) tpccTools.randomNumber(TpccTools.NUMBER_OF_ITEMS_INTERVAL[0],
+                                                   TpccTools.NUMBER_OF_ITEMS_INTERVAL[1]); // o_ol_cnt
       this.itemIDs = new long[numItems];
       this.supplierWarehouseIDs = new long[numItems];
       this.orderQuantities = new long[numItems];
       this.allLocal = 1; // see clause 2.4.2.2 (dot 6)
       for (int i = 0; i < numItems; i++) // clause 2.4.1.5
       {
-         itemIDs[i] = TpccTools.nonUniformRandom(TpccTools.C_OL_I_ID, TpccTools.A_OL_I_ID, 1, TpccTools.NB_MAX_ITEM);
-         if (TpccTools.randomNumber(1, 100) > 1) {
-            supplierWarehouseIDs[i] = terminalWarehouseID;
+         itemIDs[i] = tpccTools.nonUniformRandom(TpccTools.C_OL_I_ID, TpccTools.A_OL_I_ID, 1, TpccTools.NB_MAX_ITEM);
+         if (tpccTools.randomNumber(1, 100) > 1) {
+            supplierWarehouseIDs[i] = this.warehouseID;
          } else //see clause 2.4.1.5 (dot 2)
          {
             do {
-               supplierWarehouseIDs[i] = TpccTools.randomNumber(1, TpccTools.NB_WAREHOUSES);
+               supplierWarehouseIDs[i] = tpccTools.randomNumber(1, TpccTools.NB_WAREHOUSES);
             }
-            while (supplierWarehouseIDs[i] == terminalWarehouseID && TpccTools.NB_WAREHOUSES > 1);
+            while (supplierWarehouseIDs[i] == this.warehouseID && TpccTools.NB_WAREHOUSES > 1);
             allLocal = 0;// see clause 2.4.2.2 (dot 6)
          }
-         orderQuantities[i] = TpccTools.randomNumber(1, TpccTools.NB_MAX_DISTRICT); //see clause 2.4.1.5 (dot 6)
+         orderQuantities[i] = tpccTools.randomNumber(1, TpccTools.NB_MAX_DISTRICT); //see clause 2.4.1.5 (dot 6)
       }
       // clause 2.4.1.5 (dot 1)
-      if (TpccTools.randomNumber(1, 100) == 1)
+      if (tpccTools.randomNumber(1, 100) == 1)
          this.itemIDs[this.numItems - 1] = -12345;
 
    }
 
    @Override
    public void executeTransaction(CacheWrapper cacheWrapper) throws Throwable {
-
-      newOrderTransaction(cacheWrapper, terminalWarehouseID, districtID, customerID, numItems, allLocal, itemIDs, supplierWarehouseIDs, orderQuantities);
-
-
+      newOrderTransaction(cacheWrapper);
    }
 
    @Override
@@ -82,18 +73,16 @@ public class NewOrderTransaction implements TpccTransaction {
       return false;
    }
 
-   private void newOrderTransaction(CacheWrapper cacheWrapper, long w_id, long d_id, long c_id, int o_ol_cnt, int o_all_local, long[] itemIDs, long[] supplierWarehouseIDs, long[] orderQuantities) throws Throwable {
-
-
+   private void newOrderTransaction(CacheWrapper cacheWrapper) throws Throwable {
       long o_id = -1, s_quantity;
       String i_data, s_data;
 
       String ol_dist_info = null;
-      double[] itemPrices = new double[o_ol_cnt];
-      double[] orderLineAmounts = new double[o_ol_cnt];
-      String[] itemNames = new String[o_ol_cnt];
-      long[] stockQuantities = new long[o_ol_cnt];
-      char[] brandGeneric = new char[o_ol_cnt];
+      double[] itemPrices = new double[numItems];
+      double[] orderLineAmounts = new double[numItems];
+      String[] itemNames = new String[numItems];
+      long[] stockQuantities = new long[numItems];
+      char[] brandGeneric = new char[numItems];
       long ol_supply_w_id, ol_i_id, ol_quantity;
       int s_remote_cnt_increment;
       double ol_amount, total_amount = 0;
@@ -102,35 +91,35 @@ public class NewOrderTransaction implements TpccTransaction {
       Customer c = new Customer();
       Warehouse w = new Warehouse();
 
-      c.setC_id(c_id);
-      c.setC_d_id(d_id);
-      c.setC_w_id(w_id);
+      c.setC_id(customerID);
+      c.setC_d_id(districtID);
+      c.setC_w_id(warehouseID);
 
       boolean found = c.load(cacheWrapper);
 
       if (!found)
-         throw new ElementNotFoundException("W_ID=" + w_id + " C_D_ID=" + d_id + " C_ID=" + c_id + " not found!");
+         throw new ElementNotFoundException("W_ID=" + warehouseID + " C_D_ID=" + districtID + " C_ID=" + customerID + " not found!");
 
-      w.setW_id(w_id);
+      w.setW_id(warehouseID);
 
       found = w.load(cacheWrapper);
-      if (!found) throw new ElementNotFoundException("W_ID=" + w_id + " not found!");
+      if (!found) throw new ElementNotFoundException("W_ID=" + warehouseID + " not found!");
 
 
       District d = new District();
       // see clause 2.4.2.2 (dot 4)
 
 
-      d.setD_id(d_id);
-      d.setD_w_id(w_id);
+      d.setD_id(districtID);
+      d.setD_w_id(warehouseID);
       found = d.load(cacheWrapper);
-      if (!found) throw new ElementNotFoundException("D_ID=" + d_id + " D_W_ID=" + w_id + " not found!");
+      if (!found) throw new ElementNotFoundException("D_ID=" + districtID + " D_W_ID=" + warehouseID + " not found!");
 
 
       o_id = d.getD_next_o_id();
 
 
-      NewOrder no = new NewOrder(o_id, d_id, w_id);
+      NewOrder no = new NewOrder(o_id, districtID, warehouseID);
 
       no.store(cacheWrapper);
 
@@ -139,13 +128,13 @@ public class NewOrderTransaction implements TpccTransaction {
       d.store(cacheWrapper);
 
 
-      Order o = new Order(o_id, d_id, w_id, c_id, new Date(), -1, o_ol_cnt, o_all_local);
+      Order o = new Order(o_id, districtID, warehouseID, customerID, new Date(), -1, numItems, allLocal);
 
       o.store(cacheWrapper);
 
 
       // see clause 2.4.2.2 (dot 8)
-      for (int ol_number = 1; ol_number <= o_ol_cnt; ol_number++) {
+      for (int ol_number = 1; ol_number <= numItems; ol_number++) {
          ol_supply_w_id = supplierWarehouseIDs[ol_number - 1];
          ol_i_id = itemIDs[ol_number - 1];
          ol_quantity = orderQuantities[ol_number - 1];
@@ -177,7 +166,7 @@ public class NewOrderTransaction implements TpccTransaction {
             s_quantity += -ol_quantity + 91;
          }
 
-         if (ol_supply_w_id == w_id) {
+         if (ol_supply_w_id == warehouseID) {
             s_remote_cnt_increment = 0;
          } else {
             s_remote_cnt_increment = 1;
@@ -203,7 +192,7 @@ public class NewOrderTransaction implements TpccTransaction {
             brandGeneric[ol_number - 1] = 'G';
          }
 
-         switch ((int) d_id) {
+         switch ((int) districtID) {
             case 1:
                ol_dist_info = s.getS_dist_01();
                break;
@@ -237,7 +226,8 @@ public class NewOrderTransaction implements TpccTransaction {
          }
          // clause 2.4.2.2 (dot 8.5)
 
-         OrderLine ol = new OrderLine(o_id, d_id, w_id, ol_number, ol_i_id, ol_supply_w_id, null, ol_quantity, ol_amount, ol_dist_info);
+         OrderLine ol = new OrderLine(o_id, districtID, warehouseID, ol_number, ol_i_id, ol_supply_w_id, null,
+                                      ol_quantity, ol_amount, ol_dist_info);
          ol.store(cacheWrapper);
 
       }

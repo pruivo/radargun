@@ -3,6 +3,8 @@ package org.radargun;
 
 import org.radargun.utils.TypedProperties;
 
+import java.util.Map;
+
 /**
  * CacheWrappers wrap caching products to provide RadarGun with a standard way of
  * accessing and manipulating a cache.
@@ -18,14 +20,17 @@ public interface CacheWrapper {
     * caching product being tested.
     *
     * @param config
+    * @param isLocal
     * @param nodeIndex
     * @param confAttributes
+    * @throws Exception
     */
    void setUp(String config, boolean isLocal, int nodeIndex, TypedProperties confAttributes) throws Exception;
 
    /**
     * This is called at the very end of all tests on this cache, and is used for clean-up
     * operations.
+    * @throws Exception
     */
    void tearDown() throws Exception;
 
@@ -35,9 +40,10 @@ public interface CacheWrapper {
     * realistic) way possible.
     *
     * @param bucket a bucket is a group of keys. Some implementations might ignore the bucket (e.g. InfinispanWrapper}}
-    * so in order to avoid key collisions, one should make sure that the keys are unique even between different buckets. 
+    * so in order to avoid key collisions, one should make sure that the keys are unique even between different buckets.
     * @param key
     * @param value
+    * @throws Exception
     */
    void put(String bucket, Object key, Object value) throws Exception;
 
@@ -49,6 +55,7 @@ public interface CacheWrapper {
    /**
     * This is called after each test type (if emptyCacheBetweenTests is set to true in benchmark.xml) and is
     * used to flush the cache.
+    * @throws Exception
     */
    void empty() throws Exception;
 
@@ -66,6 +73,8 @@ public interface CacheWrapper {
     * Some caches (e.g. JBossCache with  buddy replication) do not store replicated data directlly in the main
     * structure, but use some additional structure to do this (replication tree, in the case of buddy replication).
     * This method is a hook for handling this situations.
+    * @param bucket
+    * @param key
     */
    Object getReplicatedData(String bucket, String key) throws Exception;
 
@@ -84,4 +93,38 @@ public interface CacheWrapper {
    void endTransaction(boolean successful);
 
    int size();
+
+   /**
+    * returns true if the current thread is inside a transaction when the method is invoked
+    *
+    * @return  true if the current thread is inside a transaction when the method is invoked
+    */
+   boolean isInTransaction();
+
+   /**
+    * returns a map with cache dependent statistics
+    * @return the map with cache dependent statistics or an empty map of no statistics are available
+    */
+   Map<String, String> getAdditionalStats();
+
+   /**
+    * return true if the replication protocol is passive replication (single master protocol!)
+    * @return  true if is passive replication, false otherwise
+    */
+   boolean isPassiveReplication();
+
+   /**
+    * returns true if this cache wrapper is *the* master in passive replication
+    * @return true if this cache wrapper is *the* master, false otherwise
+    */
+   boolean isTheMaster();
+
+   /**
+    * it resets the additional stats
+    */
+   void resetAdditionalStats();
+
+   void dumpDataContainer(String filePath);
+
+   void dumpCommitLog(String filePath);
 }

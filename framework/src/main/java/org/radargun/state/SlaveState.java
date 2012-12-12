@@ -1,6 +1,7 @@
 package org.radargun.state;
 
 import org.radargun.CacheWrapper;
+import org.radargun.workloads.KeyGeneratorFactory;
 
 import java.net.InetAddress;
 
@@ -14,6 +15,7 @@ public class SlaveState extends StateBase {
    private InetAddress masterAddress;
    private InetAddress localAddress;
    private CacheWrapper cacheWrapper;
+   private KeyGeneratorFactory keyGeneratorFactory;
 
    public InetAddress getMasterAddress() {
       return masterAddress;
@@ -37,5 +39,13 @@ public class SlaveState extends StateBase {
 
    public CacheWrapper getCacheWrapper() {
       return cacheWrapper;
+   }
+
+   public KeyGeneratorFactory getKeyGeneratorFactory() {
+      return keyGeneratorFactory;
+   }
+
+   public void setKeyGeneratorFactory(KeyGeneratorFactory keyGeneratorFactory) {
+      this.keyGeneratorFactory = keyGeneratorFactory;
    }
 }

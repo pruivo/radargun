@@ -1,13 +1,12 @@
 package org.radargun.tpcc.domain;
 
 import org.radargun.CacheWrapper;
-
-import java.io.Serializable;
+import org.radargun.tpcc.DomainObject;
 
 /**
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
  */
-public class Stock implements Serializable {
+public class Stock extends DomainObject<Stock> {
 
    private long s_i_id;
 
@@ -204,41 +203,6 @@ public class Stock implements Serializable {
       this.s_data = s_data;
    }
 
-   private String getKey() {
-      return "STOCK_" + this.s_w_id + "_" + this.s_i_id;
-   }
-
-   public void store(CacheWrapper wrapper) throws Throwable {
-
-      wrapper.put(null, this.getKey(), this);
-   }
-
-   public boolean load(CacheWrapper wrapper) throws Throwable {
-
-      Stock loaded = (Stock) wrapper.get(null, this.getKey());
-
-      if (loaded == null) return false;
-
-      this.s_data = loaded.s_data;
-      this.s_dist_01 = loaded.s_dist_01;
-      this.s_dist_02 = loaded.s_dist_02;
-      this.s_dist_03 = loaded.s_dist_03;
-      this.s_dist_04 = loaded.s_dist_04;
-      this.s_dist_05 = loaded.s_dist_05;
-      this.s_dist_06 = loaded.s_dist_06;
-      this.s_dist_07 = loaded.s_dist_07;
-      this.s_dist_08 = loaded.s_dist_08;
-      this.s_dist_09 = loaded.s_dist_09;
-      this.s_dist_10 = loaded.s_dist_10;
-      this.s_order_cnt = loaded.s_order_cnt;
-      this.s_quantity = loaded.s_quantity;
-      this.s_remote_cnt = loaded.s_remote_cnt;
-      this.s_ytd = loaded.s_ytd;
-
-
-      return true;
-   }
-
    @Override
    public boolean equals(Object o) {
       if (this == o) return true;
@@ -289,5 +253,81 @@ public class Stock implements Serializable {
       return result;
    }
 
+   @Override
+   public boolean load(CacheWrapper wrapper) throws Throwable {
 
+      Stock loaded = internalLoad(wrapper);
+
+      if (loaded == null) return false;
+
+      this.s_data = loaded.s_data;
+      this.s_dist_01 = loaded.s_dist_01;
+      this.s_dist_02 = loaded.s_dist_02;
+      this.s_dist_03 = loaded.s_dist_03;
+      this.s_dist_04 = loaded.s_dist_04;
+      this.s_dist_05 = loaded.s_dist_05;
+      this.s_dist_06 = loaded.s_dist_06;
+      this.s_dist_07 = loaded.s_dist_07;
+      this.s_dist_08 = loaded.s_dist_08;
+      this.s_dist_09 = loaded.s_dist_09;
+      this.s_dist_10 = loaded.s_dist_10;
+      this.s_order_cnt = loaded.s_order_cnt;
+      this.s_quantity = loaded.s_quantity;
+      this.s_remote_cnt = loaded.s_remote_cnt;
+      this.s_ytd = loaded.s_ytd;
+
+
+      return true;
+   }
+
+   @Override
+   protected TpccKey createTpccKey() {
+      return new StockKey(s_w_id, s_i_id);
+   }
+
+   public static class StockKey extends TpccKey {
+
+      private final long warehouseId;
+      private final long itemId;
+
+      public StockKey(long warehouseId, long itemId) {
+         this.warehouseId = warehouseId;
+         this.itemId = itemId;
+      }
+
+      @Override
+      public Number getWarehouseId() {
+         return warehouseId;
+      }
+
+      @Override
+      public Number getItemId() {
+         return itemId;
+      }
+
+      @Override
+      public String toString() {
+         return "StockKey{" +
+               "warehouseId=" + warehouseId +
+               ", itemId=" + itemId +
+               '}';
+      }
+
+      @Override
+      public boolean equals(Object o) {
+         if (this == o) return true;
+         if (o == null || getClass() != o.getClass()) return false;
+
+         StockKey stockKey = (StockKey) o;
+
+         return itemId == stockKey.itemId && warehouseId == stockKey.warehouseId;
+      }
+
+      @Override
+      public int hashCode() {
+         int result = (int) (warehouseId ^ (warehouseId >>> 32));
+         result = 31 * result + (int) (itemId ^ (itemId >>> 32));
+         return result;
+      }
+   }
 }

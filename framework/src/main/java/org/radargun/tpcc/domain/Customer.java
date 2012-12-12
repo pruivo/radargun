@@ -1,14 +1,14 @@
 package org.radargun.tpcc.domain;
 
 import org.radargun.CacheWrapper;
+import org.radargun.tpcc.DomainObject;
 
-import java.io.Serializable;
 import java.util.Date;
 
 /**
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
  */
-public class Customer implements Serializable, Comparable {
+public class Customer extends DomainObject<Customer> implements Comparable {
 
    /* district id */
    private long c_d_id;
@@ -250,44 +250,6 @@ public class Customer implements Serializable, Comparable {
       this.c_data = c_data;
    }
 
-   private String getKey() {
-      return "CUSTOMER_" + this.c_w_id + "_" + this.c_d_id + "_" + this.c_id;
-   }
-
-   public void store(CacheWrapper wrapper) throws Throwable {
-
-      wrapper.put(null, this.getKey(), this);
-   }
-
-   public boolean load(CacheWrapper wrapper) throws Throwable {
-
-      Customer loaded = (Customer) wrapper.get(null, this.getKey());
-
-      if (loaded == null) return false;
-
-      this.c_balance = loaded.c_balance;
-      this.c_city = loaded.c_city;
-      this.c_credit = loaded.c_credit;
-      this.c_credit_lim = loaded.c_credit_lim;
-      this.c_data = loaded.c_data;
-      this.c_delivery_cnt = loaded.c_delivery_cnt;
-      this.c_discount = loaded.c_discount;
-      this.c_first = loaded.c_first;
-      this.c_last = loaded.c_last;
-      this.c_middle = loaded.c_middle;
-      this.c_payment_cnt = loaded.c_payment_cnt;
-      this.c_phone = loaded.c_phone;
-      this.c_since = loaded.c_since;
-      this.c_state = loaded.c_state;
-      this.c_street1 = loaded.c_street1;
-      this.c_street2 = loaded.c_street2;
-      this.c_ytd_payment = loaded.c_ytd_payment;
-      this.c_zip = loaded.c_zip;
-
-
-      return true;
-   }
-
    @Override
    public int compareTo(Object o) {
       if (o == null || !(o instanceof Customer)) return -1;
@@ -363,7 +325,97 @@ public class Customer implements Serializable, Comparable {
       result = 31 * result + c_delivery_cnt;
       result = 31 * result + (c_data != null ? c_data.hashCode() : 0);
       return result;
+   }
 
+   @Override
+   public boolean load(CacheWrapper wrapper) throws Throwable {
+
+      Customer loaded = internalLoad(wrapper);
+
+      if (loaded == null) return false;
+
+      this.c_balance = loaded.c_balance;
+      this.c_city = loaded.c_city;
+      this.c_credit = loaded.c_credit;
+      this.c_credit_lim = loaded.c_credit_lim;
+      this.c_data = loaded.c_data;
+      this.c_delivery_cnt = loaded.c_delivery_cnt;
+      this.c_discount = loaded.c_discount;
+      this.c_first = loaded.c_first;
+      this.c_last = loaded.c_last;
+      this.c_middle = loaded.c_middle;
+      this.c_payment_cnt = loaded.c_payment_cnt;
+      this.c_phone = loaded.c_phone;
+      this.c_since = loaded.c_since;
+      this.c_state = loaded.c_state;
+      this.c_street1 = loaded.c_street1;
+      this.c_street2 = loaded.c_street2;
+      this.c_ytd_payment = loaded.c_ytd_payment;
+      this.c_zip = loaded.c_zip;
+
+      return true;
+   }
+
+   @Override
+   protected TpccKey createTpccKey() {
+      return new CustomerKey(c_w_id, c_d_id, c_id);
+   }
+
+   public static class CustomerKey extends TpccKey {
+      private final long warehouseId;
+      private final long districtId;
+      private final long customerId;
+
+      public CustomerKey(long warehouseId, long districtId, long customerId) {
+         this.warehouseId = warehouseId;
+         this.districtId = districtId;
+         this.customerId = customerId;
+      }
+
+      @Override
+      public Number getWarehouseId() {
+         return warehouseId;
+      }
+
+      @Override
+      public Number getDistrictId() {
+         return districtId;
+      }
+
+      @Override
+      public Number getCustomerId() {
+         return customerId;
+      }
+
+      @Override
+      public String toString() {
+         return "CustomerKey{" +
+               "warehouseId=" + warehouseId +
+               ", districtId=" + districtId +
+               ", customerId=" + customerId +
+               '}';
+      }
+
+      @Override
+      public boolean equals(Object o) {
+         if (this == o) return true;
+         if (o == null || getClass() != o.getClass()) return false;
+
+         CustomerKey that = (CustomerKey) o;
+
+         return customerId == that.customerId &&
+               districtId == that.districtId &&
+               warehouseId == that.warehouseId;
+
+      }
+
+      @Override
+      public int hashCode() {
+         int result = (int) (warehouseId ^ (warehouseId >>> 32));
+         result = 31 * result + (int) (districtId ^ (districtId >>> 32));
+         result = 31 * result + (int) (customerId ^ (customerId >>> 32));
+         return result;
+      }
    }
 
 }

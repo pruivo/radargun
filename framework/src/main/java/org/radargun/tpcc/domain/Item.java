@@ -1,13 +1,12 @@
 package org.radargun.tpcc.domain;
 
 import org.radargun.CacheWrapper;
-
-import java.io.Serializable;
+import org.radargun.tpcc.DomainObject;
 
 /**
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
  */
-public class Item implements Serializable {
+public class Item extends DomainObject<Item> {
 
    private long i_id;
 
@@ -19,9 +18,7 @@ public class Item implements Serializable {
 
    private String i_data;
 
-   public Item() {
-
-   }
+   public Item() {}
 
    public Item(long i_id, long i_im_id, String i_name, double i_price, String i_data) {
       this.i_id = i_id;
@@ -71,32 +68,8 @@ public class Item implements Serializable {
       this.i_data = i_data;
    }
 
-   private String getKey() {
-
-      return "ITEM_" + this.i_id;
-   }
-
-   public void store(CacheWrapper wrapper) throws Throwable {
-
-
-      wrapper.put(null, this.getKey(), this);
-
-
-   }
-
-   public boolean load(CacheWrapper wrapper) throws Throwable {
-
-      Item loaded = (Item) wrapper.get(null, this.getKey());
-
-      if (loaded == null) return false;
-
-      this.i_data = loaded.i_data;
-      this.i_im_id = loaded.i_im_id;
-      this.i_name = loaded.i_name;
-      this.i_price = loaded.i_price;
-
-
-      return true;
+   private TpccKey getKey() {
+      return new ItemKey(i_id);
    }
 
    @Override
@@ -128,4 +101,60 @@ public class Item implements Serializable {
       return result;
    }
 
+   @Override
+   public boolean load(CacheWrapper wrapper) throws Throwable {
+
+      Item loaded = internalLoad(wrapper);
+
+      if (loaded == null) return false;
+
+      this.i_data = loaded.i_data;
+      this.i_im_id = loaded.i_im_id;
+      this.i_name = loaded.i_name;
+      this.i_price = loaded.i_price;
+
+
+      return true;
+   }
+
+   @Override
+   protected TpccKey createTpccKey() {
+      return new ItemKey(i_id);
+   }
+
+   public static class ItemKey extends TpccKey {
+
+      private final long itemId;
+
+      public ItemKey(long itemId) {
+         this.itemId = itemId;
+      }
+
+      @Override
+      public Number getItemId() {
+         return itemId;
+      }
+
+      @Override
+      public String toString() {
+         return "ItemKey{" +
+               "itemId=" + itemId +
+               '}';
+      }
+
+      @Override
+      public boolean equals(Object o) {
+         if (this == o) return true;
+         if (o == null || getClass() != o.getClass()) return false;
+
+         ItemKey itemKey = (ItemKey) o;
+
+         return itemId == itemKey.itemId;
+      }
+
+      @Override
+      public int hashCode() {
+         return (int) (itemId ^ (itemId >>> 32));
+      }
+   }
 }

@@ -19,11 +19,11 @@ import java.util.Map;
 import java.io.File;
 
 /**
- * Helper class for assembling JAXB configs. 
+ * Helper class for assembling JAXB configs.
  *
  * @author Mircea.Markus@jboss.com
  * //TODO - add support for System.getEnv
- * //TODO - make sure that if a benchmark has more nodes than the root an exception is thrown  
+ * //TODO - make sure that if a benchmark has more nodes than the root an exception is thrown
  */
 public class JaxbConfigParser extends ConfigParser {
 

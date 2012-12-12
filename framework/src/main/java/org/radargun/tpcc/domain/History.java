@@ -1,15 +1,15 @@
 package org.radargun.tpcc.domain;
 
 import org.radargun.CacheWrapper;
+import org.radargun.tpcc.DomainObject;
 
-import java.io.Serializable;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
  */
-public class History implements Serializable {
+public class History extends DomainObject<History> {
 
    private static final AtomicLong idGenerator = new AtomicLong(0L);
 
@@ -113,13 +113,7 @@ public class History implements Serializable {
    }
 
    private static String generateId(int slaveIndex) {
-
       return String.valueOf(slaveIndex) + String.valueOf(History.idGenerator.incrementAndGet());
-   }
-
-   public void store(CacheWrapper wrapper, int slaveIndex) throws Throwable {
-      String id = generateId(slaveIndex);
-      wrapper.put(null, id, this);
    }
 
    @Override
@@ -157,5 +151,58 @@ public class History implements Serializable {
       return result;
    }
 
+   @Override
+   public void store(CacheWrapper wrapper, int slaveIndex) throws Throwable {
+      wrapper.put(null, new HistoryKey(slaveIndex, idGenerator.incrementAndGet()), this);
+   }
 
+   @Override
+   public void store(CacheWrapper wrapper) throws Throwable {
+      store(wrapper, -1);
+   }
+
+   @Override
+   public boolean load(CacheWrapper wrapper) throws Throwable {
+      return true;
+   }
+
+   @Override
+   protected TpccKey createTpccKey() {
+      return null;
+   }
+
+   public static class HistoryKey extends TpccKey {
+      private final int nodeIdx;
+      private final long historyId;
+
+      public HistoryKey(int nodeIdx, long historyId) {
+         this.nodeIdx = nodeIdx;
+         this.historyId = historyId;
+      }
+
+      @Override
+      public String toString() {
+         return "HistoryKey{" +
+               "nodeIdx=" + nodeIdx +
+               ", historyId=" + historyId +
+               '}';
+      }
+
+      @Override
+      public boolean equals(Object o) {
+         if (this == o) return true;
+         if (o == null || getClass() != o.getClass()) return false;
+
+         HistoryKey that = (HistoryKey) o;
+
+         return historyId == that.historyId && nodeIdx == that.nodeIdx;
+      }
+
+      @Override
+      public int hashCode() {
+         int result = nodeIdx;
+         result = 31 * result + (int) (historyId ^ (historyId >>> 32));
+         return result;
+      }
+   }
 }

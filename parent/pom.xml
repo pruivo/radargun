@@ -177,6 +177,10 @@
          <id>jboss-public-repository-group</id>
          <url>http://repository.jboss.org/nexus/content/groups/public-jboss</url>
       </repository>
+      <repository>
+         <id>pruivo-gsd-repository</id>
+         <url>http://homepages.gsd.inesc-id.pt/~pruivo/maven-repo/</url>
+      </repository>
    </repositories>
 
    <pluginRepositories>
@@ -191,6 +195,10 @@
       <pluginRepository>
          <id>jboss-public-repository-group</id>
          <url>http://repository.jboss.org/nexus/content/groups/public-jboss</url>
+      </pluginRepository>
+      <pluginRepository>
+         <id>pruivo-gsd-plugin-repository</id>
+         <url>http://homepages.gsd.inesc-id.pt/~pruivo/maven-repo/</url>
       </pluginRepository>
    </pluginRepositories>
 

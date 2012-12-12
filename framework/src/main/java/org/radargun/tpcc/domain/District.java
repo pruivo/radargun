@@ -1,13 +1,12 @@
 package org.radargun.tpcc.domain;
 
 import org.radargun.CacheWrapper;
-
-import java.io.Serializable;
+import org.radargun.tpcc.DomainObject;
 
 /**
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
  */
-public class District implements Serializable {
+public class District extends DomainObject<District> {
 
    private long d_id;
 
@@ -145,35 +144,6 @@ public class District implements Serializable {
       this.d_next_o_id = d_next_o_id;
    }
 
-   private String getKey() {
-      return "DISTRICT_" + this.d_w_id + "_" + this.d_id;
-   }
-
-   public void store(CacheWrapper wrapper) throws Throwable {
-
-      wrapper.put(null, this.getKey(), this);
-   }
-
-   public boolean load(CacheWrapper wrapper) throws Throwable {
-
-      District loaded = (District) wrapper.get(null, this.getKey());
-
-      if (loaded == null) return false;
-
-      this.d_city = loaded.d_city;
-      this.d_name = loaded.d_name;
-      this.d_next_o_id = loaded.d_next_o_id;
-      this.d_state = loaded.d_state;
-      this.d_street1 = loaded.d_street1;
-      this.d_street2 = loaded.d_street2;
-      this.d_tax = loaded.d_tax;
-      this.d_ytd = loaded.d_ytd;
-      this.d_zip = loaded.d_zip;
-
-
-      return true;
-   }
-
    @Override
    public boolean equals(Object o) {
       if (this == o) return true;
@@ -216,5 +186,78 @@ public class District implements Serializable {
       return result;
    }
 
+   @Override
+   public boolean load(CacheWrapper wrapper) throws Throwable {
+
+      District loaded = internalLoad(wrapper);
+
+      if (loaded == null) return false;
+
+      this.d_city = loaded.d_city;
+      this.d_name = loaded.d_name;
+      this.d_next_o_id = loaded.d_next_o_id;
+      this.d_state = loaded.d_state;
+      this.d_street1 = loaded.d_street1;
+      this.d_street2 = loaded.d_street2;
+      this.d_tax = loaded.d_tax;
+      this.d_ytd = loaded.d_ytd;
+      this.d_zip = loaded.d_zip;
+
+
+      return true;
+   }
+
+   @Override
+   protected TpccKey createTpccKey() {
+      return new DistrictKey(d_w_id, d_id);
+   }
+
+   public static class DistrictKey extends TpccKey {
+
+      private final long warehouseId;
+      private final long districtId;
+
+
+      public DistrictKey(long warehouseId, long districtId) {
+         this.warehouseId = warehouseId;
+         this.districtId = districtId;
+      }
+
+      @Override
+      public Number getWarehouseId() {
+         return warehouseId;
+      }
+
+      @Override
+      public Number getDistrictId() {
+         return districtId;
+      }
+
+      @Override
+      public String toString() {
+         return "DistrictKey{" +
+               "warehouseId=" + warehouseId +
+               ", districtId=" + districtId +
+               '}';
+      }
+
+      @Override
+      public boolean equals(Object o) {
+         if (this == o) return true;
+         if (o == null || getClass() != o.getClass()) return false;
+
+         DistrictKey that = (DistrictKey) o;
+
+         return districtId == that.districtId && warehouseId == that.warehouseId;
+
+      }
+
+      @Override
+      public int hashCode() {
+         int result = (int) (warehouseId ^ (warehouseId >>> 32));
+         result = 31 * result + (int) (districtId ^ (districtId >>> 32));
+         return result;
+      }
+   }
 
 }

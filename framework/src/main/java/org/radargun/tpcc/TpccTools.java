@@ -1,11 +1,12 @@
 package org.radargun.tpcc;
 
 import java.io.UnsupportedEncodingException;
-import java.lang.management.ManagementFactory;
+import java.util.List;
 import java.util.Random;
 
 /**
  * @author peluso@gsd.inesc-id.pt , peluso@dis.uniroma1.it
+ * @author Pedro Ruivo
  */
 public final class TpccTools {
 
@@ -61,27 +62,35 @@ public final class TpccTools {
 
    public final static String ORIGINAL = "ORIGINAL";
 
+   public final static int [] NUMBER_OF_ITEMS_INTERVAL = {5,15};
+
    private final static int unicode[][] = {{65, 126}, {192, 259}};
 
-   private static Random _randUniform = new Random(System.nanoTime() * 31 + ManagementFactory.getRuntimeMXBean().getName().hashCode());
+   private final Random randUniform;
 
-   private static Random _randNonUniform = new Random(System.nanoTime() * 31 + ManagementFactory.getRuntimeMXBean().getName().hashCode());
+   private final Random randNonUniform;
 
-   private static Random _randAlea = new Random(System.nanoTime() * 31 + ManagementFactory.getRuntimeMXBean().getName().hashCode());
+   private final Random randAlea;
 
    private TpccTools() {
+      randUniform = new Random(System.nanoTime() * 31);
+      randNonUniform = new Random(System.nanoTime() * 31 * 17);
+      randAlea = new Random(System.nanoTime() * 31 * 17 * 3);
    }
 
+   public static TpccTools newInstance() {
+      return new TpccTools();
+   }
 
-   private static String aleaChaine(int deb, int fin, int min, int max, int radix) {
+   private String aleaChaine(int deb, int fin, int min, int max, int radix) {
       if (deb > fin) return null;
-      String chaine = new String();
+      String chaine = "";
       int lch = fin;
 
       if (deb != fin) lch = aleaNumber(deb, fin);
 
       for (int i = 0; i < lch; i++) {
-         int random = _randAlea.nextInt(max - min + 1) + min;
+         int random = randAlea.nextInt(max - min + 1) + min;
          char c = (char) (((byte) random) & 0xff);
          chaine += c;
       }
@@ -89,16 +98,16 @@ public final class TpccTools {
    }
 
 
-   public static String aleaChainel(int deb, int fin, int radix) {
+   public final String aleaChainel(int deb, int fin, int radix) {
       return aleaChaine(deb, fin, DEFAULT_MINL, DEFAULT_MAXL, radix);
    }
 
-   public static String aleaChainel(int deb, int fin) {
+   public final String aleaChainel(int deb, int fin) {
       return aleaChainel(deb, fin, DEFAULT_RADIX);
    }
 
 
-   public static String aleaChainec(int deb, int fin, int radix) {
+   public final String aleaChainec(int deb, int fin, int radix) {
       if (deb > fin) return null;
       String chaine = "";
       String str = null;
@@ -107,27 +116,27 @@ public final class TpccTools {
       if (deb != fin) lch = aleaNumber(deb, fin);
 
       for (int i = 0; i < lch; i++) {
-         int ref = _randAlea.nextInt(2);
+         int ref = randAlea.nextInt(2);
          int min = unicode[ref][0];
          int max = unicode[ref][1];
-         int random = _randAlea.nextInt(max - min + 1) + min;
+         int random = randAlea.nextInt(max - min + 1) + min;
 
          char c = (char) (((byte) random));
          chaine += c;
       }
       try {
-         str = new String(chaine.toString().getBytes(), "UTF-8");
+         str = new String(chaine.getBytes(), "UTF-8");
       } catch (UnsupportedEncodingException e) {
          System.out.println("----------- Error " + e.getMessage());
       }
       return str;
    }
 
-   public static String aleaChainec(int deb, int fin) {
+   public final String aleaChainec(int deb, int fin) {
       return aleaChainec(deb, fin, DEFAULT_RADIX);
    }
 
-   public static String sData() {
+   public final String sData() {
       String alea = aleaChainec(S_DATA_MINN, S_DATA_MAXN);
       if (aleaNumber(1, 10) == 1) {
          long number = randomNumber(0, alea.length() - 8);
@@ -137,59 +146,65 @@ public final class TpccTools {
    }
 
 
-   public static String aleaChainen(int deb, int fin, int radix) {
+   public final String aleaChainen(int deb, int fin, int radix) {
       return aleaChaine(deb, fin, DEFAULT_MINN, DEFAULT_MAXN, radix);
    }
 
-   public static String aleaChainen(int deb, int fin) {
+   public final String aleaChainen(int deb, int fin) {
       return aleaChainen(deb, fin, DEFAULT_RADIX);
    }
 
 
-   public static int aleaNumber(int deb, int fin) {
-      return _randAlea.nextInt(fin - deb + 1) + deb;
+   public final int aleaNumber(int deb, int fin) {
+      return randAlea.nextInt(fin - deb + 1) + deb;
    }
 
 
-   public static long aleaNumber(long deb, long fin) {
-      long random = _randAlea.nextLong() % (fin + 1);
+   public final long aleaNumber(long deb, long fin) {
+      long random = randAlea.nextLong() % (fin + 1);
       while (random < deb) random += fin - deb;
       return random;
    }
 
-   public static float aleaFloat(float deb, float fin, int virg) {
+   public final float aleaFloat(float deb, float fin, int virg) {
       if (deb > fin || virg < 1) return 0;
       long pow = (long) Math.pow(10, virg);
       long amin = (long) (deb * pow);
       long amax = (long) (fin * pow);
-      long random = (long) (_randAlea.nextDouble() * (amax - amin) + amin);
+      long random = (long) (randAlea.nextDouble() * (amax - amin) + amin);
       return (float) random / pow;
    }
 
-   public static double aleaDouble(double deb, double fin, int virg) {
+   public final double aleaDouble(double deb, double fin, int virg) {
       if (deb >= fin || virg < 1) return 0.;
       long pow = (long) Math.pow(10, virg);
       long amin = (long) (deb * pow);
       long amax = (long) (fin * pow);
-      long random = (long) (_randAlea.nextDouble() * (amax - amin) + amin);
+      long random = (long) (randAlea.nextDouble() * (amax - amin) + amin);
       return (double) random / pow;
    }
 
-   public static long randomNumber(long min, long max) {
-      return (long) (_randUniform.nextDouble() * (max - min + 1) + min);
+   public final long randomNumber(long min, long max) {
+      return (long) (randUniform.nextDouble() * (max - min + 1) + min);
    }
 
-   public static double doubleRandomNumber(long min, long max) {
-      return _randUniform.nextDouble() * (max - min + 1) + min;
+   public final double doubleRandomNumber(long min, long max) {
+      return randUniform.nextDouble() * (max - min + 1) + min;
    }
 
-   public static long randomNumberForNonUniform(long min, long max) {
-      return (long) (_randNonUniform.nextDouble() * (max - min + 1) + min);
+   public final long randomNumberForNonUniform(long min, long max) {
+      return (long) (randNonUniform.nextDouble() * (max - min + 1) + min);
    }
 
-   public static long nonUniformRandom(long type, long x, long min, long max) {
+   public final long nonUniformRandom(long type, long x, long min, long max) {
       return (((randomNumberForNonUniform(0, x) | randomNumberForNonUniform(min, max)) + type) % (max - min + 1)) + min;
    }
 
+   public static void selectLocalWarehouse(int numberOfSlaves, int slaveIdx, List<Integer> localWarehousesList) {
+      int init = slaveIdx % NB_WAREHOUSES;
 
+      for (int i = init + 1; i <= NB_WAREHOUSES; i += numberOfSlaves) {
+         localWarehousesList.add(i);
+      }
+   }
 }
