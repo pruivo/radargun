@@ -1,12 +1,17 @@
 package org.radargun;
 
+import org.radargun.parser.ArgumentsParser;
+import org.radargun.parser.Option;
+
 import javax.management.MBeanServerConnection;
 import javax.management.ObjectName;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.EnumMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -17,47 +22,62 @@ import java.util.Map;
  */
 public class SyntWorkloadJmxRequest {
 
-   private enum Option {
-      WRITE_PERCENTAGE("-writePercentage", false, "setWriteTxPercentage", "int"),
-      WRT_TX_WORKLOAD("-writeTxWorkload", false, "setWriteTxWorkload", "String"),
-      RD_TX_WORKLOAD("-readTxWorkload", false, "setReadTxWorkload", "String"),
+   private enum Parameter {
+      //Synthetic Benchmark
+      WRT_TX_WRITES("-writeTxWrites", false, "setWriteTransactionWrites", "String"),
+      WRT_TX_READS("-writeTxReads", false, "setWriteTransactionReads", "String"),
+      RD_TX_READS("-readTxReads", false, "setReadTransactionsReads", "String"),
+      WRITE_PERCENTAGE("-writePercentage", false, "setWriteTransactionPercentage", "int"),
+
+      //Bank Benchmark
+      TRANSFER_WEIGHT("-transferWeight", false, "setTransferWeight", "int"),
+      DEPOSIT_WEIGHT("-depositWeight", false, "setDepositWeight", "int"),
+      WITHDRAW_WEIGHT("-withdrawWeight", false, "setWithdrawWeight", "int"),
+      NUM_TRANSFERS("-numTransfers", false, "setNumberOfTransfers", "String"),
+      NUM_DEPOSIT("-numDeposit", false, "setNumberOfDeposits", "String"),
+      NUM_WITHDRAW("-numWithdraw", false, "setNumberOfWithdraws", "String"),
+
+      //Common to synthetic and bank benchmarks
       VALUE_SIZE("-valueSize", false, "setSizeOfValue", "int"),
       NR_THREADS("-nrThreads", false, "setNumberOfThreads", "int"),
       NR_KEYS("-nrKeys", false, "setNumberOfKeys", "int"),
       CONTENTION("-contention", false, "setNoContention", "boolean"),
-      STOP("-stop", true, "stopBenchmark", null),
-      JMX_COMPONENT("-jmxComponent", false, null, null),
+      LOCALITY_PROBABILITY("-locality-prob", false, "setLocalityProbability", "int"),
+      STD_DEV("-std-dev", false, "setStdDev", "int"),
+
+      //TPC-C Benchmark
+      //....
+
+      //Configuration
+      JMX_COMPONENT("-jmxComponent", false, null, null, DEFAULT_COMPONENT),
       JMX_HOSTNAME("-hostname", false, null, null),
-      JMX_PORT("-port", false, null, null),
+      JMX_PORT("-port", false, null, null, DEFAULT_JMX_PORT),
       HELP("-help", true, null, null);
 
-      private final String argumentName;
-      private final boolean isBoolean;
+      private final Option option;
       private final String methodName;
       private final String[] types;
 
-      Option(String argumentName, boolean isBoolean, String methodName, String type) {
-         if (argumentName == null) {
-            throw new IllegalArgumentException("Null not allowed");
-         }
+      Parameter(String argumentName, boolean isBoolean, String methodName, String type) {
          this.methodName = methodName;
          this.types = new String[] {type};
-         this.argumentName = argumentName;
-         this.isBoolean = isBoolean;
+         this.option = new Option(argumentName, null, isBoolean, null);
       }
 
-      public final String toString() {
-         return argumentName;
+      Parameter(String argumentName, boolean isBoolean, String methodName, String type, String defaultValue) {
+         this.methodName = methodName;
+         this.types = new String[] {type};
+         this.option = new Option(argumentName, null, isBoolean, defaultValue);
       }
 
-      public static Option fromString(String optionName) {
-         for (Option option : values()) {
-            if (option.argumentName.equalsIgnoreCase(optionName)) {
-               return option;
-            }
+      public static Collection<Option> asList() {
+         List<Option> optionList = new LinkedList<Option>();
+         for (Parameter parameter : values()) {
+            optionList.add(parameter.option);
          }
-         return null;
+         return optionList;
       }
+
    }
 
    private static final String COMPONENT_PREFIX = "org.radargun:stage=";
@@ -67,56 +87,77 @@ public class SyntWorkloadJmxRequest {
    private final ObjectName benchmarkComponent;
    private final MBeanServerConnection mBeanServerConnection;
 
-   private final EnumMap<Option, Object> optionValues;
+   private final EnumMap<Parameter, Object> optionValues;
 
    public static void main(String[] args) throws Exception {
-      Arguments arguments = new Arguments();
-      arguments.parse(args);
-      arguments.validate();
+      ArgumentsParser parser = new ArgumentsParser(Parameter.asList());
+      parser.parse(args);
 
-      System.out.println("Options are " + arguments.printOptions());
+      System.out.println("Options are " + parser.printOptions());
 
-      if (arguments.hasOption(Option.HELP)) {
-         System.out.println("Available options are:");
-         for (Option option : Option.values()) {
-            System.out.println("  " + option.argumentName + (option.isBoolean ? "" : " <value>"));
-         }
-         System.out.println();
+
+      if (parser.hasOption(Parameter.HELP.option)) {
+         System.out.println(parser.printHelp());
          System.exit(0);
       }
 
-      SyntWorkloadJmxRequest request = new SyntWorkloadJmxRequest(arguments.getValue(Option.JMX_COMPONENT),
-                                                          arguments.getValue(Option.JMX_HOSTNAME),
-                                                          arguments.getValue(Option.JMX_PORT));
+      SyntWorkloadJmxRequest request = new SyntWorkloadJmxRequest(parser.getOption(Parameter.JMX_COMPONENT.option),
+                                                                  parser.getOption(Parameter.JMX_HOSTNAME.option),
+                                                                  parser.getOption(Parameter.JMX_PORT.option));
 
-      for (Option option : Option.values()) {
-         if (!arguments.hasOption(option)) {
+      for (Parameter parameter : Parameter.values()) {
+         if (!parser.hasOption(parameter.option)) {
             continue;
          }
-         switch (option) {
-            case STOP:
-               request.setStop(arguments.getValueAsBoolean(option));
+         Number number;
+         switch (parameter) {
+            case WRT_TX_WRITES:
+               request.setWriteTxWrites(parser.getOption(parameter.option));
                break;
-            case CONTENTION:
-               request.setContention(arguments.getValueAsBoolean(option));
+            case WRT_TX_READS:
+               request.setWriteTxReads(parser.getOption(parameter.option));
+               break;
+            case RD_TX_READS:
+               request.setReadTxReads(parser.getOption(parameter.option));
                break;
             case NR_KEYS:
-               request.setNumberOfKeys(arguments.getValueAsInt(option));
+               number = parser.getOptionAsNumber(parameter.option);
+               if (number != null) {
+                  request.setNumberOfKeys(number.intValue());
+               }
                break;
             case NR_THREADS:
-               request.setNumberOfThreads(arguments.getValueAsInt(option));
-               break;
-            case RD_TX_WORKLOAD:
-               request.setReadTxWorkload(arguments.getValue(option));
+               number = parser.getOptionAsNumber(parameter.option);
+               if (number != null) {
+                  request.setNumberOfThreads(number.intValue());
+               }
                break;
             case VALUE_SIZE:
-               request.setValueSize(arguments.getValueAsInt(option));
+               number = parser.getOptionAsNumber(parameter.option);
+               if (number != null) {
+                  request.setValueSize(number.intValue());
+               }
                break;
             case WRITE_PERCENTAGE:
-               request.setWriteTxPercentage(arguments.getValueAsInt(option));
+               number = parser.getOptionAsNumber(parameter.option);
+               if (number != null) {
+                  request.setWriteTxPercentage(number.intValue());
+               }
                break;
-            case WRT_TX_WORKLOAD:
-               request.setWriteTxWorkload(arguments.getValue(option));
+            case LOCALITY_PROBABILITY:
+               number = parser.getOptionAsNumber(parameter.option);
+               if (number != null) {
+                  request.setLocalityProbability(number.intValue());
+               }
+               break;
+            case STD_DEV:
+               number = parser.getOptionAsNumber(parameter.option);
+               if (number != null) {
+                  request.setStdDev(number.doubleValue());
+               }
+               break;
+            case CONTENTION:
+               request.setContention(true);
                break;
             default:
                //no-op
@@ -133,53 +174,64 @@ public class SyntWorkloadJmxRequest {
       JMXConnector connector = JMXConnectorFactory.connect(new JMXServiceURL(connectionUrl));
       mBeanServerConnection = connector.getMBeanServerConnection();
       benchmarkComponent = new ObjectName(COMPONENT_PREFIX + component);
-      optionValues = new EnumMap<Option, Object>(Option.class);
+      optionValues = new EnumMap<Parameter, Object>(Parameter.class);
    }
 
    public void setWriteTxPercentage(int value) {
       if (value >= 0 && value <= 100) {
-         optionValues.put(Option.WRITE_PERCENTAGE, value);
+         optionValues.put(Parameter.WRITE_PERCENTAGE, value);
       }
    }
 
-   public void setWriteTxWorkload(String value) {
+   public void setWriteTxWrites(String value) {
       if (value == null || value.isEmpty()) {
          return;
       }
-      optionValues.put(Option.WRT_TX_WORKLOAD, value);
+      optionValues.put(Parameter.WRT_TX_WRITES, value);
    }
 
-   public void setReadTxWorkload(String value) {
+   public void setWriteTxReads(String value) {
       if (value == null || value.isEmpty()) {
          return;
       }
-      optionValues.put(Option.RD_TX_WORKLOAD, value);
+      optionValues.put(Parameter.WRT_TX_READS, value);
+   }
+
+   public void setReadTxReads(String value) {
+      if (value == null || value.isEmpty()) {
+         return;
+      }
+      optionValues.put(Parameter.RD_TX_READS, value);
    }
 
    public void setValueSize(int value) {
       if (value > 0) {
-         optionValues.put(Option.VALUE_SIZE, value);
+         optionValues.put(Parameter.VALUE_SIZE, value);
       }
    }
 
    public void setNumberOfThreads(int value) {
       if (value > 0) {
-         optionValues.put(Option.NR_THREADS, value);
+         optionValues.put(Parameter.NR_THREADS, value);
       }
    }
 
    public void setNumberOfKeys(int value) {
       if (value > 0) {
-         optionValues.put(Option.NR_KEYS, value);
+         optionValues.put(Parameter.NR_KEYS, value);
       }
    }
 
    public void setContention(boolean value) {
-      optionValues.put(Option.CONTENTION, value);
+      optionValues.put(Parameter.CONTENTION, value);
    }
 
-   public void setStop(boolean value) {
-      optionValues.put(Option.STOP, value);
+   public void setLocalityProbability(int value) {
+      optionValues.put(Parameter.LOCALITY_PROBABILITY, value);
+   }
+
+   public void setStdDev(double value) {
+      optionValues.put(Parameter.STD_DEV, value);
    }
 
    public void doRequest() {
@@ -187,10 +239,10 @@ public class SyntWorkloadJmxRequest {
          throw new NullPointerException("Component does not exists");
       }
 
-      for (Map.Entry<Option, Object> entry : optionValues.entrySet()) {
-         Option option = entry.getKey();
+      for (Map.Entry<Parameter, Object> entry : optionValues.entrySet()) {
+         Parameter parameter = entry.getKey();
          Object value = entry.getValue();
-         invoke(option, value);
+         invoke(parameter, value);
       }
 
       try {
@@ -202,82 +254,17 @@ public class SyntWorkloadJmxRequest {
       System.out.println("done!");
    }
 
-   private void invoke(Option option, Object value) {
-      System.out.println("Invoking " + option.methodName + " for " + option.argumentName + " with " + value);
+   private void invoke(Parameter parameter, Object value) {
+      System.out.println("Invoking " + parameter.methodName + " for " + parameter.option.getParameter()
+                               + " with " + value);
       try {
-         if (option.isBoolean) {
-            mBeanServerConnection.invoke(benchmarkComponent, option.methodName, new Object[0], new String[0]);
+         if (parameter.option.isFlag()) {
+            mBeanServerConnection.invoke(benchmarkComponent, parameter.methodName, new Object[0], new String[0]);
          } else {
-            mBeanServerConnection.invoke(benchmarkComponent, option.methodName, new Object[] {value}, option.types);
+            mBeanServerConnection.invoke(benchmarkComponent, parameter.methodName, new Object[] {value}, parameter.types);
          }
       } catch (Exception e) {
-         System.out.println("Failed to invoke " + option.argumentName);
-      }
-   }
-
-   private static class Arguments {
-
-      private final Map<Option, String> argsValues;
-
-      private Arguments() {
-         argsValues = new EnumMap<Option, String>(Option.class);
-
-         //set the default values
-         argsValues.put(Option.JMX_COMPONENT, DEFAULT_COMPONENT);
-         argsValues.put(Option.JMX_PORT, DEFAULT_JMX_PORT);
-      }
-
-      public final void parse(String[] args) {
-         int idx = 0;
-         while (idx < args.length) {
-            Option option = Option.fromString(args[idx]);
-            if (option == null) {
-               throw new IllegalArgumentException("unkown option: " + args[idx] + ". Possible options are: " +
-                                                        Arrays.asList(Option.values()));
-            }
-            idx++;
-            if (option.isBoolean) {
-               argsValues.put(option, Boolean.toString(true));
-               continue;
-            }
-            if (idx >= args.length) {
-               throw new IllegalArgumentException("expected a value for option " + option);
-            }
-            argsValues.put(option, args[idx++]);
-         }
-      }
-
-      public final void validate() {
-         if (!hasOption(Option.JMX_HOSTNAME) && !hasOption(Option.HELP)) {
-            throw new IllegalArgumentException("Option " + Option.JMX_HOSTNAME + " is required");
-         }
-      }
-
-      public final String getValue(Option option) {
-         return argsValues.get(option);
-      }
-
-      public final int getValueAsInt(Option option) {
-         return Integer.parseInt(argsValues.get(option));
-      }
-
-      public final boolean getValueAsBoolean(Option option) {
-         return Boolean.parseBoolean(argsValues.get(option));
-      }
-
-      public final boolean hasOption(Option option) {
-         return argsValues.containsKey(option);
-      }
-
-      public final String printOptions() {
-         return argsValues.toString();
-      }
-
-      @Override
-      public final String toString() {
-         return "Arguments{" +
-               "argsValues=" + argsValues +
-               '}';
+         System.out.println("Failed to invoke " + parameter.methodName);
       }
    }
 

@@ -29,7 +29,7 @@ public class SyntheticBenchmarkStressor extends AbstractBenchmarkStressor<Synthe
    }
 
    @ManagedOperation
-   public final void setWriteTransactionwrites(String writes) {
+   public final void setWriteTransactionWrites(String writes) {
       transactionWorkload.setWriteTransactionwrites(writes);
    }
 
