@@ -3,6 +3,7 @@ package org.radargun.cachewrappers;
 import org.radargun.CacheWrapper;
 import org.radargun.utils.TypedProperties;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -111,5 +112,40 @@ public class TerracottaWrapper implements CacheWrapper {
          sessionCaches.put(bucket, result);
          return sessionCaches.get(bucket);
       }
+   }
+
+   @Override
+   public boolean isInTransaction() {
+      return false;
+   }
+
+   @Override
+   public Map<String, String> getAdditionalStats() {
+      return Collections.emptyMap();
+   }
+
+   @Override
+   public boolean isPassiveReplication() {
+      return false;
+   }
+
+   @Override
+   public boolean isTheMaster() {
+      return true;
+   }
+
+   @Override
+   public void resetAdditionalStats() {
+      //no-op
+   }
+
+   @Override
+   public void dumpDataContainer(String filePath) {
+      //no-op
+   }
+
+   @Override
+   public void dumpCommitLog(String filePath) {
+      //no-op
    }
 }

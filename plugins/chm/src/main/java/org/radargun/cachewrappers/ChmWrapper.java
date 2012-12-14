@@ -4,6 +4,10 @@ import org.radargun.CacheWrapper;
 import org.radargun.utils.TypedProperties;
 
 
+import javax.transaction.Status;
+import javax.transaction.SystemException;
+import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ChmWrapper implements CacheWrapper {
@@ -54,5 +58,40 @@ public class ChmWrapper implements CacheWrapper {
    @Override
    public int size() {
       return 0;  // TODO: Customise this generated block
+   }
+
+   @Override
+   public boolean isInTransaction() {
+      return false;
+   }
+
+   @Override
+   public Map<String, String> getAdditionalStats() {
+      return Collections.emptyMap();
+   }
+
+   @Override
+   public boolean isPassiveReplication() {
+      return false;
+   }
+
+   @Override
+   public boolean isTheMaster() {
+      return true;
+   }
+
+   @Override
+   public void resetAdditionalStats() {
+      //no-op
+   }
+
+   @Override
+   public void dumpDataContainer(String filePath) {
+      //no-op
+   }
+
+   @Override
+   public void dumpCommitLog(String filePath) {
+      //no-op
    }
 }

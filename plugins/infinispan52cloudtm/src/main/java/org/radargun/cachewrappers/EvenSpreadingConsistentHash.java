@@ -4,7 +4,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.infinispan.distribution.ch.ConsistentHash;
 import org.infinispan.distribution.ch.DefaultConsistentHash;
-import org.infinispan.distribution.ch.TopologyInfo;
 import org.infinispan.remoting.transport.Address;
 import org.infinispan.util.Immutables;
 import org.radargun.stressors.ObjectKey;
@@ -80,22 +79,6 @@ public class EvenSpreadingConsistentHash implements ConsistentHash {
       this.keysPerThread = keysPerThread;
    }
 
-   /**
-    * No need to implement this: https://issues.jboss.org/browse/ISPN-899
-    */
-   @Override
-   public int getHashId(Address a) {
-      return 0;
-   }
-
-   /**
-    * No need to implement this: https://issues.jboss.org/browse/ISPN-899
-    */
-   @Override
-   public int getHashSpace() {
-      return 0;
-   }
-
    //following methods should only be used during rehashing, so no point in implementing them
 
 
@@ -116,6 +99,11 @@ public class EvenSpreadingConsistentHash implements ConsistentHash {
    }
 
    @Override
+   public Address primaryLocation(Object key) {
+      return existing.primaryLocation(key);
+   }
+
+   @Override
    public void setCaches(Set<Address> caches) {
       existing.setCaches(caches);
 
@@ -126,11 +114,6 @@ public class EvenSpreadingConsistentHash implements ConsistentHash {
             return o1.toString().compareTo(o2.toString());
          }
       });
-   }
-
-   @Override
-   public void setTopologyInfo(TopologyInfo topologyInfo) {
-      existing.setTopologyInfo(topologyInfo);
    }
 
    public Map<Object, List<Address>> locateAll(Collection<Object> keys, int replCount) {
@@ -145,7 +128,17 @@ public class EvenSpreadingConsistentHash implements ConsistentHash {
    }
 
    @Override
+   public List<Integer> getHashIds(Address a) {
+      return existing.getHashIds(a);
+   }
+
+   @Override
    public Set<Address> getCaches() {
       return existing.getCaches();
    }
+
+   /*@Override
+   public ReplicationGroup getGroupFor(Object key, int replicationCount) {
+      return null;  // TODO: Customise this generated block
+   }*/
 }

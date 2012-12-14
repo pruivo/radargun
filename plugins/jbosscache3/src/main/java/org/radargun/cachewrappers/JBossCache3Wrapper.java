@@ -11,6 +11,7 @@ import org.jboss.cache.util.Caches;
 import org.radargun.CacheWrapper;
 import org.radargun.utils.TypedProperties;
 
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -131,5 +132,40 @@ public class JBossCache3Wrapper implements CacheWrapper
    @Override
    public int size() {
       return 0;  // TODO: Customise this generated block
+   }
+
+   @Override
+   public boolean isInTransaction() {
+      return true;
+   }
+
+   @Override
+   public Map<String, String> getAdditionalStats() {
+      return Collections.emptyMap();
+   }
+
+   @Override
+   public boolean isPassiveReplication() {
+      return false;
+   }
+
+   @Override
+   public boolean isTheMaster() {
+      return true;
+   }
+
+   @Override
+   public void resetAdditionalStats() {
+      //no-op
+   }
+
+   @Override
+   public void dumpDataContainer(String filePath) {
+      //no-op
+   }
+
+   @Override
+   public void dumpCommitLog(String filePath) {
+      //no-op
    }
 }

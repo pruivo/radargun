@@ -8,6 +8,8 @@ import org.jgroups.util.Util;
 import org.radargun.CacheWrapper;
 import org.radargun.utils.TypedProperties;
 
+import javax.transaction.Status;
+import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 import java.io.InputStream;
 import java.lang.reflect.Method;
@@ -133,7 +135,7 @@ public class JGroupsWrapper extends ReceiverAdapter implements CacheWrapper {
       // we're simulating picking ourselves, which returns the data directly from the local cache - no RPC involved
       if (target == null)
          return get_rsp;
-      
+
       try {
          return disp.callRemoteMethod(target, get_call, get_options);
       } catch (Throwable t) {
@@ -200,7 +202,7 @@ public class JGroupsWrapper extends ReceiverAdapter implements CacheWrapper {
       // self also has the keys for the previous num_owners - 1 nodes
       if (noop_self_requests && index >= members.size() - num_owners)
          return null;
-      
+
       return members.get(index);
    }
 
@@ -220,4 +222,43 @@ public class JGroupsWrapper extends ReceiverAdapter implements CacheWrapper {
       return targets;
    }
 
+   @Override
+   public boolean isInTransaction() {
+      try {
+         return tm != null && tm.getStatus() != Status.STATUS_NO_TRANSACTION;
+      } catch (SystemException e) {
+         //
+      }
+      return false;
+   }
+
+   @Override
+   public Map<String, String> getAdditionalStats() {
+      return Collections.emptyMap();
+   }
+
+   @Override
+   public boolean isPassiveReplication() {
+      return false;
+   }
+
+   @Override
+   public boolean isTheMaster() {
+      return true;
+   }
+
+   @Override
+   public void resetAdditionalStats() {
+      //no-op
+   }
+
+   @Override
+   public void dumpDataContainer(String filePath) {
+      //no-op
+   }
+
+   @Override
+   public void dumpCommitLog(String filePath) {
+      //no-op
+   }
 }

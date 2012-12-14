@@ -8,8 +8,12 @@ import org.apache.commons.logging.LogFactory;
 import org.radargun.CacheWrapper;
 import org.radargun.utils.TypedProperties;
 
+import javax.transaction.Status;
+import javax.transaction.SystemException;
 import java.io.Serializable;
 import java.net.URL;
+import java.util.Collections;
+import java.util.Map;
 
 
 /**
@@ -108,5 +112,40 @@ public class EHCacheWrapper implements CacheWrapper {
    @Override
    public int size() {
       return cache.getKeys().size();
+   }
+
+   @Override
+   public boolean isInTransaction() {
+      return false;
+   }
+
+   @Override
+   public Map<String, String> getAdditionalStats() {
+      return Collections.emptyMap();
+   }
+
+   @Override
+   public boolean isPassiveReplication() {
+      return false;
+   }
+
+   @Override
+   public boolean isTheMaster() {
+      return true;
+   }
+
+   @Override
+   public void resetAdditionalStats() {
+      //no-op
+   }
+
+   @Override
+   public void dumpDataContainer(String filePath) {
+      //no-op
+   }
+
+   @Override
+   public void dumpCommitLog(String filePath) {
+      //no-op
    }
 }
