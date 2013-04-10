@@ -52,7 +52,7 @@ public class UniformContendedStringHash implements ConsistentHash {
 
 
     private void rollAndFill(List<Address> list, int replCount, double keyIndex, double numNodes) {
-        int node = (int) (keyIndex / numNodes);
+        int node = (int) (keyIndex % numNodes);
         for (int i = 0; i < replCount; i++) {
             list.add(this.caches[node + i]);
             if (i == numNodes - 1) //roll
