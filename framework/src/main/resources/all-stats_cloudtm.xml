@@ -71,8 +71,11 @@
         <stat displayName="AvgNumPutsBySuccessfulLocalTx" attributeName="AvgNumPutsBySuccessfulLocalTx"/>
         <stat displayName="NumKilledTxDueToValidation" attributeName="NumKilledTxDueToValidation"/>
         <stat displayName="NumAbortedTxDueToValidation" attributeName="NumAbortedTxDueToValidation"/>
-       <stat displayName="NumAbortedTxDueToWriteLock" attributeName="NumAbortedTxDueToWriteLock"/>
+        <stat displayName="NumAbortedTxDueToWriteLock" attributeName="NumAbortedTxDueToWriteLock"/>
         <stat displayName="NumAbortedTxDueToReadLock" attributeName="NumAbortedTxDueToReadLock"/>
-        <stat displayName="NumAbortedTxDueToNotLastValueAccessed" attributeName="NumAbortedTxDueToNotLastValueAccessed"/> 
+        <stat displayName="NumAbortedTxDueToNotLastValueAccessed" attributeName="NumAbortedTxDueToNotLastValueAccessed"/>
+        <stat displayName="AvgRemoteGetsPerROTransaction" attributeName="AvgRemoteGetsPerROTransaction"/>
+        <stat displayName="AvgRemoteGetsPerWrTransaction" attributeName="AvgRemoteGetsPerWrTransaction"/>
+        <stat displayName="GMUClusteredGetCommandWaitingTime" attributeName="GMUClusteredGetCommandWaitingTime"/>
     </component>
 </stats-collector>
