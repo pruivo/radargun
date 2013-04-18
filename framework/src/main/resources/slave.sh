@@ -75,12 +75,16 @@ if [ -n $SLAVE_NAME ] ; then
   LOG4J_PREFIX=$SLAVE_NAME
 
   # The slave_BIND_ADDRESS variable may be defined in environment.sh
-  eval MY_BIND_ADDRESS=\$${SLAVE_NAME}_BIND_ADDRESS
-  if [ -n $MY_BIND_ADDRESS ] ; then
-    BIND_ADDRESS=$MY_BIND_ADDRESS
-  fi
-  echo Using bind address $BIND_ADDRESS
+  #eval MY_BIND_ADDRESS=\$${SLAVE_NAME}_BIND_ADDRESS
+  #if [ -n $MY_BIND_ADDRESS ] ; then
+  #  BIND_ADDRESS=$MY_BIND_ADDRESS
+  #fi
 fi
+if [ -z $BIND_ADDRESS ] ; then
+  BIND_ADDRESS=`hostname`
+fi
+
+echo Using bind address $BIND_ADDRESS
 
 D_VARS="-Djava.net.preferIPv4Stack=true -Dlog4j.file.prefix=${LOG4J_PREFIX} -Dbind.address=${BIND_ADDRESS} -Djgroups.bind_addr=${BIND_ADDRESS}"
 echo "${JAVA} ${JVM_OPTS} ${D_VARS} -classpath $CP org.radargun.Slave ${CONF}" > stdout_slave_${LOG4J_PREFIX}.out

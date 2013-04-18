@@ -99,7 +99,7 @@ fi
 . ${RADARGUN_HOME}/bin/master.sh -s ${SLAVE_COUNT} -m ${MASTER} -c ${CONFIG}
 PID_OF_MASTER_PROCESS=$RADARGUN_MASTER_PID
 #### Sleep for a few seconds so master can open its port
-
+sleep 2
 ####### then start the rest of the nodes
 
 for slave in $SLAVES; do

@@ -1,41 +1,49 @@
 <bench-config xmlns="urn:radargun:benchmark:1.1">
 
-   <master bindAddress="${127.0.0.1:master.address}" port="${2103:master.port}"/>
+    <master bindAddress="${127.0.0.1:master.address}" port="${2103:master.port}"/>
 
-   <benchmark initSize="2" maxSize="${4:slaves}" increment="1">
-      <DestroyWrapper runOnAllSlaves="true"/>
-      <StartCluster staggerSlaveStartup="true" delayAfterFirstSlaveStarts="5000" delayBetweenStartingSlaves = "500"/>
-      <ClusterValidation partialReplication="false"/>
-      <StressTestWarmup numRequests="2500" opsCountStatusLog="500" numThreads="2"/>
-      <ClearCluster/>
-      <!--
-         This will average to 10000 requests per thread, although a work-stealing pattern is used so some threads may
-         do more work than others.
-       -->
-      <StressTest numRequests="2500" opsCountStatusLog="500" numThreads="2"/>
-      <CsvReportGeneration/>
-   </benchmark>
+    <benchmark initSize="2" maxSize="${10:slaves}" increment="2">
+        <DestroyWrapper runOnAllSlaves="true"/>
+        <StartCluster staggerSlaveStartup="true" delayAfterFirstSlaveStarts="5000" delayBetweenStartingSlaves="500"/>
+        <ClusterValidation partialReplication="false"/>
+        <StressTestWarmup duration="1m" opsCountStatusLog="5000" numThreads="8" transactionSize="10"
+                          useTransactions="true" writePercentage="50" numEntries="1000" sharedKeys="false"/>
+        <StressTest duration="5m" opsCountStatusLog="5000" numThreads="8" transactionSize="10"
+                    useTransactions="true" writePercentage="20" numEntries="1000" sharedKeys="false"/>
+        <CsvReportGeneration targetDir="./no_contention"/>
+        <ClearCluster/>
+        <StressTestWarmup duration="1m" opsCountStatusLog="5000" numThreads="8" transactionSize="10"
+                          useTransactions="true" writePercentage="50" numEntries="1000" sharedKeys="true"/>
+        <StressTest duration="5m" opsCountStatusLog="5000" numThreads="8" transactionSize="10"
+                    useTransactions="true" writePercentage="50" numEntries="1000" sharedKeys="true"/>
+        <CsvReportGeneration targetDir="./contention"/>
+    </benchmark>
 
-   <products>
-      <jbosscache3>
-         <config name="mvcc/mvcc-repl-sync.xml"/>
-      </jbosscache3>
-      <infinispan4>
-         <config name="repl-sync.xml"/>
-         <config name="dist-sync.xml"/>
-      </infinispan4>
-   </products>
+    <products>
+        <infinispan53>
+            <config name="to-repl-sync.xml"/>
+            <config name="repl-sync.xml"/>
+            <config name="to-repl-sync-ws.xml"/>
+            <config name="repl-sync-ws.xml"/>
+            <config name="to-dist-sync.xml"/>
+            <config name="dist-sync.xml"/>
+            <config name="to-dist-sync-ws.xml"/>
+            <config name="dist-sync-ws.xml"/>
+        </infinispan53>
+    </products>
 
-   <reports>
-      <report name="Replicated">
-         <item product="infinispan4" config="repl-sync.xml"/>
-         <item product="jbosscache3" config="*"/>
-      </report>
-      <report name="DistVsRepl">
-         <item product="infinispan4" config="repl-sync.xml"/>
-         <item product="infinispan4" config="dist-sync.xml"/>
-      </report>
-      <report name="All" includeAll="true"/>
-   </reports>
+    <reports>
+        <report name="Replicated">
+            <item product="infinispan53" config="to-repl-sync.xml"/>
+            <item product="infinispan53" config="repl-sync.xml"/>
+            <item product="infinispan53" config="to-repl-sync-ws.xml"/>
+            <item product="infinispan53" config="repl-sync-ws.xml"/>
+            <item product="infinispan53" config="to-dist-sync.xml"/>
+            <item product="infinispan53" config="dist-sync.xml"/>
+            <item product="infinispan53" config="to-dist-sync-ws.xml"/>
+            <item product="infinispan53" config="dist-sync-ws.xml"/>
+        </report>
+        <report name="All" includeAll="true"/>
+    </reports>
 
 </bench-config>
