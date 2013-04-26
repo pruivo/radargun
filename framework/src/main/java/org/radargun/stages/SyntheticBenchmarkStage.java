@@ -34,6 +34,7 @@ public class SyntheticBenchmarkStage extends WebSessionBenchmarkStage {
    private int updateXactWrites = 1;
    private int readOnlyXactSize = 1;
    private int updateXactReads = 1;
+    private boolean allowBlindWrites = false;
 
    protected Map<String, String> doWork() {
       log.info("Starting " + getClass().getSimpleName() + ": " + this);
@@ -51,6 +52,7 @@ public class SyntheticBenchmarkStage extends WebSessionBenchmarkStage {
       putGetStressor.setupdateXactWrites(updateXactWrites);
       putGetStressor.setReadOnlyXactSize(readOnlyXactSize);
       putGetStressor.setUpdateXactReads(updateXactReads);
+       putGetStressor.setAllowBlindWrites(allowBlindWrites);
       return putGetStressor.stress(cacheWrapper);
    }
 
@@ -78,7 +80,11 @@ public class SyntheticBenchmarkStage extends WebSessionBenchmarkStage {
       this.updateXactWrites = updateXactWrites;
    }
 
-   @Override
+    public void setAllowBlindWrites(boolean allowBlindWrites) {
+        this.allowBlindWrites = allowBlindWrites;
+    }
+
+    @Override
    public String toString() {
       return "SyntheticBenchmarkStage{" +
               "updateXactWrites=" + updateXactWrites +

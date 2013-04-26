@@ -13,7 +13,7 @@
        -->
       <GarbageCollection/>
       <ResetStats/>
-      <SyntheticBenchmark sizeOfAnAttribute="1000" keyGeneratorClass="org.radargun.stressors.ContentionStringKeyGenerator" numberOfAttributes="10000" numOfThreads="2" updateXactWrites="1" updateXactReads="9" readOnlyXactSize="10" writePercentage="20" duration="30000"/>
+      <SyntheticBenchmark sizeOfAnAttribute="1000" keyGeneratorClass="org.radargun.stressors.ContentionStringKeyGenerator" numberOfAttributes="10000" numOfThreads="2" updateXactWrites="1" updateXactReads="9" readOnlyXactSize="10" writePercentage="20" allowBlindWrites="false" duration="30000"/>
       <CsvReportGeneration/>
    </benchmark>
 

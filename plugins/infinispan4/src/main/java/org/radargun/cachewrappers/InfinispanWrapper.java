@@ -97,10 +97,9 @@ public class InfinispanWrapper implements CacheWrapper {
         log.info("JGroups version: " + org.jgroups.Version.printDescription());
         log.info("Using config attributes: " + confAttributes);
         blockForRehashing();
-        log.warn("Beware! I am getting rid of the EvenConsistentHash");
+        log.warn("Beware! Relying on the default hash function");
         // injectEvenConsistentHash(confAttributes);
-
-        injectEvenConsistentHash(confAttributes);
+        //injectEvenConsistentHash(confAttributes);
 
 
         for (int i = 0; i < MAX_THREADS; i++) {
