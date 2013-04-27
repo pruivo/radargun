@@ -97,7 +97,7 @@ public class InfinispanWrapper implements CacheWrapper {
         log.info("JGroups version: " + org.jgroups.Version.printDescription());
         log.info("Using config attributes: " + confAttributes);
         blockForRehashing();
-        log.warn("Beware! Relying on the default hash function");
+        //log.warn("Beware! Relying on the default hash function");
         // injectEvenConsistentHash(confAttributes);
         //injectEvenConsistentHash(confAttributes);
 
@@ -254,7 +254,7 @@ public class InfinispanWrapper implements CacheWrapper {
 
       }
    }
-  */
+
 
     private void injectEvenConsistentHash(TypedProperties confAttributes) {
         if(cache.getCacheConfiguration().clustering().cacheMode().isDistributed()){
@@ -269,7 +269,7 @@ public class InfinispanWrapper implements CacheWrapper {
 
         }
     }
-
+   */
     private void assertTm() {
         if (tm == null) throw new RuntimeException("No configured TM!");
     }
@@ -368,11 +368,13 @@ public class InfinispanWrapper implements CacheWrapper {
 
     @Override
     public boolean isPassiveReplication() {
-
+        //TODO handle the case for v5!!!
+        /*
         try {
             //DIEGO's
             return this.cache.getAdvancedCache().getConfiguration().isPassiveReplication();
         } catch (Exception e) {
+        */
             try {
                 //PEDRO's
                 return isPassiveReplicationMethod != null && (isPassiveReplicationWithSwitch() ||
@@ -380,7 +382,7 @@ public class InfinispanWrapper implements CacheWrapper {
             } catch (Exception ee) {
                 log.debug("isPassiveReplication method not found or can't be invoked. Assuming *no* passive replication in use");
             }
-        }
+        //}
 
         return false;
 

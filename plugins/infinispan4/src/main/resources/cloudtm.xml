@@ -1,7 +1,7 @@
 <infinispan
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="urn:infinispan:config:5.1 http://www.infinispan.org/schemas/infinispan-config-5.1.xsd"
-        xmlns="urn:infinispan:config:5.1">
+        xsi:schemaLocation="urn:infinispan:config:5.2 http://www.infinispan.org/schemas/infinispan-config-5.2.xsd"
+        xmlns="urn:infinispan:config:5.2">
     <global>
         <globalJmxStatistics
                 enabled="true"
@@ -44,11 +44,7 @@
             <sync
                     replTimeout="15000" />
             <hash
-                    numVirtualNodes="100"
-                    numOwners="1"
-                    rehashEnabled="false"
-                    rehashRpcTimeout="600000"
-                    rehashWait="60000" />
+                    numOwners="1"/>
             <l1
                     enabled="false"
                     onRehash="false"
@@ -97,11 +93,7 @@
             <sync
                     replTimeout="15000" />
             <hash
-                    numVirtualNodes="1"
-                    numOwners="1"
-                    rehashEnabled="false"
-                    rehashRpcTimeout="600000"
-                    rehashWait="60000" />
+                    numOwners="1"/>
             <l1
                     enabled="false"
                     onRehash="false"
@@ -111,7 +103,7 @@
         <customInterceptors>
              <interceptor
                     after="org.infinispan.interceptors.InvocationContextInterceptor"
-                    class="org.infinispan.distribution.wrappers.DistCustomStatsInterceptor"/>
+                    class="org.infinispan.distribution.wrappers.CustomStatsInterceptor"/>
             <interceptor
                     before="org.infinispan.interceptors.NotificationInterceptor"
                     class="org.infinispan.stats.topK.DistributedStreamLibInterceptor"/>

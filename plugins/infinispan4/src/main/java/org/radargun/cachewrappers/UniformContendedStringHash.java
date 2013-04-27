@@ -1,5 +1,6 @@
 package org.radargun.cachewrappers;
 
+import org.infinispan.commons.hash.Hash;
 import org.infinispan.distribution.ch.ConsistentHash;
 import org.infinispan.distribution.ch.DefaultConsistentHash;
 import org.infinispan.remoting.transport.Address;
@@ -13,17 +14,12 @@ import java.util.*;
 public class UniformContendedStringHash implements ConsistentHash {
 
     private Address[] caches;
-    private volatile DefaultConsistentHash existing;
 
-    public UniformContendedStringHash() {
-        this.existing = new DefaultConsistentHash();
-    }
     public UniformContendedStringHash(Set<Address> caches) {
-        this.existing = new DefaultConsistentHash();
         setCaches(caches);
     }
 
-    @Override
+
     public void setCaches(Set<Address> caches) {
         this.caches = new Address[caches.size()];
         int i = 0;
@@ -31,14 +27,14 @@ public class UniformContendedStringHash implements ConsistentHash {
             this.caches[i++] = c;
     }
 
-    @Override
+
     public Set<Address> getCaches() {
         Set ret = new HashSet<Address>();
         Collections.addAll(ret, caches);
         return ret;
     }
 
-    @Override
+
     public List<Address> locate(Object key, int replCount) {
         List<Address> ret = new LinkedList<Address>();
         rollAndFill(ret, replCount, (double) keyIndex(key), (double) this.caches.length);
@@ -60,7 +56,7 @@ public class UniformContendedStringHash implements ConsistentHash {
         }
     }
 
-    @Override
+
     public Map<Object, List<Address>> locateAll(Collection<Object> keys, int replCount) {
         Map<Object, List<Address>> ret = new HashMap<Object, List<Address>>();
         for (Object o : keys)
@@ -68,32 +64,84 @@ public class UniformContendedStringHash implements ConsistentHash {
         return ret;
     }
 
-    @Override
+
     public boolean isKeyLocalToAddress(Address a, Object key, int replCount) {
         return locate(key, replCount).contains(a);
     }
 
-    @Override
+
     public List<Integer> getHashIds(Address a) {
         return new LinkedList<Integer>();
     }
 
-    public List<Address> getStateProvidersOnLeave(Address leaver, int replCount) {
-        return existing.getStateProvidersOnLeave(leaver, replCount);
-    }
 
-
-    public List<Address> getStateProvidersOnJoin(Address joiner, int replCount) {
-        return existing.getStateProvidersOnJoin(joiner, replCount);
-    }
-
-    public List<Address> getBackupsForNode(Address node, int replCount) {
-        return existing.getBackupsForNode(node, replCount);
-    }
-
-    @Override
     public Address primaryLocation(Object key) {
         int index = (int) (((double) keyIndex(key)) / (double) caches.length);
         return caches[index];
+    }
+
+    @Override
+    public int getNumOwners() {
+        return 0;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public Hash getHashFunction() {
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public int getNumSegments() {
+        return 0;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public List<Address> getMembers() {
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public Address locatePrimaryOwner(Object o) {
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public List<Address> locateOwners(Object o) {
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public Set<Address> locateAllOwners(Collection<Object> objects) {
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public boolean isKeyLocalToNode(Address address, Object o) {
+        return false;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public int getSegment(Object o) {
+        return 0;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public List<Address> locateOwnersForSegment(int i) {
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public Address locatePrimaryOwnerForSegment(int i) {
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public Set<Integer> getSegmentsForOwner(Address address) {
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
+    }
+
+    @Override
+    public String getRoutingTableAsString() {
+        return null;  //To change body of implemented methods use File | Settings | File Templates.
     }
 }

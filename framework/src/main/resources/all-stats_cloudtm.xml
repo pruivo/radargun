@@ -1,6 +1,7 @@
 <stats-collector>
     <component name="ExtendedStatistics">
         <stat displayName="WaitedTimeInCommitQueue" attributeName="WaitedTimeInCommitQueue"/>
+        <stat displayName="WaitedTimeInRemoteCommitQueue" attributeName="WaitedTimeInRemoteCommitQueue"/>
         <stat displayName="NumOwnedWrItemsInRemotePrepare" attributeName="NumOwnedWrItemsInRemotePrepare"/>
         <stat displayName="NumOwnedRdItemsInRemotePrepare" attributeName="NumOwnedRdItemsInRemotePrepare"/>
         <stat displayName="NumOwnedWrItemsInLocalPrepare" attributeName="NumOwnedWrItemsInLocalPrepare"/>
