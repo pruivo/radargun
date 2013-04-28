@@ -29,6 +29,8 @@ public class SyntheticWarmupOnlyPrimaryStressor extends PutGetStressor {
         return stressors;
     }
 
+
+
     private int keysPerThread(int totalThreads, int threadIndex) {
         int remainder = numberOfKeys % totalThreads;
         int keys = (int) Math.floor(((double) numberOfKeys) / ((double) totalThreads));
@@ -71,15 +73,24 @@ public class SyntheticWarmupOnlyPrimaryStressor extends PutGetStressor {
             }
         }
 
+        public void initialiseKeys() {
+            //NO-OP
+        }
 
         private void runInternal() {
+            try {
+                startPoint.await();
+                log.trace("Starting thread: " + getName());
+            } catch (InterruptedException e) {
+                log.warn(e);
+            }
             long init = System.currentTimeMillis();
-            int remaining = keysPerThread(numOfThreads,threadIndex);
-            int lastBase = baseKey(threadIndex,numOfThreads);
+            int remaining = keysPerThread(numOfThreads, threadIndex);
+            int lastBase = baseKey(threadIndex, numOfThreads);
             log.debug("ThreadIndex " + threadIndex + " base = " + lastBase);
             while (remaining > 0) {
                 int next = keyPerXact(remaining);
-                log.debug("Going to insert keys from " + lastBase + " to " + (lastBase + next - 1));
+                log.debug(threadIndex + " Going to insert keys from " + lastBase + " to " + (lastBase + next - 1));
                 cacheWrapper.startTransaction();
                 boolean success = true;
                 try {
@@ -104,6 +115,7 @@ public class SyntheticWarmupOnlyPrimaryStressor extends PutGetStressor {
                     remaining -= next;
                     lastBase += next;
                 }
+                log.info(threadIndex + " Elements in cache " + cacheWrapper.getCacheSize());
 
 
             }

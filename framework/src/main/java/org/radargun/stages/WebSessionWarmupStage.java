@@ -42,7 +42,7 @@ public class WebSessionWarmupStage extends WebSessionBenchmarkStage {
             try {
                 long startTime = System.currentTimeMillis();
                 if (!skip) {
-                    log.warn("Warmin' up...");
+                    log.warn("Warmin' up..."+cacheWrapper.getCacheSize()+" elements in the cache");
                     doWork();
                     log.warn("Ding! Supper's ready! "+cacheWrapper.getCacheSize()+" elements in cache");
                 }
