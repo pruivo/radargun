@@ -57,9 +57,9 @@ public class PutGetStressor extends AbstractCacheWrapperStressor {
     */
    protected int nodeIndex = -1;
 
-   private int transactionSize = 1;
+   protected int transactionSize = 1;
 
-   private boolean useTransactions = false;
+   protected boolean useTransactions = false;
 
    private boolean commitTransactions = true;
 
@@ -167,7 +167,7 @@ public class PutGetStressor extends AbstractCacheWrapperStressor {
 
       private ArrayList<Object> pooledKeys = new ArrayList<Object>(numberOfKeys);
 
-      private int threadIndex;
+      protected int threadIndex;
       private int nrFailures;
       private long readDuration = 0;
       private long writeDuration = 0;

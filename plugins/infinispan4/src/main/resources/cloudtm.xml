@@ -54,10 +54,7 @@
         <customInterceptors>
             <interceptor
                     after="org.infinispan.interceptors.InvocationContextInterceptor"
-                    class="org.infinispan.distribution.wrappers.DistCustomStatsInterceptor"/>
-            <interceptor
-                    before="org.infinispan.interceptors.NotificationInterceptor"
-                    class="org.infinispan.stats.topK.DistributedStreamLibInterceptor"/>
+                    class="org.infinispan.distribution.wrappers.CustomStatsInterceptor"/>
         </customInterceptors>
         <versioning
                 enabled="true"
@@ -104,9 +101,6 @@
              <interceptor
                     after="org.infinispan.interceptors.InvocationContextInterceptor"
                     class="org.infinispan.distribution.wrappers.CustomStatsInterceptor"/>
-            <interceptor
-                    before="org.infinispan.interceptors.NotificationInterceptor"
-                    class="org.infinispan.stats.topK.DistributedStreamLibInterceptor"/>
         </customInterceptors>
         <versioning
                 enabled="true"

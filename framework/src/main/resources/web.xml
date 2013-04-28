@@ -6,7 +6,7 @@
       <DestroyWrapper runOnAllSlaves="true"/>
       <StartCluster staggerSlaveStartup="true" delayAfterFirstSlaveStarts="5000" delayBetweenStartingSlaves = "500"/>
       <ClusterValidation partialReplication="false"/>
-      <SyntheticWarmup keyGeneratorClass="org.radargun.stressors.ContentionStringKeyGenerator" numberOfAttributes="10000" sizeOfAnAttribute="1000" numOfThreads="1"/>
+      <SyntheticWarmup keyGeneratorClass="org.radargun.stressors.ContentionStringKeyGenerator" numberOfAttributes="10000" sizeOfAnAttribute="1000" numOfThreads="2" transactionSize="100"/>
       <!--
          This will average to 10000 requests per thread, although a work-stealing pattern is used so some threads may
          do more work than others.

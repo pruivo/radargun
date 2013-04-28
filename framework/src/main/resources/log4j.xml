@@ -62,6 +62,9 @@
     <category name="org.radargun">
         <priority value="INFO"/>
     </category>
+    <category name="org.radargun.stressors">
+	<priority value="DEBUG"/>
+   </category>
 
     <category name="org.radargun.reporting">
         <priority value="WARN"/>
