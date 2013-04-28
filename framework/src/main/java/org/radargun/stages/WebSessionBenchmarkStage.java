@@ -24,7 +24,7 @@ import static org.radargun.utils.Utils.numberFormat;
 public class WebSessionBenchmarkStage extends AbstractDistStage {
 
    private static final String SIZE_INFO = "SIZE_INFO";
-   private int opsCountStatusLog = 5000;
+   protected int opsCountStatusLog = 5000;
 
    public static final String SESSION_PREFIX = "SESSION";
 

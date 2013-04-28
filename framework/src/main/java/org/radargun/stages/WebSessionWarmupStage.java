@@ -18,6 +18,7 @@ import java.util.Set;
 public class WebSessionWarmupStage extends WebSessionBenchmarkStage {
 
     private static final Set<String> WARMED_UP_CONFIGS = new HashSet<String>(2);
+    private boolean runOnlyOnMaster = true;
 
     @Override
     public DistStageAck executeOnSlave() {
@@ -29,16 +30,19 @@ public class WebSessionWarmupStage extends WebSessionBenchmarkStage {
         }
 
         String configName = cacheWrapper.getClass().getName() + " - " + cacheWrapper.getInfo();
-
+        boolean skip = false;
         if (!WARMED_UP_CONFIGS.contains(configName)) {
-            if (slaveIndex != 0) {
+            //DIE
+            if (runOnlyOnMaster && !cacheWrapper.isCoordinator()) {
                 log.warn("Skipping Warmup as I am not the master node");
+                skip = true;
             } else {
                 log.warn("Warming up as I am the master");
             }
             try {
                 long startTime = System.currentTimeMillis();
-                doWork();
+                if(!skip)
+                    doWork();
                 long duration = System.currentTimeMillis() - startTime;
                 log.info("The warmup took: " + (duration / 1000) + " seconds.");
                 result.setPayload(duration);
@@ -70,5 +74,13 @@ public class WebSessionWarmupStage extends WebSessionBenchmarkStage {
     @Override
     public String toString() {
         return "Warmup for " + super.toString();
+    }
+
+    public boolean isRunOnlyOnMaster() {
+        return runOnlyOnMaster;
+    }
+
+    public void setRunOnlyOnMaster(boolean runOnlyOnMaster) {
+        this.runOnlyOnMaster = runOnlyOnMaster;
     }
 }
