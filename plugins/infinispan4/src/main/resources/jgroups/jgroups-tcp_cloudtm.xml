@@ -3,6 +3,8 @@
 <MPING mcast_addr="${jgroups.udp.mcast_addr:224.0.0.1}" mcast_port="${jgroups.udp.mcast_port:46655}" ip_ttl="${jgroups.udp.ip_ttl:8}" num_initial_members="5" break_on_coord_rsp="true" stagger_timeout="3000" timeout="15000"/>
 <MERGE2 max_interval="30000" min_interval="10000"/>
 <FD_SOCK/>
+<TCPGOSSIP
+         initial_hosts="cloudtm[12000]" num_initial_members="3"/>
 <BARRIER/>
 <pbcast.NAKACK2 use_mcast_xmit="false" discard_delivered_msgs="true"/>
 <UNICAST2 max_stable_msgs="100" xmit_interval="1000" conn_expiry_timeout="0" max_bytes="10M" stable_interval="10000"/>

@@ -2,7 +2,6 @@ package org.radargun.stressors;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -74,7 +73,9 @@ public class SyntheticWarmupOnlyPrimaryStressor extends PutGetStressor {
         }
 
         public void initialiseKeys() {
-            //NO-OP
+            /*
+            Do nothing: the population is performed in the run method
+             */
         }
 
         private void runInternal() {

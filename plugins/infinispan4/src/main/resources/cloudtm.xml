@@ -34,7 +34,9 @@
                 eagerLockSingleNode="false"
                 use1PcForAutoCommitTransactions="false"
                 autoCommit="true"
-                />
+                >
+		<recovery enabled="false"/>
+       </transaction>
         <jmxStatistics
                 enabled="true"/>
         <customStats sampleServiceTimes="true"/>
@@ -80,7 +82,9 @@
                 eagerLockSingleNode="false"
                 use1PcForAutoCommitTransactions="false"
                 autoCommit="true"
-                />
+                >
+		<recovery enabled="false"/>
+	</transaction>
         <jmxStatistics
                 enabled="true"/>
 	<customStats sampleServiceTimes="true"/>
