@@ -78,5 +78,9 @@
         <stat displayName="AvgRemoteGetsPerROTransaction" attributeName="AvgRemoteGetsPerROTransaction"/>
         <stat displayName="AvgRemoteGetsPerWrTransaction" attributeName="AvgRemoteGetsPerWrTransaction"/>
         <stat displayName="GMUClusteredGetCommandWaitingTime" attributeName="GMUClusteredGetCommandWaitingTime"/>
-    </component>
+	<stat displayName="LocalUpdateTxTotalCpuTime" attributeName="LocalUpdateTxTotalCpuTime"/>
+        <stat displayName="LocalUpdateTxTotalResponseTime" attributeName="LocalUpdateTxTotalResponseTime"/>
+        <stat displayName="ReadOnlyTxTotalCpuTime" attributeName="ReadOnlyTxTotalCpuTime"/>
+        <stat displayName="ReadOnlyTxTotalResponseTime" attributeName="ReadOnlyTxResponseTime"/>    
+</component>
 </stats-collector>
