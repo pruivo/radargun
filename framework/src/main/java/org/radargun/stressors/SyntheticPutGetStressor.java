@@ -103,6 +103,8 @@ public class SyntheticPutGetStressor extends PutGetStressor {
         results.put("WRITE_COUNT", str(writes));
         results.put("LOCAL_FAILURES", str(localFailures));
         results.put("REMOTE_FAILURES", str(remoteFailures));
+        results.put("CPU_USAGE",str(sampler!=null? sampler.getAvgCpuUsage():"Not_Available"));
+        results.put("MEM_USAGE",str(sampler!=null? sampler.getAvgMemUsage():"Not_Available"));
         results.putAll(cacheWrapper.getAdditionalStats());
         return results;
 

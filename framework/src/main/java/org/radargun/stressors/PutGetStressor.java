@@ -79,7 +79,7 @@ public class PutGetStressor extends AbstractCacheWrapperStressor {
     private volatile long startNanos;
     protected volatile CountDownLatch startPoint;
     protected volatile StressorCompletion completion;
-
+    protected StatSampler sampler = null;
 
     public Map<String, String> stress(CacheWrapper wrapper) {
         this.cacheWrapper = wrapper;
@@ -91,7 +91,7 @@ public class PutGetStressor extends AbstractCacheWrapperStressor {
             completion = new OperationCountCompletion(new AtomicInteger(numberOfRequests));
         }
 
-        StatSampler sampler = null;
+
         if (statsSamplingInterval > 0) {
             sampler =new StatSampler(statsSamplingInterval);
             sampler.start();
