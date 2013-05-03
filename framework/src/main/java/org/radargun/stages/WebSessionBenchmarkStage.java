@@ -70,6 +70,8 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
 
    protected long durationMillis = -1;
 
+   protected long statsSamplingInterval = 0L;
+
    protected Map<String, String> doWork() {
       log.info("Starting " + getClass().getSimpleName() + ": " + this);
       PutGetStressor putGetStressor = new PutGetStressor();
@@ -225,7 +227,16 @@ public class WebSessionBenchmarkStage extends AbstractDistStage {
       this.durationMillis = Utils.string2Millis(duration);
    }
 
-   @Override
+
+    public long getStatsSamplingInterval() {
+        return statsSamplingInterval;
+    }
+
+    public void setStatsSamplingInterval(long statsSamplingInterval) {
+        this.statsSamplingInterval = statsSamplingInterval;
+    }
+
+    @Override
    public String toString() {
       return "WebSessionBenchmarkStage {" +
               "opsCountStatusLog=" + opsCountStatusLog +

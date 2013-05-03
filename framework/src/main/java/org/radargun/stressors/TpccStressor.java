@@ -525,6 +525,7 @@ public class TpccStressor extends AbstractCacheWrapperStressor {
       }
       log.info("Cache wrapper info is: " + cacheWrapper.getInfo());
       startPoint.countDown();
+
       blockWhileRunning();
       for (Stressor stressor : stressors) {
          stressor.join();

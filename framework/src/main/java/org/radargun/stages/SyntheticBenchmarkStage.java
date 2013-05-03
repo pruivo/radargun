@@ -31,65 +31,72 @@ import java.util.Map;
  */
 public class SyntheticBenchmarkStage extends WebSessionBenchmarkStage {
 
-   private int updateXactWrites = 1;
-   private int readOnlyXactSize = 1;
-   private int updateXactReads = 1;
+    private int updateXactWrites = 1;
+    private int readOnlyXactSize = 1;
+    private int updateXactReads = 1;
     private boolean allowBlindWrites = false;
 
-   protected Map<String, String> doWork() {
-      log.info("Starting " + getClass().getSimpleName() + ": " + this);
-      SyntheticPutGetStressor putGetStressor = new SyntheticPutGetStressor();
-      putGetStressor.setNodeIndex(getSlaveIndex());
-      putGetStressor.setNumberOfAttributes(numberOfAttributes);
-      putGetStressor.setNumOfThreads(numOfThreads);
-      putGetStressor.setSizeOfAnAttribute(sizeOfAnAttribute);
-      putGetStressor.setWritePercentage(writePercentage);
-      putGetStressor.setKeyGeneratorClass(keyGeneratorClass);
-      putGetStressor.setUseTransactions(useTransactions);
-      putGetStressor.setCommitTransactions(commitTransactions);
-      putGetStressor.setTransactionSize(transactionSize);
-      putGetStressor.setDurationMillis(durationMillis);
-      putGetStressor.setupdateXactWrites(updateXactWrites);
-      putGetStressor.setReadOnlyXactSize(readOnlyXactSize);
-      putGetStressor.setUpdateXactReads(updateXactReads);
-       putGetStressor.setAllowBlindWrites(allowBlindWrites);
-      return putGetStressor.stress(cacheWrapper);
-   }
 
-   public int getUpdateXactWrites() {
-      return updateXactWrites;
-   }
+    protected Map<String, String> doWork() {
+        log.info("Starting " + getClass().getSimpleName() + ": " + this);
+        SyntheticPutGetStressor putGetStressor = new SyntheticPutGetStressor();
+        putGetStressor.setNodeIndex(getSlaveIndex());
+        putGetStressor.setNumberOfAttributes(numberOfAttributes);
+        putGetStressor.setNumOfThreads(numOfThreads);
+        putGetStressor.setSizeOfAnAttribute(sizeOfAnAttribute);
+        putGetStressor.setWritePercentage(writePercentage);
+        putGetStressor.setKeyGeneratorClass(keyGeneratorClass);
+        putGetStressor.setUseTransactions(useTransactions);
+        putGetStressor.setCommitTransactions(commitTransactions);
+        putGetStressor.setTransactionSize(transactionSize);
+        putGetStressor.setDurationMillis(durationMillis);
+        putGetStressor.setupdateXactWrites(updateXactWrites);
+        putGetStressor.setReadOnlyXactSize(readOnlyXactSize);
+        putGetStressor.setUpdateXactReads(updateXactReads);
+        putGetStressor.setAllowBlindWrites(allowBlindWrites);
+        putGetStressor.setStatsSamplingInterval(statsSamplingInterval);
+        return putGetStressor.stress(cacheWrapper);
+    }
 
-   public int getReadOnlyXactSize() {
-      return readOnlyXactSize;
-   }
+    public int getUpdateXactWrites() {
+        return updateXactWrites;
+    }
 
-   public void setReadOnlyXactSize(int readOnlyXactSize) {
-      this.readOnlyXactSize = readOnlyXactSize;
-   }
 
-   public int getUpdateXactReads() {
-      return updateXactReads;
-   }
+    public boolean isAllowBlindWrites() {
+        return allowBlindWrites;
+    }
 
-   public void setUpdateXactReads(int updateXactReads) {
-      this.updateXactReads = updateXactReads;
-   }
+    public int getReadOnlyXactSize() {
+        return readOnlyXactSize;
+    }
 
-   public void setUpdateXactWrites(int updateXactWrites) {
-      this.updateXactWrites = updateXactWrites;
-   }
+    public void setReadOnlyXactSize(int readOnlyXactSize) {
+        this.readOnlyXactSize = readOnlyXactSize;
+    }
+
+    public int getUpdateXactReads() {
+        return updateXactReads;
+    }
+
+    public void setUpdateXactReads(int updateXactReads) {
+        this.updateXactReads = updateXactReads;
+    }
+
+    public void setUpdateXactWrites(int updateXactWrites) {
+        this.updateXactWrites = updateXactWrites;
+    }
 
     public void setAllowBlindWrites(boolean allowBlindWrites) {
         this.allowBlindWrites = allowBlindWrites;
     }
 
     @Override
-   public String toString() {
-      return "SyntheticBenchmarkStage{" +
-              "updateXactWrites=" + updateXactWrites +
-              ", readOnlyXactSize=" + readOnlyXactSize +
-              ", updateXactReads=" + updateXactReads +
-              '}';
-   }
+    public String toString() {
+        return "SyntheticBenchmarkStage{" +
+                "updateXactWrites=" + updateXactWrites +
+                ", readOnlyXactSize=" + readOnlyXactSize +
+                ", updateXactReads=" + updateXactReads +
+                '}';
+    }
 }

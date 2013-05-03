@@ -35,6 +35,19 @@ public class SyntheticPutGetStressor extends PutGetStressor {
     private boolean allowBlindWrites = false;
     private long startTime;
 
+    public boolean isAllowBlindWrites() {
+        return allowBlindWrites;
+    }
+
+    public long getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(long startTime) {
+        this.startTime = startTime;
+    }
+
+
 
     public int getupdateXactWrites() {
         return updateXactWrites;
@@ -107,6 +120,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
             stressor.start();
         }
         log.info("Cache wrapper info is: " + cacheWrapper.getInfo());
+
         startPoint.countDown();
         log.info("Started " + stressors.size() + " stressor threads.");
         for (Stressor stressor : stressors) {
