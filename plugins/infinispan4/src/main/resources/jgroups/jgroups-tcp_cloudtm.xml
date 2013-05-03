@@ -4,7 +4,7 @@
 <MERGE2 max_interval="30000" min_interval="10000"/>
 <FD_SOCK/>
 <TCPGOSSIP
-         initial_hosts="cloudtm[12000]" num_initial_members="3"/>
+         initial_hosts="cloudtm[15000]" num_initial_members="3"/>
 <BARRIER/>
 <pbcast.NAKACK2 use_mcast_xmit="false" discard_delivered_msgs="true"/>
 <UNICAST2 max_stable_msgs="100" xmit_interval="1000" conn_expiry_timeout="0" max_bytes="10M" stable_interval="10000"/>

@@ -81,6 +81,6 @@
 	<stat displayName="LocalUpdateTxTotalCpuTime" attributeName="LocalUpdateTxTotalCpuTime"/>
         <stat displayName="LocalUpdateTxTotalResponseTime" attributeName="LocalUpdateTxTotalResponseTime"/>
         <stat displayName="ReadOnlyTxTotalCpuTime" attributeName="ReadOnlyTxTotalCpuTime"/>
-        <stat displayName="ReadOnlyTxTotalResponseTime" attributeName="ReadOnlyTxResponseTime"/>    
+        <stat displayName="ReadOnlyTxTotalResponseTime" attributeName="ReadOnlyTxTotalResponseTime"/>    
 </component>
 </stats-collector>
