@@ -34,6 +34,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
     private int updateXactReads = 1;
     private boolean allowBlindWrites = false;
     private long startTime;
+   private boolean retryOnABort = false;
 
     public boolean isAllowBlindWrites() {
         return allowBlindWrites;
@@ -158,7 +159,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
         private void runInternal() {
             Random r = new Random();
             xactClass lastClazz = xactClass.RO;
-            result outcome;
+            result outcome =  result.COM;
             try {
                 startPoint.await();
                 log.trace("Starting thread: " + getName());
@@ -168,8 +169,10 @@ public class SyntheticPutGetStressor extends PutGetStressor {
 
             while (completion.moreToRun()) {
                 try {
-                    lastClazz = xactClass(r);
+                   log.trace(threadIndex+ " starting new xact");
+                    lastClazz = xactClass(r,lastClazz,outcome);
                     outcome = doXact(r, lastClazz);
+                   log.trace(threadIndex+ " ending xact");
                 } catch (Exception e) {
                     log.warn("Unexpected exception" + e.getMessage());
                     outcome = result.OTHER;
@@ -247,7 +250,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
             int toDoRead = updateXactReads, toDoWrite = updateXactWrites, toDo = updateXactWrites + updateXactReads, writePerc = 100 * (int) (((double) updateXactWrites) / ((double) (toDo)));
             boolean doPut;
             int[] readSet = new int[updateXactReads];
-            int readSetIndex = -1, lastWriteIndex = -1;
+            int readSetIndex = -1;
             boolean canWrite = false;
             int keyToAccess;
             while (toDo > 0) {
@@ -284,10 +287,15 @@ public class SyntheticPutGetStressor extends PutGetStressor {
         }
 
         private void doOp(boolean put, int keyIndex) throws Exception {
-            if (put)
-                cacheWrapper.put(null, keyGen.generateKey(nodeIndex, threadIndex, keyIndex), generateRandomString(sizeOfValue));
-            else
-                cacheWrapper.get(null, keyGen.generateKey(nodeIndex, threadIndex, keyIndex));
+           Object key = keyGen.generateKey(nodeIndex, threadIndex, keyIndex);
+            if (put)    {
+               log.trace(threadIndex+ " going to write "+key);
+                cacheWrapper.put(null,key , generateRandomString(sizeOfValue));
+            }
+            else   {
+               log.trace(threadIndex+ " going to read "+key);
+                cacheWrapper.get(null, key);
+            }
         }
 
 
@@ -296,6 +304,13 @@ public class SyntheticPutGetStressor extends PutGetStressor {
                 return xactClass.RO;
             return xactClass.WR;
         }
+
+
+       private xactClass xactClass(Random r, xactClass lastClass, result lastOutcome){
+         if(retryOnABort && lastOutcome!=result.COM)
+            return lastClass;
+          return xactClass(r);
+       }
 
 
         private result doXact(Random r, xactClass clazz) throws Exception {

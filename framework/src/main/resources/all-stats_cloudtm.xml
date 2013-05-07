@@ -82,5 +82,7 @@
         <stat displayName="LocalUpdateTxTotalResponseTime" attributeName="LocalUpdateTxTotalResponseTime"/>
         <stat displayName="ReadOnlyTxTotalCpuTime" attributeName="ReadOnlyTxTotalCpuTime"/>
         <stat displayName="ReadOnlyTxTotalResponseTime" attributeName="ReadOnlyTxTotalResponseTime"/>    
+	<stat displayName="AvgNumAsyncSentCommitMsgs" attributeName="AvgNumAsyncSentCommitMsgs"/>
+	<stat displayName="AvgNumSyncSentCommitMsgs" attributeName="AvgNumSyncSentCommitMsgs"/>
 </component>
 </stats-collector>
