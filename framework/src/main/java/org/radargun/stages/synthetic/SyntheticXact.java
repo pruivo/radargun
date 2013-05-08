@@ -6,36 +6,33 @@ package org.radargun.stages.synthetic;
  * @author diego
  * @since 4.0
  */
-public class SyntheticXact extends Xact{
-   private Object[] readSet;
-   private Object[] writeSet;
+public class SyntheticXact extends Xact {
+
    private long initResponseTime;
    private long initServiceTime;
    public xactClass clazz;
    private boolean isCommit;  //we track only commit-abort without considering also xact that can abort because of application logic (and might be not restarted, then)
+   XactOp[] ops;
 
-
-   private class xactOp {
-      private Object key;
-      private Object value;
-      private boolean isPut;
+   public SyntheticXact() {
+      initResponseTime = System.nanoTime();
+      initServiceTime = initResponseTime;
    }
 
 
-   public Object[] getReadSet() {
-      return readSet;
+   public SyntheticXact(SyntheticXact ex, boolean sameXact) {
+      initServiceTime = System.nanoTime();
+      initResponseTime = sameXact? ex.getInitResponseTime():initServiceTime;
+      ops = ex.getOps();
+      clazz = ex.getClazz();
    }
 
-   public void setReadSet(Object[] readSet) {
-      this.readSet = readSet;
+   public XactOp[] getOps() {
+      return ops;
    }
 
-   public Object[] getWriteSet() {
-      return writeSet;
-   }
-
-   public void setWriteSet(Object[] writeSet) {
-      this.writeSet = writeSet;
+   public void setOps(XactOp[] ops) {
+      this.ops = ops;
    }
 
    public long getInitResponseTime() {

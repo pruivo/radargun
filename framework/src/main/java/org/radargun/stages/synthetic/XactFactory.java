@@ -8,5 +8,12 @@ package org.radargun.stages.synthetic;
  */
 public abstract class XactFactory <T extends XactParam, R extends Xact> {
 
-   public abstract R  buildXact(T param, R last);
+
+   protected final T params;
+
+   protected XactFactory(T params) {
+      this.params = params;
+   }
+
+   public abstract R  buildXact(R last);
 }
