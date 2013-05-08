@@ -100,8 +100,8 @@ public class SyntheticPutGetStressor extends PutGetStressor {
       int writes = 0;
       int localFailures = 0;
       int remoteFailures = 0;
-      int suxWrService = 0;
-      int suxRdService = 0;
+      long suxWrService = 0;
+      long suxRdService = 0;
       duration = (long) (1e-6 * (System.nanoTime() - startTime));
       for (Stressor stressorrrr : stressors) {
          SyntheticStressor stressor = (SyntheticStressor) stressorrrr;
@@ -209,8 +209,9 @@ public class SyntheticPutGetStressor extends PutGetStressor {
 
          while (completion.moreToRun()) {
             try {
-               log.trace(threadIndex + " starting new xact");
+
                last = factory.buildXact(last);
+               log.trace(threadIndex + " starting new xact "+"initService "+last.getInitServiceTime()+" initResponse "+last.getInitResponseTime());
                outcome = doXact(last);
                log.trace(threadIndex + " ending xact");
             } catch (Exception e) {
@@ -263,15 +264,21 @@ public class SyntheticPutGetStressor extends PutGetStressor {
 
       private void sampleCommit(SyntheticXact xact) {
          xactClass clazz = xact.clazz;
+         long now = System.nanoTime();
+         long serviceTime = now - xact.getInitServiceTime();
          switch (clazz) {
             case RO: {
                reads++;
-               readOnlySuxExecutionTime+=System.nanoTime() - xact.getInitServiceTime();
+               readOnlySuxExecutionTime+=serviceTime;
+               log.trace(threadIndex+" ending RO xact at time "+now+" started at "+xact.getInitServiceTime()+" totalService "+ serviceTime);
+               log.trace("readOnlyTotal "+readOnlySuxExecutionTime);
                break;
             }
             case WR: {
                writes++;
-               writeSuxExecutionTime += System.nanoTime() - xact.getInitServiceTime();
+               writeSuxExecutionTime += serviceTime;
+               log.trace(threadIndex+" ending WR xact at time "+now+" started at "+xact.getInitServiceTime()+" totalService "+ serviceTime);
+               log.trace("WriteTotal "+writeSuxExecutionTime);
                break;
             }
             default:
