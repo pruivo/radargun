@@ -27,9 +27,9 @@ public class SyntheticXact extends Xact {
    }
 
 
-   public SyntheticXact(SyntheticXact ex, boolean sameXact) {
+   public SyntheticXact(SyntheticXact ex) {
       initServiceTime = System.nanoTime();
-      initResponseTime = sameXact ? ex.getInitResponseTime() : initServiceTime;
+      initResponseTime = ex.getInitResponseTime();
       ops = ex.getOps();
       clazz = ex.getClazz();
       cache = ex.cache;

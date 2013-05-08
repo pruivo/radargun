@@ -39,9 +39,16 @@ public class SyntheticXactFactory extends XactFactory<SyntheticXactParams, Synth
 
       //retried xact
       else if (retry == XACT_RETRY.RETRY_SAME_CLASS) {
-         toRet = new SyntheticXact(last, true);
+         toRet = new SyntheticXact(last);
+         clazz = toRet.clazz;
+         if (clazz == xactClass.RO) {
+            ops = buildReadSet();
+         } else {
+            ops = buildReadWriteSet();
+         }
+         toRet.setOps(ops);
       } else {
-         toRet = new SyntheticXact(last, false);
+         toRet = new SyntheticXact(last);
       }
       log.trace("New xact built "+toRet.toString());
       return toRet;
