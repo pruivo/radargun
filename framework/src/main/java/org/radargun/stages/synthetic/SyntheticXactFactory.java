@@ -2,7 +2,7 @@ package org.radargun.stages.synthetic;
 
 import org.radargun.stressors.KeyGenerator;
 
-import java.util.List;
+
 import java.util.Random;
 
 /**
@@ -21,7 +21,7 @@ public class SyntheticXactFactory extends XactFactory<SyntheticXactParams, Synth
    public SyntheticXact buildXact(SyntheticXact last) {
 
       XACT_RETRY retry = params.getXact_retry();
-      SyntheticXact toRet = null;
+      SyntheticXact toRet;
       xactClass clazz;
       XactOp[] ops;
       if (retry == XACT_RETRY.NO_RETRY || last == null || last.isCommit()) {    //brand new xact
@@ -36,20 +36,20 @@ public class SyntheticXactFactory extends XactFactory<SyntheticXactParams, Synth
          toRet.setOps(ops);
          toRet.setClazz(clazz);
       }
-
-      //retried xact
-      else if (retry == XACT_RETRY.RETRY_SAME_CLASS) {
-         toRet = new SyntheticXact(last);
-         clazz = toRet.clazz;
-         if (clazz == xactClass.RO) {
-            ops = buildReadSet();
-         } else {
-            ops = buildReadWriteSet();
+      else{   //retried xact
+         toRet = last;
+         if (retry == XACT_RETRY.RETRY_SAME_CLASS) {    //If not the very same xact, rebuild the read/writeSet
+            clazz = toRet.clazz;
+            if (clazz == xactClass.RO) {
+               ops = buildReadSet();
+            } else {
+               ops = buildReadWriteSet();
+            }
+            toRet.setOps(ops);
          }
-         toRet.setOps(ops);
-      } else {
-         toRet = new SyntheticXact(last);
+         last.setInitServiceTime(System.nanoTime());
       }
+
       log.trace("New xact built "+toRet.toString());
       return toRet;
    }

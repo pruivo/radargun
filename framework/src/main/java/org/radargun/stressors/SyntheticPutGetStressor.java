@@ -100,7 +100,8 @@ public class SyntheticPutGetStressor extends PutGetStressor {
       int writes = 0;
       int localFailures = 0;
       int remoteFailures = 0;
-      int suxResponse = 0;
+      int suxWrService = 0;
+      int suxRdService = 0;
       duration = (long) (1e-6 * (System.nanoTime() - startTime));
       for (Stressor stressorrrr : stressors) {
          SyntheticStressor stressor = (SyntheticStressor) stressorrrr;
@@ -108,7 +109,8 @@ public class SyntheticPutGetStressor extends PutGetStressor {
          writes += stressor.writes;
          localFailures += stressor.localAborts;
          remoteFailures += stressor.remoteAborts;
-         suxResponse += stressor.writeSuxExecutionTime;
+         suxWrService += stressor.writeSuxExecutionTime;
+         suxRdService +=stressor.readOnlySuxExecutionTime;
       }
 
       Map<String, String> results = new LinkedHashMap<String, String>();
@@ -118,7 +120,8 @@ public class SyntheticPutGetStressor extends PutGetStressor {
       results.put("WRITE_COUNT", str(writes));
       results.put("LOCAL_FAILURES", str(localFailures));
       results.put("REMOTE_FAILURES", str(remoteFailures));
-      results.put("SUX_UPDATE_XACT_RESPONSE", str(((double) suxResponse) / ((double) writes)));
+      results.put("SUX_UPDATE_XACT_RESPONSE", str(((double) suxWrService) / ((double) writes)));
+      results.put("SUX_READ_ONLY_XACT_RESPONSE", str(((double) suxRdService) / ((double) reads)));
       results.put("CPU_USAGE", str(sampler != null ? sampler.getAvgCpuUsage() : "Not_Available"));
       results.put("MEM_USAGE", str(sampler != null ? sampler.getAvgMemUsage() : "Not_Available"));
       results.putAll(cacheWrapper.getAdditionalStats());
@@ -153,7 +156,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
       private KeyGenerator keyGen;
       private int nodeIndex, threadIndex, numKeys;
       private long writes, reads, localAborts, remoteAborts;
-      private long writeSuxExecutionTime = 0;
+      private long writeSuxExecutionTime = 0, readOnlySuxExecutionTime = 0;
       private Random r = new Random();
 
       SyntheticStressor(int threadIndex, KeyGenerator keyGen, int nodeIndex, int numKeys) {
@@ -263,6 +266,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
          switch (clazz) {
             case RO: {
                reads++;
+               readOnlySuxExecutionTime+=System.nanoTime() - xact.getInitServiceTime();
                break;
             }
             case WR: {
