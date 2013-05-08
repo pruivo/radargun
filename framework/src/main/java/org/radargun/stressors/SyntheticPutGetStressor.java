@@ -22,6 +22,8 @@ package org.radargun.stressors;/*
  */
 
 import org.radargun.stages.synthetic.SyntheticXact;
+import org.radargun.stages.synthetic.SyntheticXactFactory;
+import org.radargun.stages.synthetic.SyntheticXactParams;
 import org.radargun.stages.synthetic.XACT_RETRY;
 import org.radargun.stages.synthetic.xactClass;
 
@@ -37,7 +39,6 @@ public class SyntheticPutGetStressor extends PutGetStressor {
    private int updateXactReads = 1;
    private boolean allowBlindWrites = false;
    private long startTime;
-   private boolean retryOnABort = false;
    private XACT_RETRY xact_retry;
 
    public boolean isAllowBlindWrites() {
@@ -85,12 +86,21 @@ public class SyntheticPutGetStressor extends PutGetStressor {
       this.updateXactWrites = numWrites;
    }
 
+   public void setAllowBlindWrites(boolean allowwBlindWrites) {
+      this.allowBlindWrites = allowwBlindWrites;
+   }
+
+   public void setXact_retry(XACT_RETRY xact_retry) {
+      this.xact_retry = xact_retry;
+   }
+
    protected Map<String, String> processResults(List<Stressor> stressors) {
       long duration = 0;
       int reads = 0;
       int writes = 0;
       int localFailures = 0;
       int remoteFailures = 0;
+      int suxResponse = 0;
       duration = (long) (1e-6 * (System.nanoTime() - startTime));
       for (Stressor stressorrrr : stressors) {
          SyntheticStressor stressor = (SyntheticStressor) stressorrrr;
@@ -98,6 +108,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
          writes += stressor.writes;
          localFailures += stressor.localAborts;
          remoteFailures += stressor.remoteAborts;
+         suxResponse += stressor.writeSuxExecutionTime;
       }
 
       Map<String, String> results = new LinkedHashMap<String, String>();
@@ -107,6 +118,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
       results.put("WRITE_COUNT", str(writes));
       results.put("LOCAL_FAILURES", str(localFailures));
       results.put("REMOTE_FAILURES", str(remoteFailures));
+      results.put("SUX_UPDATE_XACT_RESPONSE", str(((double)suxResponse)/((double)writes)));
       results.put("CPU_USAGE", str(sampler != null ? sampler.getAvgCpuUsage() : "Not_Available"));
       results.put("MEM_USAGE", str(sampler != null ? sampler.getAvgMemUsage() : "Not_Available"));
       results.putAll(cacheWrapper.getAdditionalStats());
@@ -141,6 +153,8 @@ public class SyntheticPutGetStressor extends PutGetStressor {
       private KeyGenerator keyGen;
       private int nodeIndex, threadIndex, numKeys;
       private long writes, reads, localAborts, remoteAborts;
+      private long writeSuxExecutionTime = 0;
+      private Random r = new Random();
 
       SyntheticStressor(int threadIndex, KeyGenerator keyGen, int nodeIndex, int numKeys) {
          super(threadIndex);
@@ -159,11 +173,30 @@ public class SyntheticPutGetStressor extends PutGetStressor {
          }
       }
 
+
+      private SyntheticXactParams buildParams() {
+         SyntheticXactParams params = new SyntheticXactParams();
+         params.setRandom(r);
+         params.setKeyGenerator(keyGenerator);
+         params.setNodeIndex(nodeIndex);
+         params.setThreadIndex(threadIndex);
+         params.setAllowBlindWrites(allowBlindWrites);
+         params.setNumKeys(numKeys);
+         params.setROGets(readOnlyXactSize);
+         params.setUpPuts(updateXactWrites);
+         params.setUpReads(updateXactReads);
+         params.setXact_retry(xact_retry);
+         params.setWritePercentage(writePercentage);
+         params.setSizeOfValue(sizeOfValue);
+         params.setCache(cacheWrapper);
+         return params;
+      }
+
       private void runInternal() {
-         Random r = new Random();
-         xactClass lastClazz = xactClass.RO;
-         result outcome = result.COM;
-         long startService, startResponse;
+
+         SyntheticXactFactory factory = new SyntheticXactFactory(buildParams());
+         result outcome;
+         SyntheticXact last = null;
          try {
             startPoint.await();
             log.trace("Starting thread: " + getName());
@@ -174,8 +207,8 @@ public class SyntheticPutGetStressor extends PutGetStressor {
          while (completion.moreToRun()) {
             try {
                log.trace(threadIndex + " starting new xact");
-               lastClazz = xactClass(r, lastClazz, outcome);
-               outcome = doXact(r, lastClazz);
+               last = factory.buildXact(last);
+               outcome = doXact(last);
                log.trace(threadIndex + " ending xact");
             } catch (Exception e) {
                log.warn("Unexpected exception" + e.getMessage());
@@ -183,29 +216,46 @@ public class SyntheticPutGetStressor extends PutGetStressor {
             }
             switch (outcome) {
                case COM: {
-                  sampleCommit(lastClazz);
+                  sampleCommit(last);
                   break;
                }
                case AB_L: {
-                  sampleLocalAbort(lastClazz);
+                  sampleLocalAbort(last);
                   break;
                }
                case AB_R: {
-                  sampleRemoteAbort(lastClazz);
+                  sampleRemoteAbort(last);
                }
                default: {
-                  log.error("I got strange exception for class " + lastClazz);
+                  log.error("I got strange exception for xact " + last);
                }
             }
          }
       }
 
 
-      private void sampleCommit(SyntheticXact xact) {
+      private result doXact(SyntheticXact xact) {
+         try {
+            cacheWrapper.startTransaction();
+            xact.executeLocally();
+         } catch (Exception e) {
+            log.trace("Rollback while running locally");
+            cacheWrapper.endTransaction(false);
+            return result.AB_L;
+         }
 
+         try {
+            cacheWrapper.endTransaction(true);
+         } catch (Exception e) {
+            log.trace("Rollback at prepare time");
+            return result.AB_R;
+         }
+         return result.COM;
       }
 
-      private void sampleCommit(xactClass clazz) {
+
+      private void sampleCommit(SyntheticXact xact) {
+         xactClass clazz = xact.clazz;
          switch (clazz) {
             case RO: {
                reads++;
@@ -213,6 +263,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
             }
             case WR: {
                writes++;
+               writeSuxExecutionTime += System.nanoTime() - xact.getInitServiceTime();
                break;
             }
             default:
@@ -220,7 +271,8 @@ public class SyntheticPutGetStressor extends PutGetStressor {
          }
       }
 
-      private void sampleLocalAbort(xactClass clazz) {
+      private void sampleLocalAbort(SyntheticXact xact) {
+         xactClass clazz = xact.clazz;
          switch (clazz) {
             case WR: {
                localAborts++;
@@ -231,7 +283,8 @@ public class SyntheticPutGetStressor extends PutGetStressor {
          }
       }
 
-      private void sampleRemoteAbort(xactClass clazz) {
+      private void sampleRemoteAbort(SyntheticXact xact) {
+         xactClass clazz = xact.clazz;
          switch (clazz) {
             case WR: {
                remoteAborts++;
@@ -239,19 +292,6 @@ public class SyntheticPutGetStressor extends PutGetStressor {
             }
             default:
                throw new RuntimeException("Xact class " + clazz + " should not abort");
-         }
-      }
-
-
-      private boolean readOnlyXact(Random r, int writePerc) {
-         return !cacheWrapper.isTheMaster() || r.nextInt(100) > writePerc;
-      }
-
-
-      private void doReadXact(Random r) throws Exception {
-         int doneRead = 0;
-         while (doneRead++ < readOnlyXactSize) {
-            doOp(false, r.nextInt(numKeys));
          }
       }
 
@@ -284,7 +324,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
                   }
                }
             }
-            doOp(doPut, keyToAccess);
+            //doOp(doPut, keyToAccess);
             toDo--;
             if (doPut) {
                toDoWrite--;
@@ -295,90 +335,12 @@ public class SyntheticPutGetStressor extends PutGetStressor {
 
       }
 
-      private void doOp(boolean put, int keyIndex) throws Exception {
-         Object key = keyGen.generateKey(nodeIndex, threadIndex, keyIndex);
-         if (put) {
-            log.trace(threadIndex + " going to write " + key);
-            cacheWrapper.put(null, key, generateRandomString(sizeOfValue));
-         } else {
-            log.trace(threadIndex + " going to read " + key);
-            cacheWrapper.get(null, key);
-         }
-      }
-
-
-      private xactClass xactClass(Random r) {
-         if (readOnlyXact(r, writePercentage))
-            return xactClass.RO;
-         return xactClass.WR;
-      }
-
-
-      private SyntheticXact newXact(Random r, SyntheticXact lastXact) {
-
-      }
-
-      private SyntheticXact newXact(Random r) {
-         xactClass clazz = xactClass.RO;
-         if (r.nextInt() < writePercentage)
-            clazz = xactClass.WR;
-         return newXact(clazz,true);
-      }
-
-
-
-
-      private xactClass xactClass(Random r, xactClass lastClass, result lastOutcome) {
-         if (retryOnABort && lastOutcome != result.COM)
-            return lastClass;
-         return xactClass(r);
-      }
-
-
-      private result doXact(Random r, xactClass clazz) throws Exception {
-         cacheWrapper.startTransaction();
-         try {
-            switch (clazz) {
-               case RO: {
-                  doReadXact(r);
-                  break;
-               }
-               case WR: {
-                  doWriteXact(r);
-                  break;
-               }
-               default:
-                  throw new RuntimeException("Invalid xact clazz " + clazz);
-            }
-         } catch (Exception e) {
-            log.trace("Rollback while running locally");
-            cacheWrapper.endTransaction(false);
-            return result.AB_L;
-         }
-
-         try {
-            cacheWrapper.endTransaction(true);
-         } catch (Exception e) {
-            log.trace("Rollback at prepare time");
-            return result.AB_R;
-         }
-         return result.COM;
-      }
-
-
    }
-
-   public void setAllowBlindWrites(boolean allowwBlindWrites) {
-      this.allowBlindWrites = allowwBlindWrites;
-   }
-
 
 
    private enum result {
       AB_L, AB_R, COM, OTHER
    }
-
-
 
 
 }

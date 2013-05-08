@@ -6,5 +6,7 @@ package org.radargun.stages.synthetic;
  * @author diego
  * @since 4.0
  */
-public class Xact {
+public abstract class Xact {
+
+   public abstract void executeLocally() throws Exception;
 }

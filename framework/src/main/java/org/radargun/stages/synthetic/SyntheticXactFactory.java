@@ -1,8 +1,6 @@
 package org.radargun.stages.synthetic;
 
-import org.radargun.reporting.PutGetChartGenerator;
 import org.radargun.stressors.KeyGenerator;
-import org.radargun.stressors.PutGetStressor;
 
 import java.util.List;
 import java.util.Random;
@@ -34,27 +32,26 @@ public class SyntheticXactFactory extends XactFactory<SyntheticXactParams, Synth
          } else {
             ops = buildReadWriteSet();
          }
-         toRet = new SyntheticXact();
+         toRet = new SyntheticXact(params.getCache());
          toRet.setOps(ops);
          toRet.setClazz(clazz);
       }
 
       //retried xact
       else if (retry == XACT_RETRY.RETRY_SAME_CLASS) {
-         toRet = new SyntheticXact(last,true);
+         toRet = new SyntheticXact(last, true);
+      } else {
+         toRet = new SyntheticXact(last, false);
       }
-      else{
-         toRet = new SyntheticXact(last,false);
-      }
-      return  toRet;
+      log.trace("New xact built "+toRet.toString());
+      return toRet;
    }
 
    private xactClass computeClazz() {
-      if (params.getRandom().nextInt(100) < params.getWritePercentage())
-         return xactClass.WR;
-      return xactClass.RO;
+      if (!params.getCache().isTheMaster() || params.getRandom().nextInt(100) > params.getWritePercentage())
+         return xactClass.RO;
+      return xactClass.WR;
    }
-
 
    private XactOp[] buildReadWriteSet() {
       int toDoRead = params.getUpReads(), toDoWrite = params.getUpPuts(), toDo = toDoRead + toDoWrite, writePerc = 100 * (int) (((double) toDoWrite) / ((double) (toDo)));
@@ -129,4 +126,5 @@ public class SyntheticXactFactory extends XactFactory<SyntheticXactParams, Synth
       for (int i = 0; i < size / 2; i++) sb.append((char) (64 + params.getRandom().nextInt(26)));
       return sb.toString();
    }
+
 }

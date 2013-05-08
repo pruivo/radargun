@@ -21,6 +21,7 @@ package org.radargun.stages;/*
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
+import org.radargun.stages.synthetic.XACT_RETRY;
 import org.radargun.stressors.SyntheticPutGetStressor;
 
 import java.util.Map;
@@ -35,6 +36,7 @@ public class SyntheticBenchmarkStage extends WebSessionBenchmarkStage {
     private int readOnlyXactSize = 1;
     private int updateXactReads = 1;
     private boolean allowBlindWrites = false;
+    private XACT_RETRY retryMode = XACT_RETRY.NO_RETRY;
 
 
     protected Map<String, String> doWork() {
@@ -55,6 +57,7 @@ public class SyntheticBenchmarkStage extends WebSessionBenchmarkStage {
         putGetStressor.setUpdateXactReads(updateXactReads);
         putGetStressor.setAllowBlindWrites(allowBlindWrites);
         putGetStressor.setStatsSamplingInterval(statsSamplingInterval);
+       putGetStressor.setXact_retry(retryMode);
         return putGetStressor.stress(cacheWrapper);
     }
 
@@ -90,6 +93,10 @@ public class SyntheticBenchmarkStage extends WebSessionBenchmarkStage {
     public void setAllowBlindWrites(boolean allowBlindWrites) {
         this.allowBlindWrites = allowBlindWrites;
     }
+
+   public void setRetryMode(String retry){
+      this.retryMode = XACT_RETRY.valueOf(retry);
+   }
 
     @Override
     public String toString() {

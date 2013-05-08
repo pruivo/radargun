@@ -1,5 +1,9 @@
 package org.radargun.stages.synthetic;
 
+import org.radargun.CacheWrapper;
+
+import java.util.Arrays;
+
 /**
  * // TODO: Document this
  *
@@ -12,19 +16,31 @@ public class SyntheticXact extends Xact {
    private long initServiceTime;
    public xactClass clazz;
    private boolean isCommit;  //we track only commit-abort without considering also xact that can abort because of application logic (and might be not restarted, then)
+   private CacheWrapper cache;
    XactOp[] ops;
 
-   public SyntheticXact() {
+
+   public SyntheticXact(CacheWrapper wrapper) {
       initResponseTime = System.nanoTime();
       initServiceTime = initResponseTime;
+      cache = wrapper;
    }
 
 
    public SyntheticXact(SyntheticXact ex, boolean sameXact) {
       initServiceTime = System.nanoTime();
-      initResponseTime = sameXact? ex.getInitResponseTime():initServiceTime;
+      initResponseTime = sameXact ? ex.getInitResponseTime() : initServiceTime;
       ops = ex.getOps();
       clazz = ex.getClazz();
+      cache = ex.cache;
+   }
+
+   public CacheWrapper getCache() {
+      return cache;
+   }
+
+   public void setCache(CacheWrapper wrapper) {
+      this.cache = wrapper;
    }
 
    public XactOp[] getOps() {
@@ -65,5 +81,26 @@ public class SyntheticXact extends Xact {
 
    public void setCommit(boolean commit) {
       isCommit = commit;
+   }
+
+   public void executeLocally() throws Exception {
+      for(XactOp op:ops){
+         if(op.isPut())
+            cache.put(null,op.getKey(),op.getValue());
+         else
+            cache.get(null,op.getKey());
+      }
+   }
+
+   @Override
+   public String toString() {
+      return "SyntheticXact{" +
+            "initResponseTime=" + initResponseTime +
+            ", initServiceTime=" + initServiceTime +
+            ", clazz=" + clazz +
+            ", isCommit=" + isCommit +
+            ", cache=" + cache +
+            ", ops=" + Arrays.toString(ops) +
+            '}';
    }
 }

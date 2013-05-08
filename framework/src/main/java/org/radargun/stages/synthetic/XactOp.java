@@ -40,5 +40,14 @@ public class XactOp {
    public void setPut(boolean put) {
       isPut = put;
    }
+
+   @Override
+   public String toString() {
+      return "XactOp{" +
+            "key=" + key +
+            ", value=" + value +
+            ", isPut=" + isPut +
+            '}';
+   }
 }
 

@@ -1,5 +1,6 @@
 package org.radargun.stages.synthetic;
 
+import org.radargun.CacheWrapper;
 import org.radargun.stressors.KeyGenerator;
 
 import java.util.Random;
@@ -10,7 +11,7 @@ import java.util.Random;
  * @author diego
  * @since 4.0
  */
-public class SyntheticXactParams extends XactParam{
+public class SyntheticXactParams extends XactParam {
 
    private boolean allowBlindWrites;
    private Random random;
@@ -19,8 +20,16 @@ public class SyntheticXactParams extends XactParam{
    private int UpPuts;
    private int UpReads;
    private KeyGenerator keyGenerator;
-   private int nodeIndex, threadIndex, numKeys,sizeOfValue,writePercentage;
+   private int nodeIndex, threadIndex, numKeys, sizeOfValue, writePercentage;
+   private CacheWrapper cache;
 
+   public void setCache(CacheWrapper cache) {
+      this.cache = cache;
+   }
+
+   public CacheWrapper getCache() {
+      return cache;
+   }
 
    public int getWritePercentage() {
       return writePercentage;
@@ -116,5 +125,24 @@ public class SyntheticXactParams extends XactParam{
 
    public void setXact_retry(XACT_RETRY xact_retry) {
       this.xact_retry = xact_retry;
+   }
+
+   @Override
+   public String toString() {
+      return "SyntheticXactParams{" +
+            "allowBlindWrites=" + allowBlindWrites +
+            ", random=" + random +
+            ", xact_retry=" + xact_retry +
+            ", ROGets=" + ROGets +
+            ", UpPuts=" + UpPuts +
+            ", UpReads=" + UpReads +
+            ", keyGenerator=" + keyGenerator +
+            ", nodeIndex=" + nodeIndex +
+            ", threadIndex=" + threadIndex +
+            ", numKeys=" + numKeys +
+            ", sizeOfValue=" + sizeOfValue +
+            ", writePercentage=" + writePercentage +
+            ", cache=" + cache +
+            '}';
    }
 }
