@@ -1,4 +1,4 @@
-package org.radargun.stages;
+package org.radargun.stages.synthetic;
 
 /**
  * // TODO: Document this

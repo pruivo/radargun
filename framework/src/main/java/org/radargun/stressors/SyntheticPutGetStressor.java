@@ -21,7 +21,9 @@ package org.radargun.stressors;/*
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-import org.radargun.stages.XACT_RETRY;
+import org.radargun.stages.synthetic.SyntheticXact;
+import org.radargun.stages.synthetic.XACT_RETRY;
+import org.radargun.stages.synthetic.xactClass;
 
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
@@ -199,7 +201,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
       }
 
 
-      private void sampleCommit(SyntheticXact xact){
+      private void sampleCommit(SyntheticXact xact) {
 
       }
 
@@ -312,11 +314,18 @@ public class SyntheticPutGetStressor extends PutGetStressor {
       }
 
 
-      private SyntheticXact newXact(Random r, SyntheticXact lastXact){
-         if(xact_retry == XACT_RETRY.NO_RETRY || lastXact.isCommit)
-            return newXact(r);
-         if(xact_retry == XACT_RETRY.RETRY_SAME_CLASS)
+      private SyntheticXact newXact(Random r, SyntheticXact lastXact) {
+
       }
+
+      private SyntheticXact newXact(Random r) {
+         xactClass clazz = xactClass.RO;
+         if (r.nextInt() < writePercentage)
+            clazz = xactClass.WR;
+         return newXact(clazz,true);
+      }
+
+
 
 
       private xactClass xactClass(Random r, xactClass lastClass, result lastOutcome) {
@@ -363,28 +372,13 @@ public class SyntheticPutGetStressor extends PutGetStressor {
       this.allowBlindWrites = allowwBlindWrites;
    }
 
-   private enum xactClass {
-      RO, WR
-   }
+
 
    private enum result {
       AB_L, AB_R, COM, OTHER
    }
 
 
-   private class SyntheticXact {
-      private Object[] readSet;
-      private Object[] writeSet;
-      private long initResponseTime;
-      private long initServiceTime;
-      private xactClass clazz;
-      private boolean isCommit;  //we track only commit-abort without considering also xact that can abort because of application logic (and might be not restarted, then)
-   }
 
-   private class xactOp {
-      private Object key;
-      private Object value;
-      private boolean isPut;
-   }
 
 }
