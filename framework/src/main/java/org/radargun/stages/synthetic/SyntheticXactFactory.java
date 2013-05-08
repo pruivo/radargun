@@ -53,8 +53,19 @@ public class SyntheticXactFactory extends XactFactory<SyntheticXactParams, Synth
       return xactClass.WR;
    }
 
+   /**
+    * This method builds a set containing keys to be read and <key, value> pairs to be written.  Put operations are uniformly distributed across read operations
+    * (should work also with numReads<numWrites as long as there is at least one read).
+    * If blind writes are not allowed, then writes are delayed till the first read operation. After that point, put operations are allowed and write always on the last read value
+    * (even multiple times in a row, for simplicity)
+    * @return a readWriteSet
+    */
    private XactOp[] buildReadWriteSet() {
-      int toDoRead = params.getUpReads(), toDoWrite = params.getUpPuts(), toDo = toDoRead + toDoWrite, total=toDo, writePerc = 100 * (int) (((double) toDoWrite) / ((double) (toDo)));
+      int toDoRead = params.getUpReads();
+      int toDoWrite = params.getUpPuts();
+      int toDo = toDoRead + toDoWrite;
+      int total=toDo;
+      int writePerc = 100 * (int) (((double) toDoWrite) / ((double) (toDo)));
       Random r = params.getRandom();
       int numKeys = params.getNumKeys();
       boolean allowBlindWrites = params.isAllowBlindWrites();
@@ -111,8 +122,9 @@ public class SyntheticXactFactory extends XactFactory<SyntheticXactParams, Synth
       Object key;
       int keyToAccess;
       Random r = params.getRandom();
-      int size = params.getSizeOfValue();
-      int numKeys = params.getNumKeys(), nodeIndex = params.getNodeIndex(), threadIndex = params.getThreadIndex();
+      int numKeys = params.getNumKeys();
+      int nodeIndex = params.getNodeIndex();
+      int threadIndex = params.getThreadIndex();
 
       for (int i = 0; i < numR; i++) {
          keyToAccess = r.nextInt(numKeys);
