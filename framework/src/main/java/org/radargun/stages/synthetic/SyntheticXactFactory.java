@@ -54,7 +54,7 @@ public class SyntheticXactFactory extends XactFactory<SyntheticXactParams, Synth
    }
 
    private XactOp[] buildReadWriteSet() {
-      int toDoRead = params.getUpReads(), toDoWrite = params.getUpPuts(), toDo = toDoRead + toDoWrite, writePerc = 100 * (int) (((double) toDoWrite) / ((double) (toDo)));
+      int toDoRead = params.getUpReads(), toDoWrite = params.getUpPuts(), toDo = toDoRead + toDoWrite, total=toDo, writePerc = 100 * (int) (((double) toDoWrite) / ((double) (toDo)));
       Random r = params.getRandom();
       int numKeys = params.getNumKeys();
       boolean allowBlindWrites = params.isAllowBlindWrites();
@@ -64,7 +64,8 @@ public class SyntheticXactFactory extends XactFactory<SyntheticXactParams, Synth
       boolean canWrite = false;
       int keyToAccess;
       int lastRead = 0;
-      for (int i = 0; i < toDo; i++) {
+      Object value;
+      for (int i = 0; i < total; i++) {
          //Determine if you can read or not
 
          if (toDo == toDoWrite)      //I have only puts left
@@ -91,7 +92,8 @@ public class SyntheticXactFactory extends XactFactory<SyntheticXactParams, Synth
             keyToAccess = r.nextInt(numKeys);
             lastRead = keyToAccess;
          }
-         ops[i] = new XactOp(keyToAccess, generateRandomString(size), doPut);
+         value = doPut?   generateRandomString(size):"";
+         ops[i] = new XactOp(keyToAccess, value , doPut);
          toDo--;
          if (doPut) {
             toDoWrite--;
@@ -115,7 +117,7 @@ public class SyntheticXactFactory extends XactFactory<SyntheticXactParams, Synth
       for (int i = 0; i < numR; i++) {
          keyToAccess = r.nextInt(numKeys);
          key = keyGen.generateKey(nodeIndex, threadIndex, keyToAccess);
-         ops[i] = new XactOp(key, generateRandomString(size), false);
+         ops[i] = new XactOp(key, "", false);
       }
       return ops;
    }
