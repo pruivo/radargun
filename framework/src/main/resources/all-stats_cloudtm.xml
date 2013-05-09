@@ -84,5 +84,6 @@
         <stat displayName="ReadOnlyTxTotalResponseTime" attributeName="ReadOnlyTxTotalResponseTime"/>    
 	<stat displayName="AvgNumAsyncSentCommitMsgs" attributeName="AvgNumAsyncSentCommitMsgs"/>
 	<stat displayName="AvgNumSyncSentCommitMsgs" attributeName="AvgNumSyncSentCommitMsgs"/>
+	<stat displayName="TerminationCost" attributeName="TerminationCost"/>
 </component>
 </stats-collector>

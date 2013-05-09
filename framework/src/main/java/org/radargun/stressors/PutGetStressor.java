@@ -512,17 +512,17 @@ public class PutGetStressor extends AbstractCacheWrapperStressor {
         private volatile long lastPrint = -1;
 
         TimeStressorCompletion(long durationMillis) {
-            this.durationMillis = durationMillis;
-            startTime = nowMillis();
+            this.durationMillis = TimeUnit.MILLISECONDS.toNanos(durationMillis);
+            startTime = nowNano();
         }
 
         @Override
         boolean moreToRun() {
-            return nowMillis() <= startTime + durationMillis;
+            return nowNano() <= startTime + durationMillis;
         }
 
         public void logProgress(int i, Object result, int threadIndex) {
-            long nowMillis = nowMillis();
+            long nowMillis = TimeUnit.NANOSECONDS.toMillis(nowNano());
 
             //make sure this info is not printed more frequently than 20 secs
             int logFrequency = 20;
@@ -548,8 +548,8 @@ public class PutGetStressor extends AbstractCacheWrapperStressor {
             return TimeUnit.MILLISECONDS.toSeconds(nowMillis - lastPrint);
         }
 
-        private long nowMillis() {
-            return TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
+        private long nowNano() {
+            return (System.nanoTime());
         }
     }
 

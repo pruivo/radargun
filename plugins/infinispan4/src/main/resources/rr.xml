@@ -42,7 +42,7 @@
         <customStats sampleServiceTimes="true"/>
 	<deadlockDetection
                 enabled="false"/>
-        <clustering mode="d">
+        <clustering mode="r">
             <sync
                     replTimeout="15000" />
             <hash
@@ -90,7 +90,7 @@
 	<customStats sampleServiceTimes="true"/>
         <deadlockDetection
                 enabled="false"/>
-        <clustering mode="d">
+        <clustering mode="r">
             <sync
                     replTimeout="15000" />
             <hash

@@ -25,13 +25,13 @@ public class SyntheticXactFactory extends XactFactory<SyntheticXactParams, Synth
       xactClass clazz;
       XactOp[] ops;
       if (retry == XACT_RETRY.NO_RETRY || last == null || last.isCommit()) {    //brand new xact
-
          clazz = computeClazz();
          if (clazz == xactClass.RO) {
             ops = buildReadSet();
          } else {
             ops = buildReadWriteSet();
          }
+
          toRet = new SyntheticXact(params.getCache());
          toRet.setOps(ops);
          toRet.setClazz(clazz);

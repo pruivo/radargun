@@ -102,6 +102,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
       int remoteFailures = 0;
       long suxWrService = 0;
       long suxRdService = 0;
+      long initTime = 0;
       duration = (long) (1e-6 * (System.nanoTime() - startTime));
       for (Stressor stressorrrr : stressors) {
          SyntheticStressor stressor = (SyntheticStressor) stressorrrr;
@@ -110,7 +111,8 @@ public class SyntheticPutGetStressor extends PutGetStressor {
          localFailures += stressor.localAborts;
          remoteFailures += stressor.remoteAborts;
          suxWrService += stressor.writeSuxExecutionTime;
-         suxRdService +=stressor.readOnlySuxExecutionTime;
+         suxRdService += stressor.readOnlySuxExecutionTime;
+         initTime += stressor.initTime;
       }
 
       Map<String, String> results = new LinkedHashMap<String, String>();
@@ -122,6 +124,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
       results.put("REMOTE_FAILURES", str(remoteFailures));
       results.put("SUX_UPDATE_XACT_RESPONSE", str(((double) suxWrService) / ((double) writes)));
       results.put("SUX_READ_ONLY_XACT_RESPONSE", str(((double) suxRdService) / ((double) reads)));
+      results.put("INIT_TIME", str(((double) initTime) / ((double) (localFailures + remoteFailures + reads + writes))));
       results.put("CPU_USAGE", str(sampler != null ? sampler.getAvgCpuUsage() : "Not_Available"));
       results.put("MEM_USAGE", str(sampler != null ? sampler.getAvgMemUsage() : "Not_Available"));
       results.putAll(cacheWrapper.getAdditionalStats());
@@ -156,7 +159,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
       private KeyGenerator keyGen;
       private int nodeIndex, threadIndex, numKeys;
       private long writes, reads, localAborts, remoteAborts;
-      private long writeSuxExecutionTime = 0, readOnlySuxExecutionTime = 0;
+      private long writeSuxExecutionTime = 0, readOnlySuxExecutionTime = 0, initTime = 0;
       private Random r = new Random();
 
       SyntheticStressor(int threadIndex, KeyGenerator keyGen, int nodeIndex, int numKeys) {
@@ -209,9 +212,8 @@ public class SyntheticPutGetStressor extends PutGetStressor {
 
          while (completion.moreToRun()) {
             try {
-
                last = factory.buildXact(last);
-               log.trace(threadIndex + " starting new xact "+"initService "+last.getInitServiceTime()+" initResponse "+last.getInitResponseTime());
+               log.trace(threadIndex + " starting new xact " + "initService " + last.getInitServiceTime() + " initResponse " + last.getInitResponseTime());
                outcome = doXact(last);
                log.trace(threadIndex + " ending xact");
             } catch (Exception e) {
@@ -240,11 +242,13 @@ public class SyntheticPutGetStressor extends PutGetStressor {
 
       private result doXact(SyntheticXact xact) {
          try {
+            long now = System.nanoTime();
             cacheWrapper.startTransaction();
+            initTime += System.nanoTime() - now;
             xact.executeLocally();
          } catch (Exception e) {
             log.trace("Rollback while running locally");
-            if(log.isDebugEnabled())
+            if (log.isDebugEnabled())
                e.printStackTrace();
             cacheWrapper.endTransaction(false);
             return result.AB_L;
@@ -254,7 +258,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
             cacheWrapper.endTransaction(true);
          } catch (Exception e) {
             log.trace("Rollback at prepare time");
-            if(log.isDebugEnabled())
+            if (log.isDebugEnabled())
                e.printStackTrace();
             return result.AB_R;
          }
@@ -269,16 +273,16 @@ public class SyntheticPutGetStressor extends PutGetStressor {
          switch (clazz) {
             case RO: {
                reads++;
-               readOnlySuxExecutionTime+=serviceTime;
-               log.trace(threadIndex+" ending RO xact at time "+now+" started at "+xact.getInitServiceTime()+" totalService "+ serviceTime);
-               log.trace("readOnlyTotal "+readOnlySuxExecutionTime);
+               readOnlySuxExecutionTime += serviceTime;
+               log.trace(threadIndex + " ending RO xact at time " + now + " started at " + xact.getInitServiceTime() + " totalService " + serviceTime);
+               log.trace("readOnlyTotal " + readOnlySuxExecutionTime);
                break;
             }
             case WR: {
                writes++;
                writeSuxExecutionTime += serviceTime;
-               log.trace(threadIndex+" ending WR xact at time "+now+" started at "+xact.getInitServiceTime()+" totalService "+ serviceTime);
-               log.trace("WriteTotal "+writeSuxExecutionTime);
+               log.trace(threadIndex + " ending WR xact at time " + now + " started at " + xact.getInitServiceTime() + " totalService " + serviceTime);
+               log.trace("WriteTotal " + writeSuxExecutionTime);
                break;
             }
             default:
