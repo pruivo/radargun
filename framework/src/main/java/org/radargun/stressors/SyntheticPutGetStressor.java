@@ -231,6 +231,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
                }
                case AB_R: {
                   sampleRemoteAbort(last);
+                  break;
                }
                default: {
                   log.error("I got strange exception for xact " + last);
