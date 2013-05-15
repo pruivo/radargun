@@ -88,6 +88,6 @@
 	<stat displayName="TerminationCost" attributeName="TerminationCost"/>
 	<stat displayName="GMUClusteredGetCommandServiceTime" attributeName="GMUClusteredGetCommandServiceTime"/>
 	<stat displayName="GMUClusteredGetCommandResponseTime" attributeName="GMUClusteredGetCommandResponseTime"/>
-	<stat 
+	<stat displayName="NumReadsBeforeWrite" attributeName="NumReadsBeforeWrite"/> 
 </component>
 </stats-collector>
