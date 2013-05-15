@@ -38,7 +38,8 @@
         <stat displayName="AvgRemotePutsPerWrTransaction" attributeName="AvgRemotePutsPerWrTransaction"/>
         <stat displayName="RemotePutExecutionTime" attributeName="RemotePutExecutionTime"/>
         <stat displayName="AvgPutsPerWrTransaction" attributeName="AvgPutsPerWrTransaction"/>
-        <stat displayName="RemoteGetExecutionTime" attributeName="RemoteGetExecutionTime"/>
+        <stat displayName="RemoteGetServiceTime" attributeName="RemoteGetServiceTime"/>
+	<stat displayName="RemoteGetResponseTime" attributeName="RemoteGetResponseTime"/>
         <stat displayName="AvgRemoteGetsPerROTransaction" attributeName="AvgRemoteGetsPerROTransaction"/>
         <stat displayName="AvgRemoteGetsPerWrTransaction" attributeName="AvgRemoteGetsPerWrTransaction"/>
         <stat displayName="AvgGetsPerWrTransaction" attributeName="AvgGetsPerWrTransaction"/>
@@ -85,5 +86,8 @@
 	<stat displayName="AvgNumAsyncSentCommitMsgs" attributeName="AvgNumAsyncSentCommitMsgs"/>
 	<stat displayName="AvgNumSyncSentCommitMsgs" attributeName="AvgNumSyncSentCommitMsgs"/>
 	<stat displayName="TerminationCost" attributeName="TerminationCost"/>
+	<stat displayName="GMUClusteredGetCommandServiceTime" attributeName="GMUClusteredGetCommandServiceTime"/>
+	<stat displayName="GMUClusteredGetCommandResponseTime" attributeName="GMUClusteredGetCommandResponseTime"/>
+	<stat 
 </component>
 </stats-collector>
