@@ -1,0 +1,33 @@
+<bench-config>
+
+   <master bindAddress="${127.0.0.1:master.address}" port="${2103:master.port}"/>
+
+   <benchmark initSize="40" maxSize="40" increment="40">
+      <!--DestroyWrapper runOnAllSlaves="true"/-->
+      <StartCluster staggerSlaveStartup="true" delayAfterFirstSlaveStarts="500" delayBetweenStartingSlaves = "100"/>
+      <ClusterValidation passiveReplication="false" partialReplication="true"/>
+      <SyntheticWarmup keyGeneratorClass="org.radargun.stressors.ContentionStringKeyGenerator" numberOfAttributes="1000" sizeOfAnAttribute="1000" numOfThreads="2" transactionSize="100"/>
+      <!--
+         This will average to 10000 requests per thread, although a work-stealing pattern is used so some threads may
+         do more work than others.
+       -->
+      <GarbageCollection/>
+      <ResetStats/>
+      <SyntheticBenchmark sizeOfAnAttribute="1000" keyGeneratorClass="org.radargun.stressors.ContentionStringKeyGenerator" numberOfAttributes="1000" numOfThreads="2" updateXactWrites="10" updateXactReads="10" readOnlyXactSize="10" writePercentage="50" allowBlindWrites="false" duration="180000" retryMode="NO_RETRY" statsSamplingInterval="15000"/>
+      <CsvReportGeneration/>
+   </benchmark>
+
+   <products>
+      <infinispan4>
+         <config name="cloudtm.xml"/>
+      </infinispan4>
+   </products>
+
+   <reports>
+      <report name="PCvsPR">
+ 		<item product="infinispan4" config="cloudtm.xml"/>	
+      </report>
+   </reports>
+
+</bench-config>
+
