@@ -249,7 +249,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
             xact.executeLocally();
          } catch (Exception e) {
             log.trace("Rollback while running locally");
-            if (log.isDebugEnabled())
+            if (log.isWarnEnabled())
                e.printStackTrace();
             cacheWrapper.endTransaction(false);
             return result.AB_L;
@@ -259,7 +259,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
             cacheWrapper.endTransaction(true);
          } catch (Exception e) {
             log.trace("Rollback at prepare time");
-            if (log.isDebugEnabled())
+            if (log.isWarnEnabled())
                e.printStackTrace();
             return result.AB_R;
          }
