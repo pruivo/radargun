@@ -103,6 +103,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
       long suxWrService = 0;
       long suxRdService = 0;
       long initTime = 0;
+      long commitTime = 0;
       duration = (long) (1e-6 * (System.nanoTime() - startTime));
       for (Stressor stressorrrr : stressors) {
          SyntheticStressor stressor = (SyntheticStressor) stressorrrr;
@@ -113,6 +114,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
          suxWrService += stressor.writeSuxExecutionTime;
          suxRdService += stressor.readOnlySuxExecutionTime;
          initTime += stressor.initTime;
+         commitTime += stressor.commitTime;
       }
 
       Map<String, String> results = new LinkedHashMap<String, String>();
@@ -122,11 +124,15 @@ public class SyntheticPutGetStressor extends PutGetStressor {
       results.put("WRITE_COUNT", str(writes));
       results.put("LOCAL_FAILURES", str(localFailures));
       results.put("REMOTE_FAILURES", str(remoteFailures));
-      results.put("SUX_UPDATE_XACT_RESPONSE", str(((double) suxWrService) / ((double) writes)));
-      results.put("SUX_READ_ONLY_XACT_RESPONSE", str(((double) suxRdService) / ((double) reads)));
-      results.put("INIT_TIME", str(((double) initTime) / ((double) (localFailures + remoteFailures + reads + writes))));
+      results.put("SUX_UPDATE_XACT_RESPONSE", str(((double) suxWrService) / ((double) writes) / 1000));
+      results.put("SUX_READ_ONLY_XACT_RESPONSE", str(((double) suxRdService) / ((double) reads) / 1000));
+      results.put("INIT_TIME", str(((double) initTime) / ((double) (localFailures + remoteFailures + reads + writes)) / 1000));
+      results.put("COMMIT_TIME", str(((double) commitTime) / ((double) (writes)) / 1000));
       results.put("CPU_USAGE", str(sampler != null ? sampler.getAvgCpuUsage() : "Not_Available"));
       results.put("MEM_USAGE", str(sampler != null ? sampler.getAvgMemUsage() : "Not_Available"));
+      results.put("NUM_THREADS", str(numOfThreads));
+      results.put("NUM_KEYS", str(numberOfKeys));
+      results.put("DATA_ACCESS_PATTERN", str("UNIFORM"));
       results.putAll(cacheWrapper.getAdditionalStats());
       return results;
 
@@ -159,7 +165,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
       private KeyGenerator keyGen;
       private int nodeIndex, threadIndex, numKeys;
       private long writes, reads, localAborts, remoteAborts;
-      private long writeSuxExecutionTime = 0, readOnlySuxExecutionTime = 0, initTime = 0;
+      private long writeSuxExecutionTime = 0, readOnlySuxExecutionTime = 0, initTime = 0, commitTime = 0;
       private Random r = new Random();
 
       SyntheticStressor(int threadIndex, KeyGenerator keyGen, int nodeIndex, int numKeys) {
@@ -256,7 +262,11 @@ public class SyntheticPutGetStressor extends PutGetStressor {
          }
 
          try {
+            boolean write = xact.clazz.equals(xactClass.WR);
+            long now = write?System.nanoTime():0;
             cacheWrapper.endTransaction(true);
+            if(write)
+               commitTime += System.nanoTime() - now;
          } catch (Exception e) {
             log.trace("Rollback at prepare time");
             if (log.isWarnEnabled())
