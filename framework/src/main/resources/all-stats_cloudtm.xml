@@ -89,5 +89,7 @@
 	<stat displayName="GMUClusteredGetCommandServiceTime" attributeName="GMUClusteredGetCommandServiceTime"/>
 	<stat displayName="GMUClusteredGetCommandResponseTime" attributeName="GMUClusteredGetCommandResponseTime"/>
 	<stat displayName="NumReadsBeforeWrite" attributeName="NumReadsBeforeWrite"/> 
+	<stat displayName="UpdateXactToPrepare" attributeName="UpdateXactToPrepare"/>
+        <stat displayName="RemotelyDeadXact" attributeName="RemotelyDeadXact"/>
 </component>
 </stats-collector>
