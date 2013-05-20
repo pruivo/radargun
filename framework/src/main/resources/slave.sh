@@ -116,6 +116,4 @@ echo "--------------------------------------------------------------------------
 nohup java ${JVM_OPTS} ${D_VARS} -classpath $CP org.radargun.Slave ${CONF} >> ${LOCAL_PREFIX}stdout_slave_${HOST_NAME}.out 2>&1 &
 echo "... done! Slave process started on host ${HOST_NAME}!"
 echo ""
-echo "Waiting for the master to finish"
-wait $RADARGUN_MASTER_PID
 

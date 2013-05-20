@@ -109,7 +109,8 @@ done
 
 echo "Slaves started in $SLAVES"
 echo $SLAVES > slaves
-
+echo "Waiting for the master to finish"
+wait $RADARGUN_MASTER_PID
 if [ $TAILF == "true" ]
 then
   tail -f radargun.log
