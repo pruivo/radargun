@@ -91,5 +91,7 @@
 	<stat displayName="NumReadsBeforeWrite" attributeName="NumReadsBeforeWrite"/> 
 	<stat displayName="UpdateXactToPrepare" attributeName="UpdateXactToPrepare"/>
         <stat displayName="RemotelyDeadXact" attributeName="RemotelyDeadXact"/>
+	<stat displayName="NumAbortedXacts" attributeName="NumAbortedXacts"/>
+	<stat displayName="AvgClusteredGetCommandReplySize" attributeName="AvgClusteredGetCommandReplySize"/>
 </component>
 </stats-collector>

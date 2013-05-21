@@ -128,7 +128,6 @@ public class InfinispanWrapper implements CacheWrapper {
         catch (Exception e){
             log.warn(e.getMessage());
             log.warn("Error on key "+key);
-            e.printStackTrace();
             throw e;
         }
 
