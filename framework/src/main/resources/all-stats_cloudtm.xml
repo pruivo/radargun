@@ -49,10 +49,13 @@
         <stat displayName="PercentageWriteTransactions" attributeName="PercentageWriteTransactions"/>
         <stat displayName="AvgClusteredGetCommandSize" attributeName="AvgClusteredGetCommandSize"/>
         <stat displayName="AvgCommitCommandSize" attributeName="AvgCommitCommandSize"/>
-        <stat displayName="AvgPrepareCommandSize" attributeName="AvgPrepareCommandSize"/>
+        <stat displayName="AvgRollbackCommandSize" attributeName="AvgRollbackCommandSize"/>
+	<stat displayName="AvgPrepareCommandSize" attributeName="AvgPrepareCommandSize"/>
         <stat displayName="AvgRemoteLockHoldTime" attributeName="AvgRemoteLockHoldTime"/>
-        <stat displayName="AvgLocalLockHoldTime" attributeName="AvgLocalLockHoldTime"/>
-        <stat displayName="AvgLockHoldTime" attributeName="AvgLockHoldTime"/>
+        <stat displayName="AvgLocalSuccessfulLockHoldTime" attributeName="AvgLocalSuccessfulLockHoldTime"/>
+        <stat displayName="AvgLocalLocalAbortLockHoldTime" attributeName="AvgLocalLocalAbortLockHoldTime"/>
+	<stat displayName="AvgLocalRemoteAbortLockHoldTime" attributeName="AvgLocalRemoteAbortLockHoldTime"/>
+	<stat displayName="AvgLockHoldTime" attributeName="AvgLockHoldTime"/>
         <stat displayName="LockContentionProbability" attributeName="LockContentionProbability"/>
         <stat displayName="RemoteContentionProbability" attributeName="RemoteContentionProbability"/>
         <stat displayName="LocalContentionProbability" attributeName="LocalContentionProbability"/>
