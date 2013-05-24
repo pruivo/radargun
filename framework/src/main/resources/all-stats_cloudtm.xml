@@ -97,5 +97,8 @@
         <stat displayName="RemotelyDeadXact" attributeName="RemotelyDeadXact"/>
 	<stat displayName="NumAbortedXacts" attributeName="NumAbortedXacts"/>
 	<stat displayName="AvgClusteredGetCommandReplySize" attributeName="AvgClusteredGetCommandReplySize"/>
+	<stat displayName="NumWaitedRemoteCommits" attributeName="NumWaitedRemoteCommits"/>
+	<stat displayName="NumWaitedLocalCommits" attributeName="NumWaitedLocalCommits"/>
+	<stat displayName="NumWaitedRemoteGets" attributeName="NumWaitedRemoteGets"/>
 </component>
 </stats-collector>
