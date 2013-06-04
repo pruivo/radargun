@@ -27,6 +27,12 @@
          <version>${version.infinispan}</version>
       </dependency>
 
+       <dependency>
+           <groupId>org.infinispan</groupId>
+           <artifactId>infinispan-distexec-demo</artifactId>
+           <version>${version.infinispan}</version>
+       </dependency>
+
       <dependency>
          <groupId>org.infinispan</groupId>
          <artifactId>infinispan-query</artifactId>

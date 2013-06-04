@@ -1,41 +1,47 @@
-<bench-config xmlns="urn:radargun:benchmark:1.1">
+<bench-config>
 
-   <master bindAddress="${127.0.0.1:master.address}" port="${2103:master.port}"/>
+    <master bindAddress="${127.0.0.1:master.address}" port="${2103:master.port}"/>
 
-   <benchmark initSize="2" maxSize="${4:slaves}" increment="1">
-      <DestroyWrapper runOnAllSlaves="true"/>
-      <StartCluster staggerSlaveStartup="true" delayAfterFirstSlaveStarts="5000" delayBetweenStartingSlaves = "500"/>
-      <ClusterValidation partialReplication="false"/>
-      <StressTestWarmup numRequests="2500" opsCountStatusLog="500" numThreads="2"/>
-      <ClearCluster/>
-      <!--
-         This will average to 10000 requests per thread, although a work-stealing pattern is used so some threads may
-         do more work than others.
-       -->
-      <StressTest numRequests="2500" opsCountStatusLog="500" numThreads="2"/>
-      <CsvReportGeneration/>
-   </benchmark>
+    <benchmark initSize="2" maxSize="${2:slaves}" increment="1">
+        <DestroyWrapper runOnAllSlaves="true"/>
+        <StartCluster
+                staggerSlaveStartup="true"
+                delayAfterFirstSlaveStarts="5000"
+                delayBetweenStartingSlaves="500"/>
+        <LoadFile
+                filePath="/home/pedro/IdeaProjects/opt/bigtext.txt"
+                valueSize="1048576"/>
+        <!-- <JProfiler operations="START_MEMORY_RECORDING, START_METHOD_STATS_RECORDING" /> -->
+        <!--StartJVMMonitor interfaceName="eth0"/-->
+        <StartJVMMonitor/>
+        <MapReduce
+                mapperFqn="org.infinispan.demo.mapreduce.WordCountMapper"
+                reducerFqn="org.infinispan.demo.mapreduce.WordCountReducer"
+                distributeReducePhase="true"
+                useIntermediateSharedCache="false"
+                />
+        <!-- collatorFqn = "org.infinispan.demo.mapreduce.WordCountCollator" -->
+        <!-- <JProfiler operations="STOP_METHOD_STATS_RECORDING, STOP_MEMORY_RECORDING" /> -->
+        <!-- <JProfiler operations="SAVE_SNAPSHOT" snapshotOutput="/tmp/hudson/" /> -->
+        <StopJVMMonitor/>
+        <ReportJVMMonitor reportPrefix="58K"/>
+    </benchmark>
 
-   <products>
-      <jbosscache3>
-         <config name="mvcc/mvcc-repl-sync.xml"/>
-      </jbosscache3>
-      <infinispan4>
-         <config name="repl-sync.xml"/>
-         <config name="dist-sync.xml"/>
-      </infinispan4>
-   </products>
+    <products>
+        <infinispan51>
+            <!--config name="dist-tcp-no-tx.xml" cache="testCache" wrapper="org.radargun.cachewrappers.InfinispanMapReduceWrapper" /-->
+        </infinispan51>
+        <infinispan52>
+            <config name="dist-udp-no-tx.xml" cache="testCache"
+                    wrapper="org.radargun.cachewrappers.Infinispan52MapReduceWrapper"
+                    />
+        </infinispan52>
+        <infinispan53>
+            <!--config name="dist-tcp-no-tx.xml" cache="testCache"
+                    wrapper="org.radargun.cachewrappers.Infinispan52MapReduceWrapper"/-->
+        </infinispan53>
+    </products>
 
-   <reports>
-      <report name="Replicated">
-         <item product="infinispan4" config="repl-sync.xml"/>
-         <item product="jbosscache3" config="*"/>
-      </report>
-      <report name="DistVsRepl">
-         <item product="infinispan4" config="repl-sync.xml"/>
-         <item product="infinispan4" config="dist-sync.xml"/>
-      </report>
-      <report name="All" includeAll="true"/>
-   </reports>
+    <reports/>
 
 </bench-config>

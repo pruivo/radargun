@@ -141,8 +141,15 @@ public class MapReduceStage<KOut, VOut, R> extends AbstractDistStage {
                   long durationMillis;
                   if (collatorFqn != null) {
                      long start = System.currentTimeMillis();
-                     payloadObject = mapReduceCapable.executeMapReduceTask(classLoadHelper, mapperFqn, reducerFqn,
-                           collatorFqn);
+                      try {
+                          payloadObject = mapReduceCapable.executeMapReduceTask(classLoadHelper, mapperFqn, reducerFqn,
+                                  collatorFqn);
+                      } catch (Exception e) {
+                          log.error("Failed to execute Map Reduce task.", e);
+                          result.setError(true);
+                          result.setErrorMessage("Failed to execute Map Reduce task.");
+                          return result;
+                      }
                      durationMillis = System.currentTimeMillis() - start;
                      log.info("MapReduce task with Collator completed in " + Utils.prettyPrintMillis(durationMillis));
                      String payload = this.slaveIndex + ", " + cacheWrapper.getNumMembers() + ", "
@@ -155,7 +162,14 @@ public class MapReduceStage<KOut, VOut, R> extends AbstractDistStage {
                      }
                   } else {
                      long start = System.currentTimeMillis();
-                     payloadMap = mapReduceCapable.executeMapReduceTask(classLoadHelper, mapperFqn, reducerFqn);
+                      try {
+                          payloadMap = mapReduceCapable.executeMapReduceTask(classLoadHelper, mapperFqn, reducerFqn);
+                      } catch (Exception e) {
+                          log.error("Failed to execute Map Reduce task.", e);
+                          result.setError(true);
+                          result.setErrorMessage("Failed to execute Map Reduce task.");
+                          return result;
+                      }
                      durationMillis = System.currentTimeMillis() - start;
 
                      if (payloadMap != null) {

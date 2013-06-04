@@ -119,7 +119,7 @@ public class LoadFileStage extends AbstractDistStage {
                }
                buffer.rewind();
                long start = System.nanoTime();
-               cacheWrapper.put(bucket, key, buffer.array());
+               cacheWrapper.put(bucket, key, buffer.asCharBuffer().toString());
                if (printWriteStatistics) {
                   log.info("Put on slave-" + this.getSlaveIndex() + " took "
                         + Utils.prettyPrintTime(System.nanoTime() - start, TimeUnit.NANOSECONDS));
