@@ -273,6 +273,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
                e.printStackTrace();
             return result.AB_R;
          }
+         xact.setCommit(true);
          return result.COM;
       }
 
