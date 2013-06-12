@@ -47,6 +47,7 @@ public class InfinispanWrapper implements CacheWrapper {
    private boolean perThreadTrackNewKeys = false;
    private static final int maxSleep = 2000;
    private static final boolean takeAllStats = false;
+   private static final boolean ignorePutResult = true;
 
    static {
       // Set up transactional stores for JBoss TS
@@ -58,6 +59,7 @@ public class InfinispanWrapper implements CacheWrapper {
    private static Log log = LogFactory.getLog(InfinispanWrapper.class);
    DefaultCacheManager cacheManager;
    private Cache<Object, Object> cache;
+   private Cache<Object, Object> writeCache;
    TransactionManager tm;
    boolean started = false;
    String config;
@@ -81,6 +83,7 @@ public class InfinispanWrapper implements CacheWrapper {
             throw new IllegalStateException("The requested cache(" + cacheName + ") is not defined. Defined cache " +
                                                   "names are " + cacheNames);
          cache = cacheManager.getCache(cacheName);
+         writeCache = cache.getAdvancedCache().withFlags(Flag.IGNORE_RETURN_VALUES);
          started = true;
          tm = cache.getAdvancedCache().getTransactionManager();
          log.info("Using transaction manager: " + tm);
@@ -122,14 +125,14 @@ public class InfinispanWrapper implements CacheWrapper {
    }
 
    public void put(String bucket, Object key, Object value) throws Exception {
-      try {
+
+      if (ignorePutResult) {
+         writeCache.put(key, value);
+      } else {
          if (cache.put(key, value) == null && this.trackNewKeys)
             this.newKeys.add(key);
-      } catch (Exception e) {
-         log.warn(e.getMessage());
-         log.warn("Error on key " + key);
-         throw e;
       }
+
    }
 
    @Override
@@ -562,13 +565,18 @@ public class InfinispanWrapper implements CacheWrapper {
 
    @Override
    public void setTrackNewKeys(boolean b) {
+
       log.info("Setting trackNewKeys to " + b);
       this.trackNewKeys = b;
+      throw new RuntimeException("Key tracking not supported anymore");
    }
 
    public void setPerThreadTrackNewKeys(boolean b) {
+
       log.info("Setting perThreadTrackNewKeys to " + b);
       this.perThreadTrackNewKeys = b;
+      throw new RuntimeException("Key tracking not supported anymore");
+
    }
 
    @Override
@@ -643,12 +651,16 @@ public class InfinispanWrapper implements CacheWrapper {
 
    @Override
    public void put(String bucket, Object key, Object value, int threadId) throws Exception {
-      if (perThreadTrackNewKeys) {
-         if (cache.put(key, value) == null) {
-            this.perThreadNewKeys[threadId].add(key);
-         }
-      } else
-         put(bucket, key, value);
+      if (ignorePutResult) {
+         writeCache.put(key, value);
+      } else {
+         if (perThreadTrackNewKeys) {
+            if (writeCache.put(key, value) == null) {
+               this.perThreadNewKeys[threadId].add(key);
+            }
+         } else
+            put(bucket, key, value);
+      }
    }
 
    @Override

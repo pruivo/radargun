@@ -72,7 +72,7 @@ public class SyntheticXactFactory extends XactFactory<SyntheticXactParams, Synth
       int toDoWrite = params.getUpPuts();
       int toDo = toDoRead + toDoWrite;
       int total=toDo;
-      int writePerc = 100 * (int) (((double) toDoWrite) / ((double) (toDo)));
+      int writePerc = (int) (100 *  (((double) toDoWrite) / ((double) (toDo))));
       Random r = params.getRandom();
       int numKeys = params.getNumKeys();
       boolean allowBlindWrites = params.isAllowBlindWrites();
@@ -93,7 +93,7 @@ public class SyntheticXactFactory extends XactFactory<SyntheticXactParams, Synth
          else if (allowBlindWrites) {     //I choose uniformly
             doPut = r.nextInt(100) < writePerc;
          } else {
-            if (!canWrite) {
+            if (!canWrite) {   //first read
                doPut = false;
                canWrite = true;
             } else {
@@ -103,7 +103,7 @@ public class SyntheticXactFactory extends XactFactory<SyntheticXactParams, Synth
          if (doPut) {  //xact can write
             if (allowBlindWrites) { //xact can choose what it wants
                keyToAccess = r.nextInt(numKeys);
-            } else { //xact has to write something it already read
+            } else { //xact has to write something it has already read
                keyToAccess = lastRead;
             }
          } else {    //xact reads
