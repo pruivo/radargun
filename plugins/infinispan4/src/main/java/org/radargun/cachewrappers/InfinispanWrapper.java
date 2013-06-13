@@ -48,6 +48,7 @@ public class InfinispanWrapper implements CacheWrapper {
    private static final int maxSleep = 2000;
    private static final boolean takeAllStats = false;
 
+
    static {
       // Set up transactional stores for JBoss TS
       arjPropertyManager.getCoordinatorEnvironmentBean().setCommunicationStore(VolatileStore.class.getName());
@@ -58,6 +59,7 @@ public class InfinispanWrapper implements CacheWrapper {
    private static Log log = LogFactory.getLog(InfinispanWrapper.class);
    DefaultCacheManager cacheManager;
    private Cache<Object, Object> cache;
+   private Cache<Object, Object> writeCache;
    TransactionManager tm;
    boolean started = false;
    String config;
@@ -81,6 +83,7 @@ public class InfinispanWrapper implements CacheWrapper {
             throw new IllegalStateException("The requested cache(" + cacheName + ") is not defined. Defined cache " +
                                                   "names are " + cacheNames);
          cache = cacheManager.getCache(cacheName);
+         writeCache = cache.getAdvancedCache().withFlags(Flag.IGNORE_RETURN_VALUES);
          started = true;
          tm = cache.getAdvancedCache().getTransactionManager();
          log.info("Using transaction manager: " + tm);
@@ -122,6 +125,9 @@ public class InfinispanWrapper implements CacheWrapper {
    }
 
    public void put(String bucket, Object key, Object value) throws Exception {
+
+      writeCache.put(key,value);
+      /*
       try {
          if (cache.put(key, value) == null && this.trackNewKeys)
             this.newKeys.add(key);
@@ -130,6 +136,7 @@ public class InfinispanWrapper implements CacheWrapper {
          log.warn("Error on key " + key);
          throw e;
       }
+      */
    }
 
    @Override
@@ -643,12 +650,16 @@ public class InfinispanWrapper implements CacheWrapper {
 
    @Override
    public void put(String bucket, Object key, Object value, int threadId) throws Exception {
+
+      writeCache.put(key,value);
+      /*
       if (perThreadTrackNewKeys) {
          if (cache.put(key, value) == null) {
             this.perThreadNewKeys[threadId].add(key);
          }
       } else
          put(bucket, key, value);
+         */
    }
 
    @Override
