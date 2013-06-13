@@ -139,6 +139,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
       results.put("NUM_THREADS", str(numOfThreads));
       results.put("NUM_KEYS", str(numberOfKeys));
       results.put("DATA_ACCESS_PATTERN", str("UNIFORM"));
+      results.put("READS_BEFORE_FIRST_WRITE",str(readsBeforeFirstWrite));
       results.putAll(cacheWrapper.getAdditionalStats());
       return results;
 
