@@ -3,6 +3,7 @@ package org.radargun.stages.synthetic;
 import org.radargun.stressors.KeyGenerator;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -19,7 +20,8 @@ public class SyntheticDistinctXactFactory extends SyntheticXactFactory {
    public SyntheticDistinctXactFactory(SyntheticXactParams params) {
       super(params);
       rwB = this.rwB();
-      log.trace(rwB);
+
+      log.trace(Arrays.toString(rwB));
    }
 
    @Override
@@ -34,32 +36,40 @@ public class SyntheticDistinctXactFactory extends SyntheticXactFactory {
       int nodeIndex = params.getNodeIndex(), threadIndex = params.getThreadIndex();
       int sizeS = params.getSizeOfValue();
       boolean bW = params.isAllowBlindWrites();
+      int numK = params.getNumKeys();
       Integer key;
-      int lastRead = 0, lastWrite = 0;
+      int nextWrite = 0; //without blind writes, this points to the next read item to write
       //Generate rwSet
-      for (int i = 0; i < total; i++) {
-         if (!rwB[i]) {
-            do {
-               key = r.nextInt();
-            }
-            while (readSet.contains(key));
-            readSet.add(0, key);
-            ops[i] = new XactOp(kg.generateKey(nodeIndex, threadIndex, key),
-                                null, false);    //add a read op and increment
-         } else {
-            if (bW) {        //You can have (distinct) blind writes
+      try {
+         for (int i = 0; i < total; i++) {
+            if (!rwB[i]) {  //Read
                do {
-                  key = r.nextInt();
+                  key = r.nextInt(numK);
                }
-               while (writeSet.contains(key));
-               writeSet.add(0, key);
+               while (readSet.contains(key));  //avoid repetitions
+               readSet.add(0, key);
                ops[i] = new XactOp(kg.generateKey(nodeIndex, threadIndex, key),
-                                   generateRandomString(sizeS), true);    //add a write op
-            } else { //No blind writes: Take a value already read and increment         To have distinct writes, remember numWrites<=numReads in this case
-               ops[i] = new XactOp(ops[lastWrite++].getKey(),
-                                   generateRandomString(sizeS), true);
+                       null, false);    //add a read op and increment
+            } else {    //Put
+               if (bW) {        //You can have (distinct) blind writes
+                  do {
+                     key = r.nextInt(numK);
+                  }
+                  while (writeSet.contains(key));  //avoid repetitions among writes
+                  writeSet.add(0, key);
+                  ops[i] = new XactOp(kg.generateKey(nodeIndex, threadIndex, key),
+                          generateRandomString(sizeS), true);    //add a write op
+               } else { //No blind writes: Take a value already read and increment         To have distinct writes, remember numWrites<=numReads in this case
+                  ops[i] = new XactOp(ops[nextWrite++].getKey(),
+                          generateRandomString(sizeS), true);
+                  while (rwB[nextWrite]) {       //while it is a put op, go on
+                     nextWrite++;
+                  }
+               }
             }
          }
+      } catch (Exception e) {
+         e.printStackTrace();
       }
       log.trace(ops);
       return ops;
@@ -79,7 +89,7 @@ public class SyntheticDistinctXactFactory extends SyntheticXactFactory {
       //Generate readSet
       for (int i = 1; i <= numReads; i++) {
          do {
-            key = r.nextInt();
+            key = r.nextInt(numK);
          }
          while (readSet.contains(key));
          readSet.add(0, key);
@@ -93,7 +103,7 @@ public class SyntheticDistinctXactFactory extends SyntheticXactFactory {
       } else {
          for (int i = 1; i <= numWrites; i++) {
             do {
-               key = r.nextInt();
+               key = r.nextInt(numK);
             }
             while (writeSet.contains(key));
             writeSet.add(key);
@@ -162,46 +172,54 @@ public class SyntheticDistinctXactFactory extends SyntheticXactFactory {
       int total = numReads + numWrites;
       boolean[] rwB = new boolean[total];
       int fW = params.getReadsBeforeFirstWrite();
+      if (fW > numReads)
+         throw new RuntimeException("NumReadsBeforeFirstWrite > numReads!");
       if (numReads < numWrites && !params.isAllowBlindWrites())
          throw new RuntimeException("NumWrites has to be greater than numReads to avoid blindWrites and have no duplicates");
-      int readI = 0;
+      if (fW == 0 && !params.isAllowBlindWrites())
+         throw new RuntimeException("Without blind writes you must at least read once before writing! NumReadsBeforeWrites at least 1!");
 
-      //Set reads before first write
-      for (; readI < fW; readI++) {
-         rwB[readI] = false;
-      }
-      rwB[fW] = true;
-      if (total == fW + 1)
-         return rwB;
-      double remainingReads = numReads - fW;
-      double remainingWrites = numWrites - 1;
-      boolean moreReads = false;
-      //If you have more remaining reads than writes, then each X reads you'll do ONE write; otherwise it's the opposite. If you have no more of one kind, you'll only have of the other one
-      int groupRead, groupWrite, numGroups;
-      if (remainingReads >= remainingWrites) {
-         moreReads = true;
-         groupRead = remainingWrites > 0 ? (int) Math.ceil(remainingReads / remainingWrites) : (int) remainingReads;
-         groupWrite = remainingWrites > 0 ? 1 : 0;
-         numGroups = remainingWrites > 0 ? (int) remainingWrites : 1;
-      } else {
-         moreReads = false;
-         groupRead = remainingReads > 0 ? 1 : 0;
-         groupWrite = remainingReads > 0 ? (int) Math.ceil(remainingWrites / remainingReads) : (int) remainingWrites;
-         numGroups = remainingReads > 0 ? (int) remainingReads : 1;
-      }
-      int index = fW + 1;
-      while (numGroups-- > 0) {
-         int r = groupRead;
-         int w = groupWrite;
-         while (r-- > 0) {
-            rwB[index++] = false;
+      int readI = 0;
+      try {
+         //Set reads before first write
+         for (; readI < fW; readI++) {
+            rwB[readI] = false;
          }
-         while (w-- > 0) {
-            rwB[index++] = true;
+         rwB[fW] = true;
+         if (total == fW + 1)
+            return rwB;
+         double remainingReads = numReads - fW;
+         double remainingWrites = numWrites - 1;
+         boolean moreReads = false;
+         //If you have more remaining reads than writes, then each X reads you'll do ONE write; otherwise it's the opposite. If you have no more of one kind, you'll only have of the other one
+         int groupRead, groupWrite, numGroups;
+         if (remainingReads >= remainingWrites) {
+            moreReads = true;
+            groupRead = remainingWrites > 0 ? (int) Math.ceil(remainingReads / remainingWrites) : (int) remainingReads;
+            groupWrite = remainingWrites > 0 ? 1 : 0;
+            numGroups = remainingWrites > 0 ? (int) remainingWrites : 1;
+         } else {
+            moreReads = false;
+            groupRead = remainingReads > 0 ? 1 : 0;
+            groupWrite = remainingReads > 0 ? (int) Math.ceil(remainingWrites / remainingReads) : (int) remainingWrites;
+            numGroups = remainingReads > 0 ? (int) remainingReads : 1;
          }
-      }
-      while (index < total) {
-         rwB[index] = !moreReads;
+         int index = fW + 1;
+         while (numGroups-- > 0) {
+            int r = groupRead;
+            int w = groupWrite;
+            while (r-- > 0) {
+               rwB[index++] = false;
+            }
+            while (w-- > 0) {
+               rwB[index++] = true;
+            }
+         }
+         while (index < total) {
+            rwB[index] = !moreReads;
+         }
+      } catch (Exception e) {
+         e.printStackTrace();
       }
 
       return rwB;

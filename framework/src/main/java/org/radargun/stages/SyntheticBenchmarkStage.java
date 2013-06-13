@@ -62,6 +62,10 @@ public class SyntheticBenchmarkStage extends WebSessionBenchmarkStage {
       return putGetStressor.stress(cacheWrapper);
    }
 
+   public void setReadsBeforeFirstWrite(int readsBeforeFirstWrite) {
+      this.readsBeforeFirstWrite = readsBeforeFirstWrite;
+   }
+
    public XACT_RETRY getRetryMode() {
       return retryMode;
    }

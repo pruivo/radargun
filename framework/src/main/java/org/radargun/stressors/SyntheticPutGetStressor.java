@@ -21,11 +21,7 @@ package org.radargun.stressors;/*
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-import org.radargun.stages.synthetic.SyntheticXact;
-import org.radargun.stages.synthetic.SyntheticXactFactory;
-import org.radargun.stages.synthetic.SyntheticXactParams;
-import org.radargun.stages.synthetic.XACT_RETRY;
-import org.radargun.stages.synthetic.xactClass;
+import org.radargun.stages.synthetic.*;
 
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
@@ -217,7 +213,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
 
       private void runInternal() {
 
-         SyntheticXactFactory factory = new SyntheticXactFactory(buildParams());
+         SyntheticXactFactory factory = new SyntheticDistinctXactFactory(buildParams());
          result outcome;
          SyntheticXact last = null;
          try {
@@ -235,6 +231,8 @@ public class SyntheticPutGetStressor extends PutGetStressor {
                log.trace(threadIndex + " ending xact");
             } catch (Exception e) {
                log.warn("Unexpected exception" + e.getMessage());
+               if(log.isTraceEnabled())
+                  e.printStackTrace();
                outcome = result.OTHER;
             }
             switch (outcome) {
@@ -266,7 +264,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
             xact.executeLocally();
          } catch (Exception e) {
             log.trace("Rollback while running locally");
-            if (log.isWarnEnabled())
+            if (log.isTraceEnabled())
                e.printStackTrace();
             cacheWrapper.endTransaction(false);
             return result.AB_L;
@@ -280,7 +278,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
                commitTime += System.nanoTime() - now;
          } catch (Exception e) {
             log.trace("Rollback at prepare time");
-            if (log.isWarnEnabled())
+            if (log.isTraceEnabled())
                e.printStackTrace();
             return result.AB_R;
          }

@@ -2,18 +2,18 @@
 
    <master bindAddress="${127.0.0.1:master.address}" port="${2103:master.port}"/>
 
-   <benchmark initSize="1" maxSize="${1:slaves}" increment="1">
-      <DestroyWrapper runOnAllSlaves="true"/>
-      <StartCluster staggerSlaveStartup="true" delayAfterFirstSlaveStarts="3000" delayBetweenStartingSlaves = "1000"/>
-      <ClusterValidation passiveReplication="false" partialReplication="true"/>
-      <SyntheticWarmup keyGeneratorClass="org.radargun.stressors.ContentionStringKeyGenerator" numberOfAttributes="10000" sizeOfAnAttribute="1000" numOfThreads="2" transactionSize="100"/>
+   <benchmark initSize="1" maxSize="1" increment="1">
+      <!--DestroyWrapper runOnAllSlaves="true"/-->
+      <StartCluster staggerSlaveStartup="true" delayAfterFirstSlaveStarts="5000" delayBetweenStartingSlaves = "500"/>
+      <ClusterValidation partialReplication="true"/>
+      <SyntheticWarmup keyGeneratorClass="org.radargun.stressors.ContentionStringKeyGenerator" numberOfAttributes="100000" sizeOfAnAttribute="1000" numOfThreads="2" transactionSize="100"/>
       <!--
          This will average to 10000 requests per thread, although a work-stealing pattern is used so some threads may
          do more work than others.
        -->
       <GarbageCollection/>
       <ResetStats/>
-      <SyntheticBenchmark sizeOfAnAttribute="1000" keyGeneratorClass="org.radargun.stressors.ContentionStringKeyGenerator" numberOfAttributes="10000" numOfThreads="2" updateXactWrites="1" updateXactReads="9" readOnlyXactSize="10" writePercentage="20" allowBlindWrites="false" duration="60000" retryMode="NO_RETRY" statsSamplingInterval="30000"/>
+      <SyntheticBenchmark sizeOfAnAttribute="1000" keyGeneratorClass="org.radargun.stressors.ContentionStringKeyGenerator" numberOfAttributes="100000" numOfThreads="1" updateXactWrites="10" updateXactReads="10" readOnlyXactSize="10" writePercentage="10" allowBlindWrites="false" duration="180000" retryMode="RETRY_SAME_CLASS" statsSamplingInterval="15000" readsBeforeFirstWrite="1"/>
       <CsvReportGeneration/>
    </benchmark>
 
