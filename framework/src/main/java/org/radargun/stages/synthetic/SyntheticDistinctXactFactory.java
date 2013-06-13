@@ -195,17 +195,22 @@ public class SyntheticDistinctXactFactory extends SyntheticXactFactory {
          int groupRead, groupWrite, numGroups;
          if (remainingReads >= remainingWrites) {
             moreReads = true;
-            groupRead = remainingWrites > 0 ? (int) Math.ceil(remainingReads / remainingWrites) : (int) remainingReads;
+            groupRead = remainingWrites > 0 ? (int) Math.floor(remainingReads / remainingWrites) : (int) remainingReads;
             groupWrite = remainingWrites > 0 ? 1 : 0;
             numGroups = remainingWrites > 0 ? (int) remainingWrites : 1;
+            log.trace("More remaining reads than write: " + remainingReads + " vs " + remainingWrites);
+            log.trace("I will have " + numGroups + " groups of " + groupRead + " reads and " + groupWrite + " writes");
          } else {
             moreReads = false;
             groupRead = remainingReads > 0 ? 1 : 0;
-            groupWrite = remainingReads > 0 ? (int) Math.ceil(remainingWrites / remainingReads) : (int) remainingWrites;
+            groupWrite = remainingReads > 0 ? (int) Math.floor(remainingWrites / remainingReads) : (int) remainingWrites;
             numGroups = remainingReads > 0 ? (int) remainingReads : 1;
+            log.trace("More remaining writes than reads: " + remainingWrites + " vs " + remainingReads);
+            log.trace("I will have " + numGroups + " groups of " + groupRead + " reads and " + groupWrite + " writes");
          }
          int index = fW + 1;
          while (numGroups-- > 0) {
+            log.trace(numGroups+" groups to go");
             int r = groupRead;
             int w = groupWrite;
             while (r-- > 0) {
@@ -216,7 +221,7 @@ public class SyntheticDistinctXactFactory extends SyntheticXactFactory {
             }
          }
          while (index < total) {
-            rwB[index] = !moreReads;
+            rwB[index++] = !moreReads;  //If you had more reads you have to top-up with writes(true) and vice versa
          }
       } catch (Exception e) {
          e.printStackTrace();
