@@ -100,5 +100,11 @@
 	<stat displayName="NumWaitedRemoteCommits" attributeName="NumWaitedRemoteCommits"/>
 	<stat displayName="NumWaitedLocalCommits" attributeName="NumWaitedLocalCommits"/>
 	<stat displayName="NumWaitedRemoteGets" attributeName="NumWaitedRemoteGets"/>
+	<stat displayName="NumLocalPrepareAborts" attributeName="NumLocalPrepareAborts"/>
+	<stat displayName="NumEarlyAborts" attributeName="NumEarlyAborts"/>
+	<stat displayName="NumLocalLocalLockContentions" attributeName="NumLocalLocalLockContentions"/>
+	<stat displayName="NumLocalRemoteLockContentions" attributeName="NumLocalRemoteLockContentions"/>
+	<stat displayName="NumRemoteLocalLockContentions" attributeName="NumRemoteLocalLockContentions"/>
+	<stat displayName="NumRemoteRemoteLockContentions" attributeName="NumRemoteRemoteLockContentions"/>
 </component>
 </stats-collector>
