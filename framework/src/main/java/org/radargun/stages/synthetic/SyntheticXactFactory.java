@@ -67,7 +67,7 @@ public class SyntheticXactFactory extends XactFactory<SyntheticXactParams, Synth
     * (even multiple times in a row, for simplicity)
     * @return a readWriteSet
     */
-   private XactOp[] buildReadWriteSet() {
+   protected XactOp[] buildReadWriteSet() {
       int toDoRead = params.getUpReads();
       int toDoWrite = params.getUpPuts();
       int toDo = toDoRead + toDoWrite;
@@ -141,7 +141,7 @@ public class SyntheticXactFactory extends XactFactory<SyntheticXactParams, Synth
       return ops;
    }
 
-   private String generateRandomString(int size) {
+   protected String generateRandomString(int size) {
       // each char is 2 bytes
       StringBuilder sb = new StringBuilder();
       for (int i = 0; i < size / 2; i++) sb.append((char) (64 + params.getRandom().nextInt(26)));

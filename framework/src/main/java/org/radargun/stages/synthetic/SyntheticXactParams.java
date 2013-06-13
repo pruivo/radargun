@@ -22,6 +22,15 @@ public class SyntheticXactParams extends XactParam {
    private KeyGenerator keyGenerator;
    private int nodeIndex, threadIndex, numKeys, sizeOfValue, writePercentage;
    private CacheWrapper cache;
+   private int readsBeforeFirstWrite;
+
+   public int getReadsBeforeFirstWrite() {
+      return readsBeforeFirstWrite;
+   }
+
+   public void setReadsBeforeFirstWrite(int firstWriteIndex) {
+      this.readsBeforeFirstWrite = firstWriteIndex;
+   }
 
    public void setCache(CacheWrapper cache) {
       this.cache = cache;

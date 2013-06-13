@@ -47,7 +47,7 @@ public class InfinispanWrapper implements CacheWrapper {
    private boolean perThreadTrackNewKeys = false;
    private static final int maxSleep = 2000;
    private static final boolean takeAllStats = false;
-   private static final boolean ignorePutResult = true;
+
 
    static {
       // Set up transactional stores for JBoss TS
@@ -126,13 +126,17 @@ public class InfinispanWrapper implements CacheWrapper {
 
    public void put(String bucket, Object key, Object value) throws Exception {
 
-      if (ignorePutResult) {
-         writeCache.put(key, value);
-      } else {
+      writeCache.put(key,value);
+      /*
+      try {
          if (cache.put(key, value) == null && this.trackNewKeys)
             this.newKeys.add(key);
+      } catch (Exception e) {
+         log.warn(e.getMessage());
+         log.warn("Error on key " + key);
+         throw e;
       }
-
+      */
    }
 
    @Override
@@ -565,18 +569,13 @@ public class InfinispanWrapper implements CacheWrapper {
 
    @Override
    public void setTrackNewKeys(boolean b) {
-
       log.info("Setting trackNewKeys to " + b);
       this.trackNewKeys = b;
-      throw new RuntimeException("Key tracking not supported anymore");
    }
 
    public void setPerThreadTrackNewKeys(boolean b) {
-
       log.info("Setting perThreadTrackNewKeys to " + b);
       this.perThreadTrackNewKeys = b;
-      throw new RuntimeException("Key tracking not supported anymore");
-
    }
 
    @Override
@@ -651,16 +650,16 @@ public class InfinispanWrapper implements CacheWrapper {
 
    @Override
    public void put(String bucket, Object key, Object value, int threadId) throws Exception {
-      if (ignorePutResult) {
-         writeCache.put(key, value);
-      } else {
-         if (perThreadTrackNewKeys) {
-            if (writeCache.put(key, value) == null) {
-               this.perThreadNewKeys[threadId].add(key);
-            }
-         } else
-            put(bucket, key, value);
-      }
+
+      writeCache.put(key,value);
+      /*
+      if (perThreadTrackNewKeys) {
+         if (cache.put(key, value) == null) {
+            this.perThreadNewKeys[threadId].add(key);
+         }
+      } else
+         put(bucket, key, value);
+         */
    }
 
    @Override

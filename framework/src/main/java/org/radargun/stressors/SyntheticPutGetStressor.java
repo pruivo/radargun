@@ -40,6 +40,16 @@ public class SyntheticPutGetStressor extends PutGetStressor {
    private boolean allowBlindWrites = false;
    private long startTime;
    private XACT_RETRY xact_retry;
+   private int readsBeforeFirstWrite = 1;
+
+
+   public int getReadsBeforeFirstWrite() {
+      return readsBeforeFirstWrite;
+   }
+
+   public void setReadsBeforeFirstWrite(int readsBeforeFirstWrite) {
+      this.readsBeforeFirstWrite = readsBeforeFirstWrite;
+   }
 
    public boolean isAllowBlindWrites() {
       return allowBlindWrites;
@@ -201,6 +211,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
          params.setWritePercentage(writePercentage);
          params.setSizeOfValue(sizeOfValue);
          params.setCache(cacheWrapper);
+         params.setReadsBeforeFirstWrite(readsBeforeFirstWrite);
          return params;
       }
 

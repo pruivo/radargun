@@ -27,83 +27,92 @@ import org.radargun.stressors.SyntheticPutGetStressor;
 import java.util.Map;
 
 /**
- * @author Diego Didona, didona@gsd.inesc-id.pt
- *         Date: 20/03/13
+ * @author Diego Didona, didona@gsd.inesc-id.pt Date: 20/03/13
  */
 public class SyntheticBenchmarkStage extends WebSessionBenchmarkStage {
 
-    private int updateXactWrites = 1;
-    private int readOnlyXactSize = 1;
-    private int updateXactReads = 1;
-    private boolean allowBlindWrites = false;
-    private XACT_RETRY retryMode = XACT_RETRY.NO_RETRY;
+   private int updateXactWrites = 1;
+   private int readOnlyXactSize = 1;
+   private int updateXactReads = 1;
+   private boolean allowBlindWrites = false;
+   private XACT_RETRY retryMode = XACT_RETRY.NO_RETRY;
+   private int readsBeforeFirstWrite = 1;
 
 
-    protected Map<String, String> doWork() {
-        log.info("Starting " + getClass().getSimpleName() + ": " + this);
-        SyntheticPutGetStressor putGetStressor = new SyntheticPutGetStressor();
-        putGetStressor.setNodeIndex(getSlaveIndex());
-        putGetStressor.setNumberOfAttributes(numberOfAttributes);
-        putGetStressor.setNumOfThreads(numOfThreads);
-        putGetStressor.setSizeOfAnAttribute(sizeOfAnAttribute);
-        putGetStressor.setWritePercentage(writePercentage);
-        putGetStressor.setKeyGeneratorClass(keyGeneratorClass);
-        putGetStressor.setUseTransactions(useTransactions);
-        putGetStressor.setCommitTransactions(commitTransactions);
-        putGetStressor.setTransactionSize(transactionSize);
-        putGetStressor.setDurationMillis(durationMillis);
-        putGetStressor.setupdateXactWrites(updateXactWrites);
-        putGetStressor.setReadOnlyXactSize(readOnlyXactSize);
-        putGetStressor.setUpdateXactReads(updateXactReads);
-        putGetStressor.setAllowBlindWrites(allowBlindWrites);
-        putGetStressor.setStatsSamplingInterval(statsSamplingInterval);
-       putGetStressor.setXact_retry(retryMode);
-        return putGetStressor.stress(cacheWrapper);
-    }
+   protected Map<String, String> doWork() {
+      log.info("Starting " + getClass().getSimpleName() + ": " + this);
+      SyntheticPutGetStressor putGetStressor = new SyntheticPutGetStressor();
+      putGetStressor.setNodeIndex(getSlaveIndex());
+      putGetStressor.setNumberOfAttributes(numberOfAttributes);
+      putGetStressor.setNumOfThreads(numOfThreads);
+      putGetStressor.setSizeOfAnAttribute(sizeOfAnAttribute);
+      putGetStressor.setWritePercentage(writePercentage);
+      putGetStressor.setKeyGeneratorClass(keyGeneratorClass);
+      putGetStressor.setUseTransactions(useTransactions);
+      putGetStressor.setCommitTransactions(commitTransactions);
+      putGetStressor.setTransactionSize(transactionSize);
+      putGetStressor.setDurationMillis(durationMillis);
+      putGetStressor.setupdateXactWrites(updateXactWrites);
+      putGetStressor.setReadOnlyXactSize(readOnlyXactSize);
+      putGetStressor.setUpdateXactReads(updateXactReads);
+      putGetStressor.setAllowBlindWrites(allowBlindWrites);
+      putGetStressor.setStatsSamplingInterval(statsSamplingInterval);
+      putGetStressor.setXact_retry(retryMode);
+      putGetStressor.setReadsBeforeFirstWrite(readsBeforeFirstWrite);
+      return putGetStressor.stress(cacheWrapper);
+   }
 
-    public int getUpdateXactWrites() {
-        return updateXactWrites;
-    }
+   public XACT_RETRY getRetryMode() {
+      return retryMode;
+   }
+
+   public void setRetryMode(XACT_RETRY retryMode) {
+      this.retryMode = retryMode;
+   }
+
+   public int getUpdateXactWrites() {
+      return updateXactWrites;
+   }
 
 
-    public boolean isAllowBlindWrites() {
-        return allowBlindWrites;
-    }
+   public boolean isAllowBlindWrites() {
+      return allowBlindWrites;
+   }
 
-    public int getReadOnlyXactSize() {
-        return readOnlyXactSize;
-    }
+   public int getReadOnlyXactSize() {
+      return readOnlyXactSize;
+   }
 
-    public void setReadOnlyXactSize(int readOnlyXactSize) {
-        this.readOnlyXactSize = readOnlyXactSize;
-    }
+   public void setReadOnlyXactSize(int readOnlyXactSize) {
+      this.readOnlyXactSize = readOnlyXactSize;
+   }
 
-    public int getUpdateXactReads() {
-        return updateXactReads;
-    }
+   public int getUpdateXactReads() {
+      return updateXactReads;
+   }
 
-    public void setUpdateXactReads(int updateXactReads) {
-        this.updateXactReads = updateXactReads;
-    }
+   public void setUpdateXactReads(int updateXactReads) {
+      this.updateXactReads = updateXactReads;
+   }
 
-    public void setUpdateXactWrites(int updateXactWrites) {
-        this.updateXactWrites = updateXactWrites;
-    }
+   public void setUpdateXactWrites(int updateXactWrites) {
+      this.updateXactWrites = updateXactWrites;
+   }
 
-    public void setAllowBlindWrites(boolean allowBlindWrites) {
-        this.allowBlindWrites = allowBlindWrites;
-    }
+   public void setAllowBlindWrites(boolean allowBlindWrites) {
+      this.allowBlindWrites = allowBlindWrites;
+   }
 
-   public void setRetryMode(String retry){
+   public void setRetryMode(String retry) {
       this.retryMode = XACT_RETRY.valueOf(retry);
    }
 
-    @Override
-    public String toString() {
-        return "SyntheticBenchmarkStage{" +
-                "updateXactWrites=" + updateXactWrites +
-                ", readOnlyXactSize=" + readOnlyXactSize +
-                ", updateXactReads=" + updateXactReads +
-                '}';
-    }
+   @Override
+   public String toString() {
+      return "SyntheticBenchmarkStage{" +
+            "updateXactWrites=" + updateXactWrites +
+            ", readOnlyXactSize=" + readOnlyXactSize +
+            ", updateXactReads=" + updateXactReads +
+            '}';
+   }
 }
