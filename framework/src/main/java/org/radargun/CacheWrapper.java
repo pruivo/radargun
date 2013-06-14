@@ -147,4 +147,6 @@ public interface CacheWrapper {
 
    void endTransaction(boolean successful, int threadId) throws Exception;
 
+   void setIgnorePutResult(boolean b);
+
 }

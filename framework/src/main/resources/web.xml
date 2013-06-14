@@ -4,7 +4,7 @@
 
    <benchmark initSize="1" maxSize="1" increment="1">
       <!--DestroyWrapper runOnAllSlaves="true"/-->
-      <StartCluster staggerSlaveStartup="true" delayAfterFirstSlaveStarts="5000" delayBetweenStartingSlaves = "500"/>
+      <StartCluster ignorePutResult="true"  staggerSlaveStartup="true" delayAfterFirstSlaveStarts="5000" delayBetweenStartingSlaves = "500"/>
       <ClusterValidation partialReplication="true"/>
       <SyntheticWarmup keyGeneratorClass="org.radargun.stressors.ContentionStringKeyGenerator" numberOfAttributes="100000" sizeOfAnAttribute="1000" numOfThreads="2" transactionSize="100"/>
       <!--
