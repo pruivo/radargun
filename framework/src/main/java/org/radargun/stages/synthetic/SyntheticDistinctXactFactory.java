@@ -62,7 +62,8 @@ public class SyntheticDistinctXactFactory extends SyntheticXactFactory {
                } else { //No blind writes: Take a value already read and increment         To have distinct writes, remember numWrites<=numReads in this case
                   ops[i] = new XactOp(ops[nextWrite++].getKey(),
                           generateRandomString(sizeS), true);
-                  while (rwB[nextWrite]) {       //while it is a put op, go on
+
+                  while (nextWrite<total && rwB[nextWrite]) {       //while it is a put op, go on
                      nextWrite++;
                   }
                }
