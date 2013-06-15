@@ -94,12 +94,14 @@ public class PutGetStressor extends AbstractCacheWrapperStressor {
 
       if (statsSamplingInterval > 0) {
          sampler = new StatSampler(statsSamplingInterval);
+         log.trace("Starting sampler with samplingInterval " + statsSamplingInterval);
          sampler.start();
       }
       List<Stressor> stressors;
       try {
          stressors = executeOperations();
       } catch (Exception e) {
+         e.printStackTrace();
          throw new RuntimeException(e);
       } finally {
          if (sampler != null) {
@@ -511,13 +513,17 @@ public class PutGetStressor extends AbstractCacheWrapperStressor {
       private volatile long lastPrint = -1;
 
       TimeStressorCompletion(long durationMillis) {
+
          this.durationMillis = TimeUnit.MILLISECONDS.toNanos(durationMillis);
          startTime = nowNano();
+         log.trace("DurationMillis " + durationMillis + " startTime " + startTime);
       }
 
       @Override
       boolean moreToRun() {
-         return nowNano() <= startTime + durationMillis;
+         long now = nowNano();
+         log.trace("Current Time " + nowNano() + " endTime " + (startTime + durationMillis) + " still to go: " + (startTime + durationMillis - now));
+         return now <= startTime + durationMillis;
       }
 
       public void logProgress(int i, Object result, int threadIndex) {

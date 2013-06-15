@@ -47,7 +47,7 @@ fi
 echo "Setting the correct pom to build version $1"
 cp ${CONFS}/${POM_VERSION} ${POM_DIR}/${POM}
 
-mvn clean install -DskipTests
+mvn  -o clean install -DskipTests
 
 echo "Setting the correct benchmark for version $1"
 cp ${CONF_DIR}/${BENCH_VERSION} ${CONF_DIR}/${BENCH}

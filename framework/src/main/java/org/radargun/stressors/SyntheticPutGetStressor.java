@@ -279,6 +279,9 @@ public class SyntheticPutGetStressor extends PutGetStressor {
                commitTime += System.nanoTime() - now;
          } catch (Exception e) {
             log.trace("Rollback at prepare time");
+            if (!xact.clazz.equals(xactClass.WR)) {
+               e.printStackTrace();
+            }
             if (log.isTraceEnabled())
                e.printStackTrace();
             return result.AB_R;
@@ -319,8 +322,11 @@ public class SyntheticPutGetStressor extends PutGetStressor {
                localAborts++;
                break;
             }
-            default:
-               log.fatal("Xact class " + clazz + " should not abort");
+            default: {
+               localAborts++;
+               log.fatal("Unexpected LocalAbort " + Arrays.toString(xact.getOps()));
+               //throw new RuntimeException("LocalAbort Xact class " + clazz + " should not abort");
+            }
          }
       }
 
@@ -331,50 +337,14 @@ public class SyntheticPutGetStressor extends PutGetStressor {
                remoteAborts++;
                break;
             }
-            default:
-               throw new RuntimeException("Xact class " + clazz + " should not abort");
+            default: {
+               remoteAborts++;
+               log.fatal("Unexpected RemoteAbort " + Arrays.toString(xact.getOps()));
+               //throw new RuntimeException("Remote Abort Xact class " + clazz + " should not abort");
+            }
          }
       }
 
-      private void doWriteXact(Random r) throws Exception {
-         int toDoRead = updateXactReads, toDoWrite = updateXactWrites, toDo = updateXactWrites + updateXactReads, writePerc = 100 * (int) (((double) updateXactWrites) / ((double) (toDo)));
-         boolean doPut;
-         int[] readSet = new int[updateXactReads];
-         int readSetIndex = -1;
-         boolean canWrite = false;
-         int keyToAccess;
-         while (toDo > 0) {
-            keyToAccess = r.nextInt(numKeys);
-            if (toDo == toDoWrite)      //I have only puts left
-               doPut = true;
-            else if (toDo == toDoRead)  //I have only reads left
-               doPut = false;
-            else if (allowBlindWrites) {     //I choose uniformly
-               doPut = r.nextInt(100) < writePerc;
-            } else {
-               if (!canWrite) {
-                  doPut = false;
-                  readSet[++readSetIndex] = keyToAccess;
-                  canWrite = true;
-               } else {
-                  doPut = r.nextInt(100) < writePerc;
-                  if (doPut) {
-                     keyToAccess = readSet[readSetIndex];     //Access the last value read. This is the simplest way to avoid blindWrites, still trying to avoid reading always the same item
-                  } else {
-                     readSet[++readSetIndex] = keyToAccess;
-                  }
-               }
-            }
-            //doOp(doPut, keyToAccess);
-            toDo--;
-            if (doPut) {
-               toDoWrite--;
-            } else {
-               toDoRead--;
-            }
-         }
-
-      }
 
    }
 
