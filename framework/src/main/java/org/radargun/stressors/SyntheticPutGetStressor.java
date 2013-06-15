@@ -139,7 +139,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
       results.put("NUM_THREADS", str(numOfThreads));
       results.put("NUM_KEYS", str(numberOfKeys));
       results.put("DATA_ACCESS_PATTERN", str("UNIFORM"));
-      results.put("READS_BEFORE_FIRST_WRITE",str(readsBeforeFirstWrite));
+      results.put("READS_BEFORE_FIRST_WRITE", str(readsBeforeFirstWrite));
       results.putAll(cacheWrapper.getAdditionalStats());
       return results;
 
@@ -232,7 +232,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
                log.trace(threadIndex + " ending xact");
             } catch (Exception e) {
                log.warn("Unexpected exception" + e.getMessage());
-               if(log.isTraceEnabled())
+               if (log.isTraceEnabled())
                   e.printStackTrace();
                outcome = result.OTHER;
             }
@@ -273,9 +273,9 @@ public class SyntheticPutGetStressor extends PutGetStressor {
 
          try {
             boolean write = xact.clazz.equals(xactClass.WR);
-            long now = write?System.nanoTime():0;
+            long now = write ? System.nanoTime() : 0;
             cacheWrapper.endTransaction(true);
-            if(write)
+            if (write)
                commitTime += System.nanoTime() - now;
          } catch (Exception e) {
             log.trace("Rollback at prepare time");

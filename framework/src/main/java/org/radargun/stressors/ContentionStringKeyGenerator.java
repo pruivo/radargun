@@ -21,11 +21,16 @@ package org.radargun.stressors;/*
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 /**
  * @author Diego Didona, didona@gsd.inesc-id.pt
  *         Date: 20/03/13
  */
 public class ContentionStringKeyGenerator extends StringKeyGenerator{
+
+   private static final Log log  = LogFactory.getLog(ContentionStringKeyGenerator.class);
 
    @Override
    public Object generateKey(int threadIndex, int keyIndex) {
@@ -34,6 +39,7 @@ public class ContentionStringKeyGenerator extends StringKeyGenerator{
 
    @Override
    public Object generateKey(int nodeIndex, int threadIndex, int keyIndex) {
+      log.trace("Key "+super.generateKey(CONTEND, CONTEND, keyIndex));
       return super.generateKey(CONTEND, CONTEND, keyIndex);    //To change body of overridden methods use File | Settings | File Templates.
    }
 }
