@@ -320,7 +320,7 @@ public class SyntheticPutGetStressor extends PutGetStressor {
                break;
             }
             default:
-               throw new RuntimeException("Xact class " + clazz + " should not abort");
+               log.fatal("Xact class " + clazz + " should not abort");
          }
       }
 
