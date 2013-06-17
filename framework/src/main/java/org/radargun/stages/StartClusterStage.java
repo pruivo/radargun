@@ -33,8 +33,8 @@ public class StartClusterStage extends AbstractDistStage {
    private boolean ignorePutResult = false;
 
 
-   public void setIgnorePutResult(boolean ignorePutResult) {
-      this.ignorePutResult = ignorePutResult;
+   public void setIgnorePutResult(String ignorePutResult) {
+      this.ignorePutResult = Boolean.parseBoolean(ignorePutResult);
    }
 
    public StartClusterStage() {
