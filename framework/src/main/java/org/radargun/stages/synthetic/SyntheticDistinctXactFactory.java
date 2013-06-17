@@ -49,7 +49,7 @@ public class SyntheticDistinctXactFactory extends SyntheticXactFactory {
                while (readSet.contains(key));  //avoid repetitions
                readSet.add(0, key);
                ops[i] = new XactOp(kg.generateKey(nodeIndex, threadIndex, key),
-                       null, false);    //add a read op and increment
+                                   null, false);    //add a read op and increment
             } else {    //Put
                if (bW) {        //You can have (distinct) blind writes
                   do {
@@ -58,12 +58,12 @@ public class SyntheticDistinctXactFactory extends SyntheticXactFactory {
                   while (writeSet.contains(key));  //avoid repetitions among writes
                   writeSet.add(0, key);
                   ops[i] = new XactOp(kg.generateKey(nodeIndex, threadIndex, key),
-                          generateRandomString(sizeS), true);    //add a write op
+                                      generateRandomString(sizeS), true);    //add a write op
                } else { //No blind writes: Take a value already read and increment         To have distinct writes, remember numWrites<=numReads in this case
                   ops[i] = new XactOp(ops[nextWrite++].getKey(),
-                          generateRandomString(sizeS), true);
+                                      generateRandomString(sizeS), true);
 
-                  while (nextWrite<total && rwB[nextWrite]) {       //while it is a put op, go on
+                  while (nextWrite < total && rwB[nextWrite]) {       //while it is a put op, go on
                      nextWrite++;
                   }
                }
@@ -85,14 +85,18 @@ public class SyntheticDistinctXactFactory extends SyntheticXactFactory {
       int numWrites = params.getUpPuts();
       int total = numReads + numWrites;
       boolean[] rwB = new boolean[total];
+      String msgExc = null;
       int fW = params.getReadsBeforeFirstWrite();
       if (fW > numReads)
-         throw new RuntimeException("NumReadsBeforeFirstWrite > numReads!");
+         msgExc = ("NumReadsBeforeFirstWrite > numReads!");
       if (numReads < numWrites && !params.isAllowBlindWrites())
-         throw new RuntimeException("NumWrites has to be greater than numReads to avoid blindWrites and have no duplicates");
+         msgExc = "NumWrites has to be greater than numReads to avoid blindWrites and have no duplicates";
       if (fW == 0 && !params.isAllowBlindWrites())
-         throw new RuntimeException("Without blind writes you must at least read once before writing! NumReadsBeforeWrites at least 1!");
-
+         msgExc = ("Without blind writes you must at least read once before writing! NumReadsBeforeWrites at least 1!");
+      if (msgExc != null) {
+         log.fatal(msgExc);
+         throw new RuntimeException(msgExc);
+      }
       int readI = 0;
       try {
          //Set reads before first write
@@ -124,7 +128,7 @@ public class SyntheticDistinctXactFactory extends SyntheticXactFactory {
          }
          int index = fW + 1;
          while (numGroups-- > 0) {
-            log.trace(numGroups+" groups to go");
+            log.trace(numGroups + " groups to go");
             int r = groupRead;
             int w = groupWrite;
             while (r-- > 0) {
