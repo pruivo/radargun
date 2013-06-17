@@ -55,7 +55,7 @@ public class SyntheticXactFactory extends XactFactory<SyntheticXactParams, Synth
    }
 
    private xactClass computeClazz() {
-      if (!params.getCache().isTheMaster() || params.getRandom().nextInt(100) > params.getWritePercentage())
+      if (!params.getCache().isTheMaster() || (1 + params.getRandom().nextInt(100)) > params.getWritePercentage())
          return xactClass.RO;
       return xactClass.WR;
    }
