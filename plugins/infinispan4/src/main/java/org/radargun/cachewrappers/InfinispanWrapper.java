@@ -14,6 +14,7 @@ import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.remoting.rpc.RpcManager;
 import org.infinispan.remoting.transport.Address;
 import org.infinispan.remoting.transport.Transport;
+import org.infinispan.transaction.TransactionProtocol;
 import org.infinispan.util.concurrent.TimeoutException;
 import org.radargun.CacheWrapper;
 import org.radargun.cachewrappers.parser.StatisticComponent;
@@ -65,7 +66,6 @@ public class InfinispanWrapper implements CacheWrapper {
    String config;
    private volatile boolean enlistExtraXAResource;
    Transport transport;
-   Method isPassiveReplicationMethod = null;
 
    private List<StatisticComponent> statisticComponents;
 
@@ -98,12 +98,6 @@ public class InfinispanWrapper implements CacheWrapper {
          log.info("Using transaction manager: " + tm);
          //Changed to comply with 5.0 API
          transport = cache.getAdvancedCache().getRpcManager().getTransport();
-         try {
-            isPassiveReplicationMethod = Configuration.class.getMethod("isPassiveReplication");
-         } catch (Exception e) {
-            //just ignore
-            isPassiveReplicationMethod = null;
-         }
       }
       log.debug("Loading JGroups from: " + org.jgroups.Version.class.getProtectionDomain().getCodeSource().getLocation());
       log.info("JGroups version: " + org.jgroups.Version.printDescription());
@@ -374,46 +368,12 @@ public class InfinispanWrapper implements CacheWrapper {
 
    @Override
    public boolean isPassiveReplication() {
-      //TODO handle the case for v5!!!
-        /*
-        try {
-            //DIEGO's
-            return this.cache.getAdvancedCache().getConfiguration().isPassiveReplication();
-        } catch (Exception e) {
-        */
-      try {
-         //PEDRO's
-         return isPassiveReplicationMethod != null && (isPassiveReplicationWithSwitch() ||
-                 (Boolean) isPassiveReplicationMethod.invoke(cache.getConfiguration()));
-      } catch (Exception ee) {
-         log.debug("isPassiveReplication method not found or can't be invoked. Assuming *no* passive replication in use");
-      }
-      //}
-
-      return false;
-
+       return cache.getCacheConfiguration().transaction().transactionProtocol() == TransactionProtocol.PASSIVE_REPLICATION;
    }
 
    @Override
    public boolean isTheMaster() {
       return !isPassiveReplication() || transport.isCoordinator();
-   }
-
-   private boolean isPassiveReplicationWithSwitch() {
-      MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();
-      String cacheComponentString = getCacheComponentBaseString(mBeanServer);
-
-      if (cacheComponentString != null) {
-         try {
-            return "PB".equals(getAsStringAttribute(mBeanServer,
-                    new ObjectName(cacheComponentString + "ReconfigurableReplicationManager"),
-                    "currentProtocolId"));
-         } catch (Exception e) {
-            log.warn("Unable to check for Passive Replication protocol");
-         }
-      }
-      return false;
-
    }
 
    //================================================= JMX STATS ====================================================
