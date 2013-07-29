@@ -34,8 +34,9 @@
                 lockingMode="OPTIMISTIC"
                 eagerLockSingleNode="false"
                 use1PcForAutoCommitTransactions="false"
-                autoCommit="true"
-                />
+                autoCommit="true">
+            <recovery enabled="false" />
+        </transaction>
         <jmxStatistics
                 enabled="true"/>
         <deadlockDetection

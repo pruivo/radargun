@@ -22,8 +22,7 @@
         <ResetStats />
         <BankBenchmark
                 perThreadSimulTime="300"                                
-                statsSamplingInterval="5000"
-                numOfThreads="2"                
+                numOfThreads="2"
                 coordinatorParticipation="true"
                 transferPercentage="90"
                 depositPercentage="0"
@@ -31,6 +30,10 @@
                 />
         <CacheSize
                 statName="CACHE_SIZE" />
+        <PrintDataContainer
+                commitLogPrefix="clog"
+                dataContainerPrefix="dc"
+                />
         <CsvReportGeneration/>
     </benchmark>
     <products>

@@ -6,7 +6,7 @@
             tos="8"
             ucast_recv_buf_size="20M"
             ucast_send_buf_size="640K"
-            ip_mcast="true"
+            ip_mcast="false"
             ip_ttl="${jgroups.udp.ip_ttl:8}"
             mcast_recv_buf_size="25M"
             mcast_send_buf_size="640K"
@@ -34,11 +34,17 @@
             oob_thread_pool.queue_max_size="10"
             oob_thread_pool.rejection_policy="discard"
             />
-    <PING
+    <!--PING
             num_initial_members="5"
             break_on_coord_rsp="true"
             stagger_timeout="2000"
             timeout="5000"
+            /-->
+    <TCPGOSSIP
+            break_on_coord_rsp="true"
+            num_initial_members="10"
+            timeout="5000"
+            initial_hosts="149.165.148.106[12000]"
             />
     <MERGE2
             max_interval="30000"
@@ -62,6 +68,7 @@
             max_bytes="1M"
             />
     <pbcast.GMS
+            view_ack_collection_timeout="5000"
             print_local_addr="true"
             join_timeout="3000"
             max_bundling_time="500"
@@ -70,11 +77,11 @@
     <SEQUENCER/>
     <tom.TOA/>
     <UFC
-            max_credits="4M"
+            max_credits="10M"
             min_threshold="0.4"
             />
     <MFC
-            max_credits="4M"
+            max_credits="10M"
             min_threshold="0.4"
             />
     <FRAG2

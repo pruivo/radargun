@@ -11,6 +11,7 @@
 
    <modules>
       <module>framework</module>
+       <module>analyzer</module>
       <module>plugins/infinispan4</module>
       <!--module>plugins/infinispan50-gmu</module-->
    </modules>
